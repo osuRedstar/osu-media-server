@@ -1,5 +1,5 @@
 from lets_common_log import logUtils as log
-from flask import Flask, render_template, session, redirect, url_for, request, send_from_directory, jsonify, send_file, Response
+from flask import Flask, render_template, session, redirect, url_for, request, send_from_directory, jsonify, send_file, Response, jsonify
 from functions import *
 import os
 
@@ -8,6 +8,10 @@ app = Flask(__name__)
 @app.route("/")
 def home():
     return render_template("index.html")
+
+@app.route("/list")
+def list():
+    return jsonify(read_list())
 
 
 @app.route('/bg/<id>')
