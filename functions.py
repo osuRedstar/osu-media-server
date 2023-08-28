@@ -99,6 +99,8 @@ def check(setID):
     folder_check()
     fullSongName = requests.get(f"https://redstar.moe/api/v1/get_beatmaps?s={setID}")
     fullSongName = fullSongName.json()[0]["artist"] + " - " + fullSongName.json()[0]["title"]
+    if "/" in fullSongName:
+        fullSongName = fullSongName.replace("/", "_")
     log.debug(fullSongName)
     log.info(f"{setID} bsid Redstar API 조회로 {fullSongName} fullSongName 얻음")
 
@@ -106,7 +108,7 @@ def check(setID):
         log.warning(f"{setID} 맵셋 osz 존재하지 않음. 다운로드중...")
         
         url = f'https://proxy.nerinyan.moe/d/{setID}'
-        file_name = f'{setID} {fullSongName}.osz' #919187 765 MILLION ALLSTARS - UNION!!.osz
+        file_name = f'{setID} {fullSongName}.osz' #919187 765 MILLION ALLSTARS - UNION!!.osz #2052147 (Love Live! series) - Colorful Dreams! Colorful Smiles! _  TV2
         save_path = 'dl/'  # 원하는 저장 경로로 변경
         res = requests.get(url)
         if res.status_code == 200:
