@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RedstarOSU's mediaserver</title>
+</head>
+<body style="background-color: pink;">
+    <div id="rsm" style="text-align: center;">
+        <h1>
+            <a href="/bg/" target="_blank" rel="noopener noreferrer">
+                bg/{-BeatmapSetID} or {BeatmapID}
+            </a>
+        </h1>
+        <h1>
+            <a href="/audio/" target="_blank" rel="noopener noreferrer">
+                audio/{-BeatmapSetID} or {BeatmapID}
+            </a>
+        </h1>
+        <h1>
+            <a href="/d/" target="_blank" rel="noopener noreferrer">
+                d/{-BeatmapSetID} or {BeatmapID}
+            </a>
+        </h1>
+        <h1>
+            <a href="/osu/" target="_blank" rel="noopener noreferrer">
+                osu/{BeatmapID}
+            </a>
+        </h1>
+    </div>
+
+    <script>
+        function rs() {
+            let h = window.outerHeight
+            let w = window.outerWidth
+            console.log(`${w} x ${h}`)
+
+            const FDiv = document.getElementById("rsm")
+            FDiv.style.marginTop = `${h / 4}px`
+
+            const img_resize = document.getElementsByClassName("image")
+            for (let i = 0; i < img_resize.length; i++) {
+                img_resize[i].height = h / 10
+            }
+        }
+        rs()
+        window.addEventListener("resize", rs)
+    </script>
+</body>
+</html>
