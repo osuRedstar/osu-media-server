@@ -126,6 +126,10 @@ def check(setID):
 
 #######################################################################################################################################
 
+def read_list():
+    file_list = [file for file in os.listdir(f"dl/")]
+    return file_list
+
 def read_bg(id):
     if int(id) < 0:
         id = str(id).replace("-", "")
