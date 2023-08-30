@@ -28,9 +28,7 @@ def preview(id):
 #ffmpeg 도입 시도해보기
 @app.route('/preview/<id>')
 def audio(id):
-    log.debug(id)
-    return id
-    #return send_file(read_audio(id), mimetype='audio/mpeg')
+    return send_file(read_preview(id), mimetype='audio/mpeg')
 
 @app.route('/video/<id>')
 def video(id):
