@@ -4,6 +4,9 @@ import os
 import shutil
 import requests
 from urllib.request import urlretrieve
+import config
+
+conf = config.config("config.ini")
 
 def folder_check():
     if not os.path.isdir("dl"):
@@ -15,6 +18,9 @@ def folder_check():
     if not os.path.isdir("preview"):
         os.mkdir("preview")
         log.info("preview 폴더 생성")
+    if not os.path.isdir("video"):
+        os.mkdir("video")
+        log.info("video 폴더 생성")
     if not os.path.isdir("thumb"):
         os.mkdir("thumb")
         log.info("thumb 폴더 생성")
@@ -68,22 +74,36 @@ def osu_file_read(setID):
         beatmap_info.append(temp)
         result = [setID, beatmap_info]
 
-        #필요한 파일만 osu 폴더로 이동
+        #필요한 파일만 각 폴더로 이동
         for item in result[1]:
             #아래 코드 에러 방지용 (폴더가 없으면 에러남)
-            if not os.path.isdir(f"audio/{setID}"):
-                os.mkdir(f"audio/{setID}")
             if not os.path.isdir(f"bg/{setID}"):
                 os.mkdir(f"bg/{setID}")
+            if not os.path.isdir(f"audio/{setID}"):
+                os.mkdir(f"audio/{setID}")
+            if not os.path.isdir(f"preview/{setID}"):
+                os.mkdir(f"preview/{setID}")
+            try:
+                if not os.path.isdir(f"video/{setID}") and item["BeatmapVideo"] is not None:
+                    os.mkdir(f"video/{setID}")
+            except:
+                log.warning(f"{item['BeatmapID']} bid no video")
+                pass
+            if not os.path.isdir(f"osu/{setID}"):
+                os.mkdir(f"osu/{setID}")
 
             #BeatmapSetID용 미리듣기 + BG (b.redstar.moe/preview?예정)
             if item["BeatmapID"] == result[1][0]["BeatmapID"]:
-                shutil.copy(f"dl/{setID}/{item['AudioFilename']}", f"audio/{setID}/-{setID}.mp3")
-                shutil.copy(f"dl/{setID}/{item['BeatmapBG']}", f"bg/{setID}/-{setID}{item['BeatmapBG'][item['BeatmapBG'].find('.'):]}")
+                shutil.copy(f"dl/{setID}/{item['BeatmapBG']}", f"bg/{setID}/+{setID}{item['BeatmapBG'][item['BeatmapBG'].find('.'):]}")
+                shutil.copy(f"dl/{setID}/{item['AudioFilename']}", f"audio/{setID}/+{setID}.mp3")
 
-            shutil.copy(f"dl/{setID}/{item['AudioFilename']}", f"audio/{setID}/{item['BeatmapID']}.mp3")
             shutil.copy(f"dl/{setID}/{item['BeatmapBG']}", f"bg/{setID}/{item['BeatmapID']}{item['BeatmapBG'][item['BeatmapBG'].find('.'):]}")
-            shutil.copy(f"dl/{setID}/{beatmapName}", f"osu/{item['BeatmapID']}.osu")
+            shutil.copy(f"dl/{setID}/{item['AudioFilename']}", f"audio/{setID}/{item['BeatmapID']}.mp3")
+            try:
+                shutil.copy(f"dl/{setID}/{item['BeatmapVideo']}", f"video/{setID}/{item['BeatmapVideo']}")
+            except:
+                pass
+            shutil.copy(f"dl/{setID}/{beatmapName}", f"osu/{setID}/{item['BeatmapID']}.osu")
 
     f.close()
     shutil.rmtree(f"dl/{setID}")
@@ -99,8 +119,10 @@ def check(setID):
     folder_check()
     fullSongName = requests.get(f"https://redstar.moe/api/v1/get_beatmaps?s={setID}")
     fullSongName = fullSongName.json()[0]["artist"] + " - " + fullSongName.json()[0]["title"]
+    #fullname에서 특정 문자 예외처리
     if "/" in fullSongName:
         fullSongName = fullSongName.replace("/", "_")
+        log.warning(f"fullSongName 변수에서 특정 문자 치환함. '/' --> '_'")
     log.debug(fullSongName)
     log.info(f"{setID} bsid Redstar API 조회로 {fullSongName} fullSongName 얻음")
 
@@ -108,7 +130,7 @@ def check(setID):
         log.warning(f"{setID} 맵셋 osz 존재하지 않음. 다운로드중...")
         
         url = f'https://proxy.nerinyan.moe/d/{setID}'
-        file_name = f'{setID} {fullSongName}.osz' #919187 765 MILLION ALLSTARS - UNION!!.osz #2052147 (Love Live! series) - Colorful Dreams! Colorful Smiles! _  TV2
+        file_name = f'{setID} {fullSongName}.osz' #919187 765 MILLION ALLSTARS - UNION!!.osz, 2052147 (Love Live! series) - Colorful Dreams! Colorful Smiles! _  TV2
         save_path = 'dl/'  # 원하는 저장 경로로 변경
         res = requests.get(url)
         if res.status_code == 200:
@@ -131,20 +153,20 @@ def read_list():
     return file_list
 
 def read_bg(id):
-    if int(id) < 0:
-        id = str(id).replace("-", "")
+    if "+" in id:
+        id = str(id).replace("+", "")
 
         #bg폴더 파일 체크
         if not os.path.isdir(f"bg/{id}"):
             check(id)
 
-        file_list = [file for file in os.listdir(f"bg/{id}") if file.startswith("-")]
+        file_list = [file for file in os.listdir(f"bg/{id}") if file.startswith("+")]
         try:
             type(file_list[0])
         except:
             log.error(f"bsid = {id} | type(file_list[0]) 에러")
             check(id)
-            return read_bg(f"-{id}")
+            return read_bg(f"+{id}")
         return f"bg/{id}/{file_list[0]}"
     else:
         bsid = requests.get(f"https://redstar.moe/api/v1/get_beatmaps?b={id}")
@@ -166,46 +188,40 @@ def read_bg(id):
     
 #osu_file_read() 역할 분할하기 (각각 따로 두기)
 def read_audio(id):
-    if int(id) < 0:
-        id = str(id).replace("-", "")
+    if "+" in id:
+        id = str(id).replace("+", "")
 
         #audio폴더 파일 체크
         if not os.path.isdir(f"audio/{id}"):
             check(id)
 
-        file_list = [file for file in os.listdir(f"audio/{id}") if file.startswith("-")]
+        file_list = [file for file in os.listdir(f"audio/{id}") if file.startswith("+")]
         try:
             type(file_list[0])
         except:
             log.error(f"bsid = {id} | type(file_list[0]) 에러")
             check(id)
-            return read_bg(f"-{id}")
+            return read_audio(f"+{id}")
         return f"audio/{id}/{file_list[0]}"
     else:
         bsid = requests.get(f"https://redstar.moe/api/v1/get_beatmaps?b={id}")
         bsid = bsid.json()[0]["beatmapset_id"]
         log.info(f"{id} bid Redstar API 조회로 {bsid} bsid 얻음")
 
-        #bg폴더 파일 체크
+        #audio폴더 파일 체크
         if not os.path.isdir(f"audio/{bsid}"):
             check(bsid)
 
         file_list = [file for file in os.listdir(f"audio/{bsid}") if file.startswith(str(id))]
         try:
-            type(file_list[0])
+            #루한루프 잡자
+            #type(file_list[0])
+            log.debug(type(file_list[0]))
         except:
             log.error(f"bid = {id} | type(file_list[0]) 에러")
             check(bsid)
-            return read_bg(id)
+            return read_audio(id)
         return f"audio/{bsid}/{file_list[0]}"
-
-
-
-    setID = id.replace(".mp3", "")
-    if os.path.isfile(f"audio/{setID}/-{id}"):
-        return f"audio/{setID}/-{id}"
-    else:
-        check(setID)
 
 def read_preview(id):
     setID = id.replace(".mp3", "")
@@ -214,10 +230,36 @@ def read_preview(id):
     else:
         check(setID)
 
+def read_video(id):
+        bsid = requests.get(f"https://redstar.moe/api/v1/get_beatmaps?b={id}")
+        bsid = bsid.json()[0]["beatmapset_id"]
+        log.info(f"{id} bid Redstar API 조회로 {bsid} bsid 얻음")
+        
+        #audio폴더 파일 체크
+        if not os.path.isdir(f"video/{bsid}"):
+            check(bsid)
+
+        #임시로 try 박아둠, 나중에 반초라던디 비디오 있나 요청하는거로 바꾸기
+        try:
+            file_list = [file for file in os.listdir(f"video/{bsid}") if file.endswith(".mp4")]
+            try:
+                log.debug(type(file_list[0]))
+            except:
+                log.error(f"bid = {id} | type(file_list[0]) 에러")
+                check(bsid)
+                return read_video(id)
+            return f"video/{bsid}/{file_list[0]}"
+        except:
+            return "NODATA"
+
 def read_osz(id):
     if os.path.isfile(f"dl/{get_osz_fullName(id)}"):
-        return f"dl/{get_osz_fullName(id)}"
+        return {"path": f"dl/{get_osz_fullName(id)}", "filename": get_osz_fullName(id)}
 
 def read_osu(id):
-    if os.path.isfile(f"osu/{id}.osu"):
-        return f"osu/{id}.osu"
+    bsid = requests.get(f"https://redstar.moe/api/v1/get_beatmaps?b={id}")
+    bsid = bsid.json()[0]["beatmapset_id"]
+    log.info(f"{id} bid Redstar API 조회로 {bsid} bsid 얻음")
+
+    if os.path.isfile(f"osu/{bsid}/{id}.osu"):
+        return {"path": f"osu/{bsid}/{id}.osu", "filename": f"{id}.osu"}
