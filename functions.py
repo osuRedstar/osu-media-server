@@ -35,7 +35,9 @@ def get_osz_fullName(setID):
     fullName = [file for file in os.listdir(f"dl/") if file.startswith(f"{setID} ")][0]
     return fullName
 
-def osu_file_read(setID):
+def osu_file_read(setID, moving=False):
+    zipfile.ZipFile(f'dl/{get_osz_fullName(setID)}').extractall(f'dl/{setID}')
+
     file_list = os.listdir(f"dl/{setID}")
     file_list_osu = [file for file in file_list if file.endswith(".osu")]
 
@@ -55,9 +57,9 @@ def osu_file_read(setID):
             if "BeatmapID" in line:
                 temp["BeatmapID"] = line.replace("BeatmapID:", "").replace("\n", "")
             elif "AudioFilename" in line:
-                temp["AudioFilename"] = line.replace("AudioFilename: ", "").replace("\n", "")
+                temp["AudioFilename"] = line.replace("AudioFilename:", "").replace(" ", "").replace("\n", "")
             elif "PreviewTime" in line:
-                temp["PreviewTime"] = line.replace("PreviewTime: ", "").replace("\n", "")
+                temp["PreviewTime"] = line.replace("PreviewTime:", "").replace(" ", "").replace("\n", "")
             #비트맵별 BG 파일이름
             elif ('"' and ".jpg") in line and bg_ignore == 0:
                 temp["BeatmapBG"] = line[line.find('"') + 1 : line.find('"', line.find('"') + 1)]
@@ -71,8 +73,17 @@ def osu_file_read(setID):
             #비트맵별 video 파일이름
             elif '"' and "Video" and ".mp4" in line:
                 temp["BeatmapVideo"] = line[line.find('"') + 1 : line.find('"', line.find('"') + 1)]
+            temp["beatmapName"] = beatmapName
+
         beatmap_info.append(temp)
         result = [setID, beatmap_info]
+        f.close()
+    if not moving:
+        shutil.rmtree(f"dl/{setID}")
+    return result
+
+def move_files(setID):
+        result = osu_file_read(setID, moving=True)
 
         #필요한 파일만 각 폴더로 이동
         for item in result[1]:
@@ -96,6 +107,7 @@ def osu_file_read(setID):
             if item["BeatmapID"] == result[1][0]["BeatmapID"]:
                 shutil.copy(f"dl/{setID}/{item['BeatmapBG']}", f"bg/{setID}/+{setID}{item['BeatmapBG'][item['BeatmapBG'].find('.'):]}")
                 shutil.copy(f"dl/{setID}/{item['AudioFilename']}", f"audio/{setID}/+{setID}.mp3")
+                shutil.copy(f"dl/{setID}/{item['AudioFilename']}", f"preview/{setID}/source_{setID}.mp3")
 
             shutil.copy(f"dl/{setID}/{item['BeatmapBG']}", f"bg/{setID}/{item['BeatmapID']}{item['BeatmapBG'][item['BeatmapBG'].find('.'):]}")
             shutil.copy(f"dl/{setID}/{item['AudioFilename']}", f"audio/{setID}/{item['BeatmapID']}.mp3")
@@ -103,17 +115,9 @@ def osu_file_read(setID):
                 shutil.copy(f"dl/{setID}/{item['BeatmapVideo']}", f"video/{setID}/{item['BeatmapVideo']}")
             except:
                 pass
-            shutil.copy(f"dl/{setID}/{beatmapName}", f"osu/{setID}/{item['BeatmapID']}.osu")
-
-    f.close()
-    shutil.rmtree(f"dl/{setID}")
-    return result
-
-def osz_unzip(setID):
-    zipfile.ZipFile(f'dl/{get_osz_fullName(setID)}').extractall(f'dl/{setID}')
-
-    log.debug(osu_file_read(setID))
-    print("\n")
+            shutil.copy(f"dl/{setID}/{item['beatmapName']}", f"osu/{setID}/{item['BeatmapID']}.osu")
+        #osu_file_read() 함수에 인자값으로 True를 넣어서 dl/{setID} 가 삭제 되지 않으므로 여기서 폴더 삭제함
+        shutil.rmtree(f"dl/{setID}")
 
 def check(setID):
     folder_check()
@@ -137,14 +141,14 @@ def check(setID):
             with open(save_path + file_name, 'wb') as f:
                 f.write(res.content)
             log.info(f'{file_name} 다운로드 완료')
-            osz_unzip(setID)
+            move_files(setID)
         else:
             log.error(f'{res.status_code}. 파일을 다운로드할 수 없습니다.')
         
-        #osz_unzip(setID)
+        #move_files(setID)
     else:
         log.info(f"{get_osz_fullName(setID)} 존재함")
-        osz_unzip(setID)
+        move_files(setID)
 
 #######################################################################################################################################
 
@@ -225,12 +229,24 @@ def read_audio(id):
 
 def read_preview(id):
     setID = id.replace(".mp3", "")
-    if os.path.isfile(f"audio/{setID}/-{id}"):
-        return f"audio/{setID}/-{id}"
-    else:
+        
+    if not os.path.isfile(f"preview/{setID}/{id}"):
         check(setID)
+        #음원 하이라이트 가져오기, 밀리초라서 / 1000 함
+        PreviewTime = int(osu_file_read(setID)[1][0]["PreviewTime"]) / 1000
+        os.system(f"ffmpeg -i preview\{setID}\source_{id} -ss {PreviewTime} -t 30 -vcodec copy -acodec copy preview\{setID}\{id}")
+        os.remove(f"preview/{setID}/source_{id}")
+    return f"preview/{setID}/{id}"
 
 def read_video(id):
+        apikey = conf.config["osu"]["apikey"]
+        hasVideo = requests.get(f"https://osu.ppy.sh/api/get_beatmaps?k={apikey}&b={id}")
+        hasVideo = hasVideo.json()[0]["video"]
+        
+        #type = str
+        if hasVideo == "0":
+            return f"{id} Beatmap has no video!"
+
         bsid = requests.get(f"https://redstar.moe/api/v1/get_beatmaps?b={id}")
         bsid = bsid.json()[0]["beatmapset_id"]
         log.info(f"{id} bid Redstar API 조회로 {bsid} bsid 얻음")
