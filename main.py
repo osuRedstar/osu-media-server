@@ -16,10 +16,13 @@ def home():
 def list():
     return jsonify(read_list())
 
-
 @app.route('/bg/<id>')
 def bg(id):
     return send_file(read_bg(id), mimetype='image/jpeg')
+
+@app.route('/thumb/<id>')
+def thumb(id):
+    return send_file(read_thumb(id), mimetype='image/jpeg')
 
 @app.route('/audio/<id>')
 def preview(id):
@@ -68,6 +71,14 @@ def stream_osu(id):
 @app.route('/osu/<id>')
 def osu(id):
     return stream_osu(id)
+
+#################################################
+
+@app.route("/replay/<date>")
+def replay(date):
+    return f"https://replay.redstar.moe/{date}.mp3 예정"
+
+#################################################
 
 
 if __name__ == "__main__":
