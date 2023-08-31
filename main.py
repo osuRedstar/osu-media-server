@@ -40,12 +40,25 @@ def video(id):
 
 def stream_osz(id):
     path = read_osz(id)
+    if path == 0:
+        return "ERROR"
     response = send_file(path['path'], mimetype='application/x-osu-beatmap-archive')
     response.headers["Content-Disposition"] = f"attachment; filename={path['filename']}"
     return response
 @app.route('/d/<id>')
 def osz(id):
     return stream_osz(id)
+
+def stream_osz_b(id):
+    path = read_osz_b(id)
+    if path == 0:
+        return "ERROR"
+    response = send_file(path['path'], mimetype='application/x-osu-beatmap-archive')
+    response.headers["Content-Disposition"] = f"attachment; filename={path['filename']}"
+    return response
+@app.route('/b/<id>')
+def osz_b(id):
+    return stream_osz_b(id)
 
 def stream_osu(id):
     path = read_osu(id)
