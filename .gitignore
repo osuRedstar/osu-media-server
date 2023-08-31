@@ -1,9 +1,3 @@
 __pycache__/
-bg/
-dl/
-osu/
-audio/
-preview/
-video/
-thumb/
+data/
 config.ini
