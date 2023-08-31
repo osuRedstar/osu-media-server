@@ -32,8 +32,11 @@ def folder_check():
         log.info("osu 폴더 생성")
 
 def get_osz_fullName(setID):
-    fullName = [file for file in os.listdir(f"dl/") if file.startswith(f"{setID} ")][0]
-    return fullName
+    try:
+        fullName = [file for file in os.listdir(f"dl/") if file.startswith(f"{setID} ")][0]
+        return fullName
+    except:
+        return 0
 
 def osu_file_read(setID, moving=False):
     zipfile.ZipFile(f'dl/{get_osz_fullName(setID)}').extractall(f'dl/{setID}')
@@ -133,27 +136,22 @@ def move_files(setID):
 
 def check(setID):
     folder_check()
-    #굳이? startswith 쓰면 되는걸? get_osz_fullName() 쓰려다가 오류나서 기각
-    fullSongName = requests.get(f"https://redstar.moe/api/v1/get_beatmaps?s={setID}")
-    fullSongName = fullSongName.json()[0]["artist"] + " - " + fullSongName.json()[0]["title"]
-    #fullname에서 특정 문자 예외처리
-    if "/" in fullSongName:
-        fullSongName = fullSongName.replace("/", "_")
-        log.warning(f"fullSongName 변수에서 특정 문자 치환함. '/' --> '_'")
+    fullSongName = get_osz_fullName(setID)
     log.debug(fullSongName)
-    log.info(f"{setID} bsid Redstar API 조회로 {fullSongName} fullSongName 얻음")
 
-    if not os.path.isfile(f"dl/{setID} {fullSongName}.osz"):
+    if fullSongName == 0:
         log.warning(f"{setID} 맵셋 osz 존재하지 않음. 다운로드중...")
         
         url = f'https://proxy.nerinyan.moe/d/{setID}'
-        file_name = f'{setID} {fullSongName}.osz' #919187 765 MILLION ALLSTARS - UNION!!.osz, 2052147 (Love Live! series) - Colorful Dreams! Colorful Smiles! _  TV2
+        #우선 setID .osz로 다운받고 나중에 파일 이름 변경
+        file_name = f'{setID} .osz' #919187 765 MILLION ALLSTARS - UNION!!.osz, 2052147 (Love Live! series) - Colorful Dreams! Colorful Smiles! _  TV2
         save_path = 'dl/'  # 원하는 저장 경로로 변경
         res = requests.get(url)
         if res.status_code == 200:
             with open(save_path + file_name, 'wb') as f:
                 f.write(res.content)
-            log.info(f'{file_name} 다운로드 완료')
+            log.info(f'{file_name} --> {res.headers["filename"]} 다운로드 완료')
+            os.rename(f"dl/{setID} .osz", f"dl/{res.headers['filename']}")
             move_files(setID)
         else:
             log.error(f'{res.status_code}. 파일을 다운로드할 수 없습니다.')
@@ -308,6 +306,24 @@ def read_osz(id):
         return {"path": f"dl/{get_osz_fullName(id)}", "filename": get_osz_fullName(id)}
     else:
         check(id)
+        if os.path.isfile(f"dl/{get_osz_fullName(id)}"):
+            return {"path": f"dl/{get_osz_fullName(id)}", "filename": get_osz_fullName(id)}
+        else:
+            return 0
+
+def read_osz_b(id):
+    bsid = requests.get(f"https://redstar.moe/api/v1/get_beatmaps?b={id}")
+    bsid = bsid.json()[0]["beatmapset_id"]
+    log.info(f"{id} bid Redstar API 조회로 {bsid} bsid 얻음")
+
+    if os.path.isfile(f"dl/{get_osz_fullName(bsid)}"):
+        return {"path": f"dl/{get_osz_fullName(bsid)}", "filename": get_osz_fullName(bsid)}
+    else:
+        check(bsid)
+        if os.path.isfile(f"dl/{get_osz_fullName(bsid)}"):
+            return {"path": f"dl/{get_osz_fullName(bsid)}", "filename": get_osz_fullName(bsid)}
+        else:
+            return 0
 
 def read_osu(id):
     bsid = requests.get(f"https://redstar.moe/api/v1/get_beatmaps?b={id}")
