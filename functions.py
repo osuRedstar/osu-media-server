@@ -55,11 +55,23 @@ def osu_file_read(setID, moving=False):
             if not line: break
 
             if "BeatmapID" in line:
-                temp["BeatmapID"] = line.replace("BeatmapID:", "").replace("\n", "")
+                spaceFilter = line.replace("BeatmapID:", "").replace("\n", "")
+                if spaceFilter.startswith(" "):
+                    spaceFilter = spaceFilter.replace(" ", "", 1)
+                    log.warning(f"BeatmapID: 필터링 후 앞에 공백 발견되서 replace 시킴 | {spaceFilter}")
+                temp["BeatmapID"] = spaceFilter
             elif "AudioFilename" in line:
-                temp["AudioFilename"] = line.replace("AudioFilename:", "").replace(" ", "").replace("\n", "")
+                spaceFilter = line.replace("AudioFilename:", "").replace("\n", "")
+                if spaceFilter.startswith(" "):
+                    spaceFilter = spaceFilter.replace(" ", "", 1)
+                    log.warning(f"AudioFilename: 필터링 후 앞에 공백 발견되서 replace 시킴 | {spaceFilter}")
+                temp["AudioFilename"] = spaceFilter
             elif "PreviewTime" in line:
-                temp["PreviewTime"] = line.replace("PreviewTime:", "").replace(" ", "").replace("\n", "")
+                spaceFilter = line.replace("PreviewTime:", "").replace("\n", "")
+                if spaceFilter.startswith(" "):
+                    spaceFilter = spaceFilter.replace(" ", "", 1)
+                    log.warning(f"PreviewTime: 필터링 후 앞에 공백 발견되서 replace 시킴 | {spaceFilter}")
+                temp["PreviewTime"] = spaceFilter
             #비트맵별 BG 파일이름
             elif ('"' and ".jpg") in line and bg_ignore == 0:
                 temp["BeatmapBG"] = line[line.find('"') + 1 : line.find('"', line.find('"') + 1)]
@@ -121,6 +133,7 @@ def move_files(setID):
 
 def check(setID):
     folder_check()
+    #굳이? startswith 쓰면 되는걸? get_osz_fullName() 쓰려다가 오류나서 기각
     fullSongName = requests.get(f"https://redstar.moe/api/v1/get_beatmaps?s={setID}")
     fullSongName = fullSongName.json()[0]["artist"] + " - " + fullSongName.json()[0]["title"]
     #fullname에서 특정 문자 예외처리
@@ -153,8 +166,30 @@ def check(setID):
 #######################################################################################################################################
 
 def read_list():
-    file_list = [file for file in os.listdir(f"dl/")]
-    return file_list
+    result = {}
+
+    osz_file_list = [file for file in os.listdir(f"dl/")]
+    result["osz"] = {"list": osz_file_list, "count": len(osz_file_list)}
+
+    bg_file_list = [file for file in os.listdir(f"bg/")]
+    result["bg"] = {"list": bg_file_list, "count": len(bg_file_list)}
+
+    audio_file_list = [file for file in os.listdir(f"audio/")]
+    result["audio"] = {"list": audio_file_list, "count": len(audio_file_list)}
+
+    preview_file_list = [file for file in os.listdir(f"preview/")]
+    result["preview"] = {"list": preview_file_list, "count": len(preview_file_list)}
+
+    video_file_list = [file for file in os.listdir(f"video/")]
+    result["video"] = {"list": video_file_list, "count": len(video_file_list)}
+
+    osu_file_list = [file for file in os.listdir(f"osu/")]
+    result["osu"] = {"list": osu_file_list, "count": len(osu_file_list)}
+
+    thumb_file_list = [file for file in os.listdir(f"thumb/")]
+    result["thumb"] = {"list": thumb_file_list, "count": len(thumb_file_list)}
+
+    return result
 
 def read_bg(id):
     if "+" in id:
@@ -271,6 +306,8 @@ def read_video(id):
 def read_osz(id):
     if os.path.isfile(f"dl/{get_osz_fullName(id)}"):
         return {"path": f"dl/{get_osz_fullName(id)}", "filename": get_osz_fullName(id)}
+    else:
+        check(id)
 
 def read_osu(id):
     bsid = requests.get(f"https://redstar.moe/api/v1/get_beatmaps?b={id}")
@@ -279,3 +316,5 @@ def read_osu(id):
 
     if os.path.isfile(f"osu/{bsid}/{id}.osu"):
         return {"path": f"osu/{bsid}/{id}.osu", "filename": f"{id}.osu"}
+    else:
+        check(bsid)
