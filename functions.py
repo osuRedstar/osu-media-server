@@ -66,7 +66,6 @@ def osu_file_read(setID, moving=False):
             if not line: break
 
             if "BeatmapID" in line:
-                log.debug(f'"BeatmapID" in line: | {line}')
                 spaceFilter = line.replace("BeatmapID:", "").replace("\n", "")
                 if spaceFilter.startswith(" "):
                     spaceFilter = spaceFilter.replace(" ", "", 1)
@@ -88,7 +87,6 @@ def osu_file_read(setID, moving=False):
                 if spaceFilter.startswith(" "):
                     spaceFilter = spaceFilter.replace(" ", "", 1)
                 temp["PreviewTime"] = spaceFilter
-                log.warning(f"PreviewTime = {spaceFilter}")
             #비트맵별 BG 파일이름
             elif ('"' and ".jpg") in lineCheck and not bg_ignore:
                 temp["BeatmapBG"] = line[line.find('"') + 1 : line.find('"', line.find('"') + 1)]
