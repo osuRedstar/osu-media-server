@@ -48,13 +48,15 @@ def osu_file_read(setID, moving=False):
     file_list = os.listdir(f"data/dl/{setID}")
     file_list_osu = [file for file in file_list if file.endswith(".osu")]
 
+    first_bid = 0
     result = []
     beatmap_info = []
+
     # readline_all.py
     for beatmapName in file_list_osu:
         log.info(beatmapName)
         temp = {}
-        bg_ignore = 0
+        bg_ignore = False
 
         f = open(f"data/dl/{setID}/{beatmapName}", 'r', encoding="utf-8")
         while True:
@@ -64,33 +66,39 @@ def osu_file_read(setID, moving=False):
             if not line: break
 
             if "BeatmapID" in line:
+                log.debug(f'"BeatmapID" in line: | {line}')
                 spaceFilter = line.replace("BeatmapID:", "").replace("\n", "")
                 if spaceFilter.startswith(" "):
                     spaceFilter = spaceFilter.replace(" ", "", 1)
-                    log.warning(f"BeatmapID: 필터링 후 앞에 공백 발견되서 replace 시킴 | {spaceFilter}")
                 temp["BeatmapID"] = spaceFilter
+
+                #first_bid 선별
+                if first_bid == 0:
+                    first_bid = spaceFilter
+                elif first_bid > spaceFilter:
+                    first_bid = spaceFilter
+
             elif "AudioFilename" in line:
                 spaceFilter = line.replace("AudioFilename:", "").replace("\n", "")
                 if spaceFilter.startswith(" "):
                     spaceFilter = spaceFilter.replace(" ", "", 1)
-                    log.warning(f"AudioFilename: 필터링 후 앞에 공백 발견되서 replace 시킴 | {spaceFilter}")
                 temp["AudioFilename"] = spaceFilter
             elif "PreviewTime" in line:
                 spaceFilter = line.replace("PreviewTime:", "").replace("\n", "")
                 if spaceFilter.startswith(" "):
                     spaceFilter = spaceFilter.replace(" ", "", 1)
-                    log.warning(f"PreviewTime: 필터링 후 앞에 공백 발견되서 replace 시킴 | {spaceFilter}")
                 temp["PreviewTime"] = spaceFilter
+                log.warning(f"PreviewTime = {spaceFilter}")
             #비트맵별 BG 파일이름
-            elif ('"' and ".jpg") in lineCheck and bg_ignore == 0:
+            elif ('"' and ".jpg") in lineCheck and not bg_ignore:
                 temp["BeatmapBG"] = line[line.find('"') + 1 : line.find('"', line.find('"') + 1)]
-                bg_ignore = 1
-            elif ('"' and ".png") in lineCheck and bg_ignore == 0:
+                bg_ignore = True
+            elif ('"' and ".png") in lineCheck and not bg_ignore:
                 temp["BeatmapBG"] = line[line.find('"') + 1 : line.find('"', line.find('"') + 1)]
-                bg_ignore = 1
-            elif ('"' and ".jpeg") in lineCheck and bg_ignore == 0:
+                bg_ignore = True
+            elif ('"' and ".jpeg") in lineCheck and not bg_ignore:
                 temp["BeatmapBG"] = line[line.find('"') + 1 : line.find('"', line.find('"') + 1)]
-                bg_ignore = 1
+                bg_ignore = True
             #비트맵별 video 파일이름
             #elif '"' and "Video" and ".mp4" in line:
             elif '"' and "video" and ".mp4" in lineCheck:
@@ -98,8 +106,10 @@ def osu_file_read(setID, moving=False):
             temp["beatmapName"] = beatmapName
 
         beatmap_info.append(temp)
-        result = [setID, beatmap_info]
         f.close()
+
+    log.debug(f"first_bid = {first_bid}")
+    result = [setID, first_bid, beatmap_info]
     if not moving:
         shutil.rmtree(f"data/dl/{setID}")
     return result
@@ -108,7 +118,7 @@ def move_files(setID):
         result = osu_file_read(setID, moving=True)
 
         #필요한 파일만 각 폴더로 이동
-        for item in result[1]:
+        for item in result[2]:
             #아래 코드 에러 방지용 (폴더가 없으면 에러남)
             if not os.path.isdir(f"data/bg/{setID}"):
                 os.mkdir(f"data/bg/{setID}")
@@ -127,31 +137,28 @@ def move_files(setID):
                     os.mkdir(f"data/video/{setID}")
                     log.info(f"data/video/{setID} 폴더 생성 완료!")
             except:
-                log.warning(f"{item['BeatmapID']} bid no video")
+                #log.warning(f"{item['BeatmapID']} bid no video")
                 pass
             if not os.path.isdir(f"data/osu/{setID}"):
                 os.mkdir(f"data/osu/{setID}")
                 log.info(f"data/osu/{setID} 폴더 생성 완료!")
 
-            log.debug(item)
+            #log.debug(item)
 
             #BeatmapSetID용 미리듣기 + BG (b.redstar.moe/preview?예정)
-            if item["BeatmapID"] == result[1][0]["BeatmapID"]:
+            #if item["BeatmapID"] == result[2][0]["BeatmapID"]:
+            if item["BeatmapID"] == result[1]:
                 try:
                     shutil.copy(f"data/dl/{setID}/{item['BeatmapBG']}", f"data/bg/{setID}/+{setID}{item['BeatmapBG'][item['BeatmapBG'].find('.'):]}")
+                    log.info(f"{setID} 비트맵셋, {item['BeatmapID']} 비트맵 | BG 처리함")
                 except:
                     log.error(f"{setID} 비트맵셋은 BG가 없음")
-                #얘도 사실 이 위치에 없고 if 위치에 있어도 댐?
                 try:
                     shutil.copy(f"data/dl/{setID}/{item['AudioFilename']}", f"data/audio/{setID}/+{setID}.mp3")
                     shutil.copy(f"data/dl/{setID}/{item['AudioFilename']}", f"data/preview/{setID}/source_{setID}.mp3")
+                    log.info(f"{setID} 비트맵셋, {item['BeatmapID']} 비트맵 | audio 처리함")
                 except:
-                    log.error(f"{setID}, {item['BeatmapID']} 비트맵셋은 audio가 없음")
-
-            #audio.mp3가 AudioFilename에서 우선권을 가짐
-            if item["AudioFilename"] == "audio.mp3":
-                shutil.copy(f"data/dl/{setID}/{item['AudioFilename']}", f"data/audio/{setID}/+{setID}.mp3")
-                shutil.copy(f"data/dl/{setID}/{item['AudioFilename']}", f"data/preview/{setID}/source_{setID}.mp3")
+                    log.error(f"{setID} 비트맵셋은 audio가 없음")
 
             try:
                 shutil.copy(f"data/dl/{setID}/{item['BeatmapBG']}", f"data/bg/{setID}/{item['BeatmapID']}{item['BeatmapBG'][item['BeatmapBG'].find('.'):]}")
@@ -325,7 +332,8 @@ def read_audio(id):
         try:
             #루한루프 잡자
             #type(file_list[0])
-            log.debug(type(file_list[0]))
+            #log.debug(type(file_list[0]))
+            type(file_list[0])
         except:
             log.error(f"bid = {id} | type(file_list[0]) 에러")
             check(bsid)
@@ -339,8 +347,14 @@ def read_preview(id):
         
     if not os.path.isfile(f"data/preview/{setID}/{id}"):
         check(setID)
+
         #음원 하이라이트 가져오기, 밀리초라서 / 1000 함
-        PreviewTime = int(osu_file_read(setID)[1][0]["PreviewTime"]) / 1000
+        PreviewTime = -1
+        j = osu_file_read(setID)
+        for i in j[2]:
+            if j[1] == i["BeatmapID"]:
+                PreviewTime = int(i["PreviewTime"]) / 1000
+        
         os.system(f"ffmpeg -i data\preview\{setID}\source_{id} -ss {PreviewTime} -t 30 -acodec libmp3lame data\preview\{setID}\{id}")
         os.remove(f"data/preview/{setID}/source_{id}")
     return f"data/preview/{setID}/{id}"
@@ -359,7 +373,7 @@ def read_video(id):
                 log.warning(f"{id} 해당 비트맵은 반초 API에서 조회가 되지 않습니다! | .osu 파일에 비디오 있나 체크")
                 ismp4 = osu_file_read(bsid)
                 #사실 의미 없음
-                hasVideo = ismp4[1][0]["BeatmapVideo"]
+                hasVideo = ismp4[2][0]["BeatmapVideo"]
             except:
                 log.error(f"{id} 해당 비트맵은 .osu 파일에서도 mp4가 발견되지 않음")
                 return f"{id} Beatmap doesn't exist on Bancho API!"
@@ -376,7 +390,8 @@ def read_video(id):
         try:
             file_list = [file for file in os.listdir(f"data/video/{bsid}") if file.endswith(".mp4")]
             try:
-                log.debug(type(file_list[0]))
+                #log.debug(type(file_list[0]))
+                type(file_list[0])
             except:
                 log.error(f"bid = {id} | type(file_list[0]) 에러")
                 check(bsid)
