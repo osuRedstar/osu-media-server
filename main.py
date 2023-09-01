@@ -39,7 +39,7 @@ def video(id):
     if readed_read_video.endswith(".mp4"):
         return send_file(readed_read_video, mimetype='video/mp4')
     else:
-        return {"code": 404, "message": "Sorry Beatmap has no videos", "funcmsg": readed_read_video}
+        return jsonify({"code": 404, "message": "Sorry Beatmap has no videos", "funcmsg": readed_read_video})
 
 def stream_osz(id):
     path = read_osz(id)
@@ -76,7 +76,12 @@ def osu(id):
 
 @app.route("/replay/<date>")
 def replay(date):
-    return f"https://replay.redstar.moe/{date}.mp3 예정"
+    path = f"B:/xampp/htdocs/replay.redstar.moe/{date}"
+    if os.path.isfile(path):
+        log.info(path)
+        return send_file(path, mimetype='video/mp4')
+    else:
+        return f"https://replay.redstar.moe/{date} 예정"
 
 #################################################
 

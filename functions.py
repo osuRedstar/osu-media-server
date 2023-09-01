@@ -324,23 +324,33 @@ def read_preview(id):
     return f"data/preview/{setID}/{id}"
 
 def read_video(id):
-        apikey = conf.config["osu"]["apikey"]
-        hasVideo = requests.get(f"https://osu.ppy.sh/api/get_beatmaps?k={apikey}&b={id}")
-        hasVideo = hasVideo.json()[0]["video"]
-        
-        #type = str
-        if hasVideo == "0":
-            return f"{id} Beatmap has no video!"
-
         bsid = requests.get(f"https://redstar.moe/api/v1/get_beatmaps?b={id}")
         bsid = bsid.json()[0]["beatmapset_id"]
         log.info(f"{id} bid Redstar API 조회로 {bsid} bsid 얻음")
+
+        try:
+            apikey = conf.config["osu"]["apikey"]
+            hasVideo = requests.get(f"https://osu.ppy.sh/api/get_beatmaps?k={apikey}&b={id}")
+            hasVideo = hasVideo.json()[0]["video"]
+        except:
+            try:
+                log.warning(f"{id} 해당 비트맵은 반초 API에서 조회가 되지 않습니다! | .osu 파일에 비디오 있나 체크")
+                ismp4 = osu_file_read(bsid)
+                #사실 의미 없음
+                hasVideo = ismp4[1][0]["BeatmapVideo"]
+            except:
+                log.error(f"{id} 해당 비트맵은 .osu 파일에서도 mp4가 발견되지 않음")
+                return f"{id} Beatmap doesn't exist on Bancho API!"
+            
+        #type = str
+        if hasVideo == "0":
+            return f"{id} Beatmap has no video!"
         
         #video폴더 파일 체크
         if not os.path.isdir(f"data/video/{bsid}"):
             check(bsid)
 
-        #임시로 try 박아둠, 나중에 반초라던디 비디오 있나 요청하는거로 바꾸기
+        #임시로 try 박아둠, 나중에 반초라던지 비디오 있나 요청하는거로 바꾸기
         try:
             file_list = [file for file in os.listdir(f"data/video/{bsid}") if file.endswith(".mp4")]
             try:
