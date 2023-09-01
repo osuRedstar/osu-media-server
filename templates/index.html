@@ -6,7 +6,7 @@
     <title>RedstarOSU's mediaserver</title>
 </head>
 <body style="background-color: pink;">
-    <div id="rsm" style="text-align: center;">
+    <!-- <div id="rsm" style="text-align: center;">
         <h1>
             <a href="/bg/" target="_blank" rel="noopener noreferrer">
                 bg/{+BeatmapSetID} or {BeatmapID}
@@ -54,7 +54,7 @@
                 osu/{BeatmapID}
             </a>
         </h1>
-    </div>
+    </div> -->
 
     <div style="text-align: center;">
 
@@ -62,43 +62,59 @@
         <br><br>
 
         <h1>BG</h1>
-        <a style="color: #00FFFF;" id="bg" href="https://media.redstar.moe/bg/<int:id>">https://media.redstar.moe/bg/{+BeatmapSetID} or {BeatmapID}</a>
-        <br><br><br><br>
+        <h2>
+            <a style="color: #00FFFF;" id="bg" href="">https://b.redstar.moe/bg/{+BeatmapSetID} or {BeatmapID}</a>
+        </h2>
+        <br>
 
         <h1>thumb</h1>
-        <a style="color: #00FFFF;" id="thumb" href="https://media.redstar.moe/bancho/id/<int:uid>">https://media.redstar.moe/thumb/?????</a>
-        <br><br><br><br>
+        <h2>
+            <a style="color: #00FFFF;" id="thumb" href="">https://b.redstar.moe/thumb/{BeatmapSetID}l.jpg</a>
+        </h2>
+        <br>
 
         <h1>audio</h1>
-        <a style="color: #00FFFF;" id="audio" href="https://media.redstar.moe/audio/<int:id>">https://media.redstar.moe/audio/{+BeatmapSetID} or {BeatmapID}</a>
-        <br><br><br><br>
+        <h2>
+            <a style="color: #00FFFF;" id="audio" href="">https://b.redstar.moe/audio/{+BeatmapSetID} or {BeatmapID}</a>
+        </h2>
+        <br>
         
         <h1>preview</h1>
-        <a style="color: #00FFFF;" id="preview" href="https://b.redstar.moe/preview/<int:bsid>.mp3">https://b.redstar.moe/preview/{BeatmapSetID}.mp3</a>
-        <br><br><br><br>
+        <h2>
+            <a style="color: #00FFFF;" id="preview" href="">https://b.redstar.moe/preview/{BeatmapSetID}.mp3</a>
+        </h2>
+        <br>
         
         <h1>video</h1>
-        <a style="color: #00FFFF;" id="video" href="https://media.redstar.moe/video/<int:bid>">https://media.redstar.moe/video/{BeatmapID}</a>
-        <br><br><br><br>
+        <h2>
+            <a style="color: #00FFFF;" id="video" href="">https://b.redstar.moe/video/{BeatmapID}</a>
+        </h2>
+        <br>
         
         <h1>b</h1>
-        <a style="color: #00FFFF;" id="b" href="https://media.redstar.moe/b/<int:bid>">https://media.redstar.moe/b/{BeatmapID}</a>
-        <br><br><br><br>
+        <h2>
+            <a style="color: #00FFFF;" id="b" href="">https://b.redstar.moe/b/{BeatmapID}</a>
+        </h2>
+        <br>
         
         <h1>d</h1>
-        <a style="color: #00FFFF;" id="d" href="https://media.redstar.moe/d/<int:bsid>">https://media.redstar.moe/d/{BeatmapSetID}</a>
-        <br><br><br><br>
+        <h2>
+            <a style="color: #00FFFF;" id="d" href="">https://b.redstar.moe/d/{BeatmapSetID}</a>
+        </h2>
+        <br>
         
         <h1>osu</h1>
-        <a style="color: #00FFFF;" id="osu" href="https://media.redstar.moe/osu/<int:bid>">https://media.redstar.moe/osu/{BeatmapID}</a>
-        <br><br><br><br>
+        <h2>
+            <a style="color: #00FFFF;" id="osu" href="">https://b.redstar.moe/osu/{BeatmapID}</a>
+        </h2>
+        <br>
         
         
         
 
     </div>
 
-    <script src="../stat"></script>
+    <script src="../static/js/index.js"></script>
 
     <script>
         function rs() {
