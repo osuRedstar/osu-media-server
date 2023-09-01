@@ -137,14 +137,33 @@ def move_files(setID):
 
             #BeatmapSetID용 미리듣기 + BG (b.redstar.moe/preview?예정)
             if item["BeatmapID"] == result[1][0]["BeatmapID"]:
-                shutil.copy(f"data/dl/{setID}/{item['BeatmapBG']}", f"data/bg/{setID}/+{setID}{item['BeatmapBG'][item['BeatmapBG'].find('.'):]}")
+                try:
+                    shutil.copy(f"data/dl/{setID}/{item['BeatmapBG']}", f"data/bg/{setID}/+{setID}{item['BeatmapBG'][item['BeatmapBG'].find('.'):]}")
+                except:
+                    log.error(f"{setID} 비트맵셋은 BG가 없음")
+                #얘도 사실 이 위치에 없고 if 위치에 있어도 댐?
+                try:
+                    shutil.copy(f"data/dl/{setID}/{item['AudioFilename']}", f"data/audio/{setID}/+{setID}.mp3")
+                    shutil.copy(f"data/dl/{setID}/{item['AudioFilename']}", f"data/preview/{setID}/source_{setID}.mp3")
+                except:
+                    log.error(f"{setID}, {item['BeatmapID']} 비트맵셋은 audio가 없음")
+
+            #audio.mp3가 AudioFilename에서 우선권을 가짐
+            if item["AudioFilename"] == "audio.mp3":
                 shutil.copy(f"data/dl/{setID}/{item['AudioFilename']}", f"data/audio/{setID}/+{setID}.mp3")
                 shutil.copy(f"data/dl/{setID}/{item['AudioFilename']}", f"data/preview/{setID}/source_{setID}.mp3")
 
-            shutil.copy(f"data/dl/{setID}/{item['BeatmapBG']}", f"data/bg/{setID}/{item['BeatmapID']}{item['BeatmapBG'][item['BeatmapBG'].find('.'):]}")
-            shutil.copy(f"data/dl/{setID}/{item['AudioFilename']}", f"data/audio/{setID}/{item['BeatmapID']}.mp3")
+            try:
+                shutil.copy(f"data/dl/{setID}/{item['BeatmapBG']}", f"data/bg/{setID}/{item['BeatmapID']}{item['BeatmapBG'][item['BeatmapBG'].find('.'):]}")
+            except:
+                log.error(f"{item['BeatmapID']} 비트맵은 BG가 없음")
+            try:
+                shutil.copy(f"data/dl/{setID}/{item['AudioFilename']}", f"data/audio/{setID}/{item['BeatmapID']}.mp3")
+            except:
+                log.error(f"{item['BeatmapID']} 비트맵은 audio가 없음")
             try:
                 shutil.copy(f"data/dl/{setID}/{item['BeatmapVideo']}", f"data/video/{setID}/{item['BeatmapVideo']}")
+                log.info(f"{item['BeatmapID']} 비트맵은 video가 존재함!")
             except:
                 pass
             shutil.copy(f"data/dl/{setID}/{item['beatmapName']}", f"data/osu/{setID}/{item['BeatmapID']}.osu")
@@ -260,6 +279,9 @@ def read_thumb(id):
             return read_thumb(id)
 
         img = Image.open(f"data/bg/{bsid}/{file_list[0]}")
+        # 이미지 모드를 RGBA에서 RGB로 변환
+        if img.mode == "RGBA":
+            img = img.convert("RGB")
 
         width, height = img.size
         left = (width - (height * (4 / 3))) / 2
