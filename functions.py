@@ -33,7 +33,7 @@ def folder_check():
     if not os.path.isdir("data/bg"):
         os.mkdir("data/bg")
         log.info("data/bg 폴더 생성")
-    if not os.path.isdir(f"data/osu"):
+    if not os.path.isdir(f"data/osu") and not IS_YOU_HAVE_OSU_PRIVATE_SERVER:
         os.mkdir(f"data/osu")
         log.info("data/osu 폴더 생성")
 
