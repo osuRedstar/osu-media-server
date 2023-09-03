@@ -46,6 +46,7 @@ class config:
 			self.config.get("server","flaskdebug")
 
 			self.config.get("osu","APIKEY")
+			self.config.get("osu","IS_YOU_HAVE_OSU_PRIVATE_SERVER_WITH_lets.py")
 			return True
 		except:
 			return False
@@ -65,6 +66,7 @@ class config:
 
 		self.config.add_section("osu")
 		self.config.set("osu", "APIKEY", "Your_OSU_APIKEY")
+		self.config.set("osu", "IS_YOU_HAVE_OSU_PRIVATE_SERVER_WITH_lets.py", "True")
 
 		# Write ini to file and close
 		self.config.write(f)

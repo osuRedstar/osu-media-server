@@ -8,6 +8,8 @@ import config
 from PIL import Image
 
 conf = config.config("config.ini")
+#lets.py 형태의 사설서버를 소유중이면 lets\.data\beatmaps 에서만 .osu 파일을 가져옴
+IS_YOU_HAVE_OSU_PRIVATE_SERVER = bool(conf.config["osu"]["IS_YOU_HAVE_OSU_PRIVATE_SERVER_WITH_lets.py"])
 
 def folder_check():
     if not os.path.isdir("data"):
@@ -169,7 +171,7 @@ def move_files(setID):
             except:
                 #log.warning(f"{item['BeatmapID']} bid no video")
                 pass
-            if not os.path.isdir(f"data/osu/{setID}"):
+            if not os.path.isdir(f"data/osu/{setID}") and not IS_YOU_HAVE_OSU_PRIVATE_SERVER:
                 os.mkdir(f"data/osu/{setID}")
                 log.info(f"data/osu/{setID} 폴더 생성 완료!")
 
@@ -184,6 +186,7 @@ def move_files(setID):
                 except:
                     log.error(f"{setID} 비트맵셋은 BG가 없음 | no image.png로 저장함")
                     shutil.copy(f"static/img/no image.png", f"data/bg/{setID}/+{setID}.png")
+
                 try:
                     shutil.copy(f"data/dl/{setID}/{item['AudioFilename']}", f"data/audio/{setID}/+{setID}.mp3")
                     shutil.copy(f"data/dl/{setID}/{item['AudioFilename']}", f"data/preview/{setID}/source_{setID}.mp3")
@@ -198,22 +201,27 @@ def move_files(setID):
             except:
                 log.error(f"{item['BeatmapID']} 비트맵은 BG가 없음 | no image.png로 저장함")
                 shutil.copy(f"static/img/no image.png", f"data/bg/{setID}/{item['BeatmapID']}.png")
+
             try:
                 shutil.copy(f"data/dl/{setID}/{item['AudioFilename']}", f"data/audio/{setID}/{item['BeatmapID']}.mp3")
             except:
                 log.error(f"{item['BeatmapID']} 비트맵은 audio가 없음 | no audio.mp3로 저장함")
                 shutil.copy(f"static/audio/no audio.mp3", f"data/audio/{setID}/{item['BeatmapID']}.mp3")
+
             try:
                 shutil.copy(f"data/dl/{setID}/{item['BeatmapVideo']}", f"data/video/{setID}/{item['BeatmapVideo']}")
                 log.info(f"{item['BeatmapID']} 비트맵은 video가 존재함!")
             except:
                 pass
-            shutil.copy(f"data/dl/{setID}/{item['beatmapName']}", f"data/osu/{setID}/{item['BeatmapID']}.osu")
+            
+            if not IS_YOU_HAVE_OSU_PRIVATE_SERVER:
+                shutil.copy(f"data/dl/{setID}/{item['beatmapName']}", f"data/osu/{setID}/{item['BeatmapID']}.osu")
+
         #osu_file_read() 함수에 인자값으로 True를 넣어서 dl/{setID} 가 삭제 되지 않으므로 여기서 폴더 삭제함
         shutil.rmtree(f"data/dl/{setID}")
 
 def check(setID):
-    #.osz는 무조건 새로 받되, Bancho에서 ranked, loved 등등 은 새로 안받아도 댐. (Redstar에서의 랭크상태 여부는 고민중)
+    #.osz는 무조건 새로 받되, Bancho, Redstar**전용** 맵에서 ranked, loved 등등 은 새로 안받아도 댐. (Redstar에서의 랭크상태 여부는 고민중)
     #근데 생각해보니 파일 있으면 걍 이걸 안오는데?
     folder_check()
     fullSongName = get_osz_fullName(setID)
@@ -223,7 +231,6 @@ def check(setID):
         log.warning(f"{setID} 맵셋 osz 존재하지 않음. 다운로드중...")
         
         url = [f'https://proxy.nerinyan.moe/d/{setID}', f"https://chimu.moe/d/{setID}"]
-
         def dl(site):
             #우선 setID .osz로 다운받고 나중에 파일 이름 변경
             file_name = f'{setID} .osz' #919187 765 MILLION ALLSTARS - UNION!!.osz, 2052147 (Love Live! series) - Colorful Dreams! Colorful Smiles! _  TV2
@@ -239,8 +246,6 @@ def check(setID):
                 log.error(f'{res.status_code}. 파일을 다운로드할 수 없습니다. chiumu로 재시도!')
                 dl(1)
         dl(0)
-        
-        #move_files(setID)
     else:
         log.info(f"{get_osz_fullName(setID)} 존재함")
         move_files(setID)
@@ -464,11 +469,15 @@ def read_osz_b(id):
             return 0
 
 def read_osu(id):
-    bsid = requests.get(f"https://redstar.moe/api/v1/get_beatmaps?b={id}")
-    bsid = bsid.json()[0]["beatmapset_id"]
-    log.info(f"{id} bid Redstar API 조회로 {bsid} bsid 얻음")
-
+    #B:\redstar\lets\.data\beatmaps 우선시함
+    if os.path.isfile(f"B:/redstar/lets/.data/beatmaps/{id}.osu"):
+        log.info(f"{id}.osu 파일을 B:/redstar/lets/.data/beatmaps/{id}.osu에서 먼저 찾아서 반환함")
+        return {"path": f"B:/redstar/lets/.data/beatmaps/{id}.osu", "filename": f"{id}.osu"}
+    
     if os.path.isfile(f"data/osu/{bsid}/{id}.osu"):
         return {"path": f"data/osu/{bsid}/{id}.osu", "filename": f"{id}.osu"}
     else:
+        bsid = requests.get(f"https://redstar.moe/api/v1/get_beatmaps?b={id}")
+        bsid = bsid.json()[0]["beatmapset_id"]
+        log.info(f"{id} bid Redstar API 조회로 {bsid} bsid 얻음")
         check(bsid)
