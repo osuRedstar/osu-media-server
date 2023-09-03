@@ -85,6 +85,9 @@ def replay(date):
 
 #################################################
 
+@app.route('/favicon.ico')
+def favicon():
+    return send_file("static/img/favicon.png")
 
 if __name__ == "__main__":
     folder_check()
