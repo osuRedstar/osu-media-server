@@ -59,7 +59,7 @@ def osu_file_read(setID, moving=False):
         log.info(beatmapName)
         temp = {}
         bg_ignore = False
-
+        log.debug(f"underV10 = {underV10}")
         f = open(f"data/dl/{setID}/{beatmapName}", 'r', encoding="utf-8")
         while True:
             line = f.readline()
@@ -69,14 +69,22 @@ def osu_file_read(setID, moving=False):
 
             #ㅈ같은 osu file format < osu file format v10 은 거르쟈 시발련들아
             if "osu file format" in line and not underV10:
-                osu_file_format_version = int(line.replace("osu file format v", ""))
-                if osu_file_format_version < 10:
+                osu_file_format_version = line.replace("osu file format v", "")
+
+                # BOM 문자 제거
+                if osu_file_format_version.startswith('\ufeff'):
+                    osu_file_format_version = osu_file_format_version[1:]
+                    log.warning("\nBOM 문자 제거\n")
+                if int(osu_file_format_version) < 10:
                     underV10 = True
                     log.error(f"{setID} 비트맵셋의 어떤 비트맵은 시이이이이발 osu file format 이 10이하 ({osu_file_format_version}) 이네요? 시발련들아?")
                     oldMapInfo = requests.get(f"https://redstar.moe/api/v1/get_beatmaps?s={setID}")
                     oldMapInfo = oldMapInfo.json()
                     log.info(f"{setID} 틀딱곡 Redstar에서 조회완료")
             if "Version" in line and underV10:
+                #local variable 방지
+                temp["BeatmapID"] = ""
+
                 spaceFilter = line.replace("Version:", "").replace("\n", "")
                 if spaceFilter.startswith(" "):
                     spaceFilter = spaceFilter.replace(" ", "", 1)
@@ -210,19 +218,23 @@ def check(setID):
     if fullSongName == 0:
         log.warning(f"{setID} 맵셋 osz 존재하지 않음. 다운로드중...")
         
-        url = f'https://proxy.nerinyan.moe/d/{setID}'
-        #우선 setID .osz로 다운받고 나중에 파일 이름 변경
-        file_name = f'{setID} .osz' #919187 765 MILLION ALLSTARS - UNION!!.osz, 2052147 (Love Live! series) - Colorful Dreams! Colorful Smiles! _  TV2
-        save_path = 'data/dl/'  # 원하는 저장 경로로 변경
-        res = requests.get(url)
-        if res.status_code == 200:
-            with open(save_path + file_name, 'wb') as f:
-                f.write(res.content)
-            log.info(f'{file_name} --> {res.headers["filename"]} 다운로드 완료')
-            os.rename(f"data/dl/{setID} .osz", f"data/dl/{res.headers['filename']}")
-            move_files(setID)
-        else:
-            log.error(f'{res.status_code}. 파일을 다운로드할 수 없습니다.')
+        url = [f'https://proxy.nerinyan.moe/d/{setID}', f"https://chimu.moe/d/{setID}"]
+
+        def dl(site):
+            #우선 setID .osz로 다운받고 나중에 파일 이름 변경
+            file_name = f'{setID} .osz' #919187 765 MILLION ALLSTARS - UNION!!.osz, 2052147 (Love Live! series) - Colorful Dreams! Colorful Smiles! _  TV2
+            save_path = 'data/dl/'  # 원하는 저장 경로로 변경
+            res = requests.get(url[site])
+            if res.status_code == 200:
+                with open(save_path + file_name, 'wb') as f:
+                    f.write(res.content)
+                log.info(f'{file_name} --> {res.headers["filename"]} 다운로드 완료')
+                os.rename(f"data/dl/{setID} .osz", f"data/dl/{res.headers['filename']}")
+                move_files(setID)
+            else:
+                log.error(f'{res.status_code}. 파일을 다운로드할 수 없습니다. chiumu로 재시도!')
+                dl(1)
+        dl(0)
         
         #move_files(setID)
     else:
@@ -297,7 +309,7 @@ def read_thumb(id):
         return f"data/thumb/{bsid}/{id}"
     else:
         #thumb폴더 파일 체크
-        if not os.path.isdir(f"data/thumb/{id}"):
+        if not os.path.isdir(f"data/thumb/{bsid}"):
             check(bsid)
 
         file_list = [file for file in os.listdir(f"data/bg/{bsid}") if file.startswith("+")]
