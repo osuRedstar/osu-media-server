@@ -51,6 +51,8 @@ def osu_file_read(setID, moving=False):
     first_bid = 0
     result = []
     beatmap_info = []
+    oldMapInfo = []
+    underV10 = False
 
     # readline_all.py
     for beatmapName in file_list_osu:
@@ -65,7 +67,30 @@ def osu_file_read(setID, moving=False):
             lineCheck = line.lower()
             if not line: break
 
-            if "BeatmapID" in line:
+            #ㅈ같은 osu file format < osu file format v10 은 거르쟈 시발련들아
+            if "osu file format" in line and not underV10:
+                osu_file_format_version = int(line.replace("osu file format v", ""))
+                if osu_file_format_version < 10:
+                    underV10 = True
+                    log.error(f"{setID} 비트맵셋의 어떤 비트맵은 시이이이이발 osu file format 이 10이하 ({osu_file_format_version}) 이네요? 시발련들아?")
+                    oldMapInfo = requests.get(f"https://redstar.moe/api/v1/get_beatmaps?s={setID}")
+                    oldMapInfo = oldMapInfo.json()
+                    log.info(f"{setID} 틀딱곡 Redstar에서 조회완료")
+            if "Version" in line and underV10:
+                spaceFilter = line.replace("Version:", "").replace("\n", "")
+                if spaceFilter.startswith(" "):
+                    spaceFilter = spaceFilter.replace(" ", "", 1)
+                for i in oldMapInfo:
+                    if spaceFilter == i["version"]:
+                        temp["BeatmapID"] = i["beatmap_id"]
+                        log.warning(f"{setID}/{temp['BeatmapID']} 틀딱곡 BeatmapID 세팅 완료")
+                        #first_bid 선별
+                        if first_bid == 0:
+                            first_bid = temp["BeatmapID"]
+                        elif first_bid > temp["BeatmapID"]:
+                            first_bid = temp["BeatmapID"]
+
+            if "BeatmapID" in line and not underV10:
                 spaceFilter = line.replace("BeatmapID:", "").replace("\n", "")
                 if spaceFilter.startswith(" "):
                     spaceFilter = spaceFilter.replace(" ", "", 1)
@@ -279,7 +304,7 @@ def read_thumb(id):
         try:
             type(file_list[0])
         except:
-            log.error(f"bsid = {id} | thumb type(file_list[0]) 에러")
+            log.error(f"bsid = {bsid} | thumb type(file_list[0]) 에러")
             check(bsid)
             return read_thumb(id)
 
