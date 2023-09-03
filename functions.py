@@ -244,7 +244,7 @@ def read_bg(id):
         try:
             type(file_list[0])
         except:
-            log.error(f"bsid = {id} | type(file_list[0]) 에러")
+            log.error(f"bsid = {id} | BG type(file_list[0]) 에러")
             check(id)
             return read_bg(f"+{id}")
         return f"data/bg/{id}/{file_list[0]}"
@@ -261,7 +261,7 @@ def read_bg(id):
         try:
             type(file_list[0])
         except:
-            log.error(f"bid = {id} | type(file_list[0]) 에러")
+            log.error(f"bid = {id} | BG type(file_list[0]) 에러")
             check(bsid)
             return read_bg(id)
         return f"data/bg/{bsid}/{file_list[0]}"
@@ -279,7 +279,7 @@ def read_thumb(id):
         try:
             type(file_list[0])
         except:
-            log.error(f"bsid = {id} | type(file_list[0]) 에러")
+            log.error(f"bsid = {id} | thumb type(file_list[0]) 에러")
             check(bsid)
             return read_thumb(id)
 
@@ -313,7 +313,7 @@ def read_audio(id):
         try:
             type(file_list[0])
         except:
-            log.error(f"bsid = {id} | type(file_list[0]) 에러")
+            log.error(f"bsid = {id} | audio type(file_list[0]) 에러")
             check(id)
             return read_audio(f"+{id}")
         return f"data/audio/{id}/{file_list[0]}"
@@ -333,7 +333,7 @@ def read_audio(id):
             #log.debug(type(file_list[0]))
             type(file_list[0])
         except:
-            log.error(f"bid = {id} | type(file_list[0]) 에러")
+            log.error(f"bid = {id} | audio type(file_list[0]) 에러")
             check(bsid)
             return read_audio(id)
         return f"data/audio/{bsid}/{file_list[0]}"
@@ -391,7 +391,7 @@ def read_video(id):
                 #log.debug(type(file_list[0]))
                 type(file_list[0])
             except:
-                log.error(f"bid = {id} | type(file_list[0]) 에러")
+                log.error(f"bid = {id} | video type(file_list[0]) 에러")
                 check(bsid)
                 return read_video(id)
             return f"data/video/{bsid}/{file_list[0]}"
