@@ -59,7 +59,6 @@ def osu_file_read(setID, moving=False):
         log.info(beatmapName)
         temp = {}
         bg_ignore = False
-        log.debug(f"underV10 = {underV10}")
         f = open(f"data/dl/{setID}/{beatmapName}", 'r', encoding="utf-8")
         while True:
             line = f.readline()
@@ -183,22 +182,27 @@ def move_files(setID):
                     shutil.copy(f"data/dl/{setID}/{item['BeatmapBG']}", f"data/bg/{setID}/+{setID}{item['BeatmapBG'][item['BeatmapBG'].find('.'):]}")
                     log.info(f"{setID} 비트맵셋, {item['BeatmapID']} 비트맵 | BG 처리함")
                 except:
-                    log.error(f"{setID} 비트맵셋은 BG가 없음")
+                    log.error(f"{setID} 비트맵셋은 BG가 없음 | no image.png로 저장함")
+                    shutil.copy(f"static/img/no image.png", f"data/bg/{setID}/+{setID}.png")
                 try:
                     shutil.copy(f"data/dl/{setID}/{item['AudioFilename']}", f"data/audio/{setID}/+{setID}.mp3")
                     shutil.copy(f"data/dl/{setID}/{item['AudioFilename']}", f"data/preview/{setID}/source_{setID}.mp3")
-                    log.info(f"{setID} 비트맵셋, {item['BeatmapID']} 비트맵 | audio 처리함")
+                    log.info(f"{setID} 비트맵셋, {item['BeatmapID']} 비트맵 | audio source_{setID} 처리함")
                 except:
-                    log.error(f"{setID} 비트맵셋은 audio가 없음")
+                    log.error(f"{setID} 비트맵셋은 audio가 없음 | no audio.mp3로 저장하고, preview도 처리함")
+                    shutil.copy(f"static/audio/no audio.mp3", f"data/audio/{setID}/+{setID}.mp3")
+                    shutil.copy(f"static/audio/no audio.mp3", f"data/preview/{setID}/{setID}.mp3")
 
             try:
                 shutil.copy(f"data/dl/{setID}/{item['BeatmapBG']}", f"data/bg/{setID}/{item['BeatmapID']}{item['BeatmapBG'][item['BeatmapBG'].find('.'):]}")
             except:
-                log.error(f"{item['BeatmapID']} 비트맵은 BG가 없음")
+                log.error(f"{item['BeatmapID']} 비트맵은 BG가 없음 | no image.png로 저장함")
+                shutil.copy(f"static/img/no image.png", f"data/bg/{setID}/{item['BeatmapID']}.png")
             try:
                 shutil.copy(f"data/dl/{setID}/{item['AudioFilename']}", f"data/audio/{setID}/{item['BeatmapID']}.mp3")
             except:
-                log.error(f"{item['BeatmapID']} 비트맵은 audio가 없음")
+                log.error(f"{item['BeatmapID']} 비트맵은 audio가 없음 | no audio.mp3로 저장함")
+                shutil.copy(f"static/audio/no audio.mp3", f"data/audio/{setID}/{item['BeatmapID']}.mp3")
             try:
                 shutil.copy(f"data/dl/{setID}/{item['BeatmapVideo']}", f"data/video/{setID}/{item['BeatmapVideo']}")
                 log.info(f"{item['BeatmapID']} 비트맵은 video가 존재함!")
@@ -395,17 +399,17 @@ def read_preview(id):
     return f"data/preview/{setID}/{id}"
 
 def read_video(id):
-        bsid = requests.get(f"https://redstar.moe/api/v1/get_beatmaps?b={id}")
-        bsid = bsid.json()[0]["beatmapset_id"]
-        log.info(f"{id} bid Redstar API 조회로 {bsid} bsid 얻음")
-
         try:
             apikey = conf.config["osu"]["apikey"]
             hasVideo = requests.get(f"https://osu.ppy.sh/api/get_beatmaps?k={apikey}&b={id}")
             hasVideo = hasVideo.json()[0]["video"]
         except:
             try:
+                bsid = requests.get(f"https://redstar.moe/api/v1/get_beatmaps?b={id}")
+                bsid = bsid.json()[0]["beatmapset_id"]
+
                 log.warning(f"{id} 해당 비트맵은 반초 API에서 조회가 되지 않습니다! | .osu 파일에 비디오 있나 체크")
+                log.info(f"{id} bid Redstar API 조회로 {bsid} bsid 얻음")
                 ismp4 = osu_file_read(bsid)
                 #사실 의미 없음
                 hasVideo = ismp4[2][0]["BeatmapVideo"]
