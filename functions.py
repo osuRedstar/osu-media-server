@@ -46,7 +46,7 @@ def get_osz_fullName(setID):
 
 def osu_file_read(setID, moving=False):
     zipfile.ZipFile(f'data/dl/{get_osz_fullName(setID)}').extractall(f'data/dl/{setID}')
-
+    
     file_list = os.listdir(f"data/dl/{setID}")
     file_list_osu = [file for file in file_list if file.endswith(".osu")]
 
@@ -148,7 +148,6 @@ def osu_file_read(setID, moving=False):
 
 def move_files(setID):
         result = osu_file_read(setID, moving=True)
-
         #필요한 파일만 각 폴더로 이동
         for item in result[2]:
             #아래 코드 에러 방지용 (폴더가 없으면 에러남)
@@ -231,7 +230,8 @@ def check(setID):
         log.warning(f"{setID} 맵셋 osz 존재하지 않음. 다운로드중...")
         
         url = [f'https://proxy.nerinyan.moe/d/{setID}', f"https://chimu.moe/d/{setID}"]
-        def dl(site):
+        limit = 0
+        def dl(site, limit):
             #우선 setID .osz로 다운받고 나중에 파일 이름 변경
             file_name = f'{setID} .osz' #919187 765 MILLION ALLSTARS - UNION!!.osz, 2052147 (Love Live! series) - Colorful Dreams! Colorful Smiles! _  TV2
             save_path = 'data/dl/'  # 원하는 저장 경로로 변경
@@ -243,9 +243,13 @@ def check(setID):
                 os.rename(f"data/dl/{setID} .osz", f"data/dl/{res.headers['filename']}")
                 move_files(setID)
             else:
-                log.error(f'{res.status_code}. 파일을 다운로드할 수 없습니다. chiumu로 재시도!')
-                dl(1)
-        dl(0)
+                log.error(f'{res.status_code}. 파일을 다운로드할 수 없습니다. chimu로 재시도!')
+                limit += 1
+                if limit < 5:
+                    dl(1, limit)
+                else:
+                    log.warning(f"다운로드 요청 자체 limit 걸음! {limit}번 요청함")
+        dl(0, limit=0)
     else:
         log.info(f"{get_osz_fullName(setID)} 존재함")
         move_files(setID)
