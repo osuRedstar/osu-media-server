@@ -163,7 +163,6 @@ if __name__ == "__main__":
         debugMode = True
     app = make_app()
     port = int(conf.config["server"]["port"])
-    port = 2
     app.listen(port)
     log.info(f"Server Listen on {port} Port")
     tornado.ioloop.IOLoop.current().start()
