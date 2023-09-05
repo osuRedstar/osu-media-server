@@ -3,7 +3,7 @@ import config
 import tornado.ioloop
 import tornado.web
 import lets_common_log.logUtils as log
-from functions2 import read_list, read_bg, read_thumb, read_audio, read_preview, read_video, read_osz, read_osz_b, read_osu, folder_check
+from functions import read_list, read_bg, read_thumb, read_audio, read_preview, read_video, read_osz, read_osz_b, read_osu, folder_check
 
 conf = config.config("config.ini")
 
