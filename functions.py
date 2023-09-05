@@ -507,7 +507,7 @@ def read_osz_b(id):
     if os.path.isfile(f"data/dl/{get_osz_fullName(bsid)}"):
         return {"path": f"data/dl/{get_osz_fullName(bsid)}", "filename": get_osz_fullName(bsid)}
     else:
-        check(bsid, osz)
+        check(bsid, "osz")
         if os.path.isfile(f"data/dl/{get_osz_fullName(bsid)}"):
             return {"path": f"data/dl/{get_osz_fullName(bsid)}", "filename": get_osz_fullName(bsid)}
         else:
