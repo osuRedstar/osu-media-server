@@ -1,93 +1,231 @@
-from lets_common_log import logUtils as log
-from flask import Flask, render_template, session, redirect, url_for, request, send_from_directory, jsonify, send_file, Response, jsonify
-from functions import *
 import os
 import config
+import tornado.ioloop
+import tornado.web
+import lets_common_log.logUtils as log
+from functions import read_list, read_bg, read_thumb, read_audio, read_preview, read_video, read_osz, read_osz_b, read_osu, folder_check
 
 conf = config.config("config.ini")
 
-app = Flask(__name__)
+class MainHandler(tornado.web.RequestHandler):
+    def get(self):
+        # Logging the request IP address
+        try:
+            real_ip = self.request.headers["Cf-Connecting-Ip"]
+            request_uri = self.request.headers["X-Forwarded-Proto"] + "://" + self.request.host + self.request.uri
+        except:
+            log.warning("cloudflare를 거치지 않아서 real_ip 조회가 안댐")
+            real_ip = "0.0.0.0"
+            request_uri = self.request.protocol + "://" + self.request.host + self.request.uri
+        client_ip = self.request.remote_ip
+        log.chat(f"Request from IP: {real_ip}, {client_ip} | URL: {request_uri}")
+        self.render("templates/index.html")
 
-@app.route("/")
-def home():
-    return render_template("index.html")
+class ListHandler(tornado.web.RequestHandler):
+    def get(self):
+        # Logging the request IP address
+        try:
+            real_ip = self.request.headers["Cf-Connecting-Ip"]
+            request_uri = self.request.headers["X-Forwarded-Proto"] + "://" + self.request.host + self.request.uri
+        except:
+            log.warning("cloudflare를 거치지 않아서 real_ip 조회가 안댐")
+            real_ip = "0.0.0.0"
+            request_uri = self.request.protocol + "://" + self.request.host + self.request.uri
+        client_ip = self.request.remote_ip
+        log.chat(f"Request from IP: {real_ip}, {client_ip} | URL: {request_uri}")
+        self.write(read_list())
 
-@app.route("/list")
-def list():
-    return jsonify(read_list())
+class BgHandler(tornado.web.RequestHandler):
+    def get(self, id):
+        # Logging the request IP address
+        try:
+            real_ip = self.request.headers["Cf-Connecting-Ip"]
+            request_uri = self.request.headers["X-Forwarded-Proto"] + "://" + self.request.host + self.request.uri
+        except:
+            log.warning("cloudflare를 거치지 않아서 real_ip 조회가 안댐")
+            real_ip = "0.0.0.0"
+            request_uri = self.request.protocol + "://" + self.request.host + self.request.uri
+        client_ip = self.request.remote_ip
+        log.chat(f"Request from IP: {real_ip}, {client_ip} | URL: {request_uri}")
+        self.set_header('Content-Type', 'image/jpeg')
+        with open(read_bg(id), 'rb') as f:
+            self.write(f.read())
+        
 
-@app.route('/bg/<id>')
-def bg(id):
-    return send_file(read_bg(id), mimetype='image/jpeg')
+class ThumbHandler(tornado.web.RequestHandler):
+    def get(self, id):
+        # Logging the request IP address
+        try:
+            real_ip = self.request.headers["Cf-Connecting-Ip"]
+            request_uri = self.request.headers["X-Forwarded-Proto"] + "://" + self.request.host + self.request.uri
+        except:
+            log.warning("cloudflare를 거치지 않아서 real_ip 조회가 안댐")
+            real_ip = "0.0.0.0"
+            request_uri = self.request.protocol + "://" + self.request.host + self.request.uri
+        client_ip = self.request.remote_ip
+        log.chat(f"Request from IP: {real_ip}, {client_ip} | URL: {request_uri}")
+        self.set_header('Content-Type', 'image/jpeg')
+        with open(read_thumb(id), 'rb') as f:
+            self.write(f.read())
 
-@app.route('/thumb/<id>')
-def thumb(id):
-    return send_file(read_thumb(id), mimetype='image/jpeg')
+class PreviewHandler(tornado.web.RequestHandler):
+    def get(self, id):
+        # Logging the request IP address
+        try:
+            real_ip = self.request.headers["Cf-Connecting-Ip"]
+            request_uri = self.request.headers["X-Forwarded-Proto"] + "://" + self.request.host + self.request.uri
+        except:
+            log.warning("cloudflare를 거치지 않아서 real_ip 조회가 안댐")
+            real_ip = "0.0.0.0"
+            request_uri = self.request.protocol + "://" + self.request.host + self.request.uri
+        client_ip = self.request.remote_ip
+        log.chat(f"Request from IP: {real_ip}, {client_ip} | URL: {request_uri}")
+        self.set_header('Content-Type', 'audio/mpeg')
+        with open(read_audio(id), 'rb') as f:
+            self.write(f.read())
 
-@app.route('/audio/<id>')
-def preview(id):
-    return send_file(read_audio(id), mimetype='audio/mpeg')
+class AudioHandler(tornado.web.RequestHandler):
+    def get(self, id):
+        # Logging the request IP address
+        try:
+            real_ip = self.request.headers["Cf-Connecting-Ip"]
+            request_uri = self.request.headers["X-Forwarded-Proto"] + "://" + self.request.host + self.request.uri
+        except:
+            log.warning("cloudflare를 거치지 않아서 real_ip 조회가 안댐")
+            real_ip = "0.0.0.0"
+            request_uri = self.request.protocol + "://" + self.request.host + self.request.uri
+        client_ip = self.request.remote_ip
+        log.chat(f"Request from IP: {real_ip}, {client_ip} | URL: {request_uri}")
+        self.set_header('Content-Type', 'audio/mpeg')
+        with open(read_preview(id), 'rb') as f:
+            self.write(f.read())
 
-#ffmpeg 도입 시도해보기
-@app.route('/preview/<id>')
-def audio(id):
-    return send_file(read_preview(id), mimetype='audio/mpeg')
+class VideoHandler(tornado.web.RequestHandler):
+    def get(self, id):
+        # Logging the request IP address
+        try:
+            real_ip = self.request.headers["Cf-Connecting-Ip"]
+            request_uri = self.request.headers["X-Forwarded-Proto"] + "://" + self.request.host + self.request.uri
+        except:
+            log.warning("cloudflare를 거치지 않아서 real_ip 조회가 안댐")
+            real_ip = "0.0.0.0"
+            request_uri = self.request.protocol + "://" + self.request.host + self.request.uri
+        client_ip = self.request.remote_ip
+        log.chat(f"Request from IP: {real_ip}, {client_ip} | URL: {request_uri}")
+        readed_read_video = read_video(id)
+        if readed_read_video.endswith(".mp4"):
+            self.set_header('Content-Type', 'video/mp4')
+            with open(readed_read_video, 'rb') as f:
+                self.write(f.read())
+        else:
+            self.write({"code": 404, "message": "Sorry Beatmap has no videos", "funcmsg": readed_read_video})
 
-@app.route('/video/<id>')
-def video(id):
-    readed_read_video = read_video(id)
-    if readed_read_video.endswith(".mp4"):
-        return send_file(readed_read_video, mimetype='video/mp4')
-    else:
-        return jsonify({"code": 404, "message": "Sorry Beatmap has no videos", "funcmsg": readed_read_video})
+class OszHandler(tornado.web.RequestHandler):
+    def get(self, id):
+        # Logging the request IP address
+        try:
+            real_ip = self.request.headers["Cf-Connecting-Ip"]
+            request_uri = self.request.headers["X-Forwarded-Proto"] + "://" + self.request.host + self.request.uri
+        except:
+            log.warning("cloudflare를 거치지 않아서 real_ip 조회가 안댐")
+            real_ip = "0.0.0.0"
+            request_uri = self.request.protocol + "://" + self.request.host + self.request.uri
+        client_ip = self.request.remote_ip
+        log.chat(f"Request from IP: {real_ip}, {client_ip} | URL: {request_uri}")
+        path = read_osz(id)
+        if path == 0:
+            self.write("ERROR")
+        else:
+            self.set_header('Content-Type', 'application/x-osu-beatmap-archive')
+            self.set_header('Content-Disposition', f'attachment; filename={path["filename"]}')
+            with open(path['path'], 'rb') as f:
+                self.write(f.read())
 
-def stream_osz(id):
-    path = read_osz(id)
-    if path == 0:
-        return "ERROR"
-    response = send_file(path['path'], mimetype='application/x-osu-beatmap-archive')
-    response.headers["Content-Disposition"] = f"attachment; filename={path['filename']}"
-    return response
-@app.route('/d/<id>')
-def osz(id):
-    return stream_osz(id)
+class OszBHandler(tornado.web.RequestHandler):
+    def get(self, id):
+        # Logging the request IP address
+        try:
+            real_ip = self.request.headers["Cf-Connecting-Ip"]
+            request_uri = self.request.headers["X-Forwarded-Proto"] + "://" + self.request.host + self.request.uri
+        except:
+            log.warning("cloudflare를 거치지 않아서 real_ip 조회가 안댐")
+            real_ip = "0.0.0.0"
+            request_uri = self.request.protocol + "://" + self.request.host + self.request.uri
+        client_ip = self.request.remote_ip
+        log.chat(f"Request from IP: {real_ip}, {client_ip} | URL: {request_uri}")
+        path = read_osz_b(id)
+        if path == 0:
+            self.write("ERROR")
+        else:
+            self.set_header('Content-Type', 'application/x-osu-beatmap-archive')
+            self.set_header('Content-Disposition', f'attachment; filename={path["filename"]}')
+            with open(path['path'], 'rb') as f:
+                self.write(f.read())
 
-def stream_osz_b(id):
-    path = read_osz_b(id)
-    if path == 0:
-        return "ERROR"
-    response = send_file(path['path'], mimetype='application/x-osu-beatmap-archive')
-    response.headers["Content-Disposition"] = f"attachment; filename={path['filename']}"
-    return response
-@app.route('/b/<id>')
-def osz_b(id):
-    return stream_osz_b(id)
+class OsuHandler(tornado.web.RequestHandler):
+    def get(self, id):
+        # Logging the request IP address
+        try:
+            real_ip = self.request.headers["Cf-Connecting-Ip"]
+            request_uri = self.request.headers["X-Forwarded-Proto"] + "://" + self.request.host + self.request.uri
+        except:
+            log.warning("cloudflare를 거치지 않아서 real_ip 조회가 안댐")
+            real_ip = "0.0.0.0"
+            request_uri = self.request.protocol + "://" + self.request.host + self.request.uri
+        client_ip = self.request.remote_ip
+        log.chat(f"Request from IP: {real_ip}, {client_ip} | URL: {request_uri}")
+        path = read_osu(id)
+        self.set_header('Content-Type', 'application/x-osu-beatmap')
+        self.set_header('Content-Disposition', f'attachment; filename={path["filename"]}')
+        with open(path['path'], 'rb') as f:
+            self.write(f.read())
 
-def stream_osu(id):
-    path = read_osu(id)
-    response = send_file(path['path'], mimetype='application/x-osu-beatmap')
-    response.headers["Content-Disposition"] = f"attachment; filename={path['filename']}"
-    return response
-@app.route('/osu/<id>')
-def osu(id):
-    return stream_osu(id)
+class FaviconHandler(tornado.web.RequestHandler):
+    def get(self):
+        # Logging the request IP address
+        try:
+            real_ip = self.request.headers["Cf-Connecting-Ip"]
+            request_uri = self.request.headers["X-Forwarded-Proto"] + "://" + self.request.host + self.request.uri
+        except:
+            log.warning("cloudflare를 거치지 않아서 real_ip 조회가 안댐")
+            real_ip = "0.0.0.0"
+            request_uri = self.request.protocol + "://" + self.request.host + self.request.uri
+        client_ip = self.request.remote_ip
+        log.chat(f"Request from IP: {real_ip}, {client_ip} | URL: {request_uri}")
+        self.set_header('Content-Type', 'image/png')
+        with open("static/img/favicon.png", 'rb') as f:
+            self.write(f.read())
 
-#################################################
+class StaticHandler(tornado.web.RequestHandler):
+    def get(self, item):
+        # Logging the request IP address
+        try:
+            real_ip = self.request.headers["Cf-Connecting-Ip"]
+            request_uri = self.request.headers["X-Forwarded-Proto"] + "://" + self.request.host + self.request.uri
+        except:
+            log.warning("cloudflare를 거치지 않아서 real_ip 조회가 안댐")
+            real_ip = "0.0.0.0"
+            request_uri = self.request.protocol + "://" + self.request.host + self.request.uri
+        client_ip = self.request.remote_ip
+        log.chat(f"Request from IP: {real_ip}, {client_ip} | URL: {request_uri}")
+        with open(f"static/{item}", 'rb') as f:
+                self.write(f.read())
 
-@app.route("/replay/<date>")
-def replay(date):
-    path = f"B:/xampp/htdocs/replay.redstar.moe/{date}"
-    if os.path.isfile(path):
-        log.info(path)
-        return send_file(path, mimetype='video/mp4')
-    else:
-        return f"https://replay.redstar.moe/{date} 예정"
-
-#################################################
-
-@app.route('/favicon.ico')
-def favicon():
-    return send_file("static/img/favicon.png")
+def make_app():
+    return tornado.web.Application([
+        (r"/", MainHandler),
+        (r"/list", ListHandler),
+        (r"/bg/([^/]+)", BgHandler),
+        (r"/thumb/([^/]+)", ThumbHandler),
+        (r"/audio/([^/]+)", PreviewHandler),
+        (r"/preview/([^/]+)", AudioHandler),
+        (r"/video/([^/]+)", VideoHandler),
+        (r"/d/([^/]+)", OszHandler),
+        (r"/b/([^/]+)", OszBHandler),
+        (r"/osu/([^/]+)", OsuHandler),
+        (r"/favicon.ico", FaviconHandler),
+        (r"/static/(.*)", StaticHandler),
+    ])
 
 if __name__ == "__main__":
     folder_check()
@@ -95,5 +233,8 @@ if __name__ == "__main__":
         debugMode = False
     else:
         debugMode = True
-    app.run(host= '0.0.0.0', port=conf.config["server"]["port"], threaded= False, debug=debugMode)
-
+    app = make_app()
+    port = int(conf.config["server"]["port"])
+    app.listen(port)
+    log.info(f"Server Listen on {port} Port")
+    tornado.ioloop.IOLoop.current().start()
