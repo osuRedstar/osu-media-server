@@ -1,0 +1,11 @@
+User-agent: *
+Disallow: /
+User-agent: osu!
+Allow: /
+
+
+
+{
+    "code": 200,
+    "message": "마 개쒜이들아 끄지라 마!"
+}

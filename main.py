@@ -10,7 +10,6 @@ conf = config.config("config.ini")
 class MainHandler(tornado.web.RequestHandler):
     def get(self):
         # Logging the request IP address
-        # Logging the request IP address
         print("")
         try:
             real_ip = self.request.headers["Cf-Connecting-Ip"]
@@ -47,7 +46,6 @@ class ListHandler(tornado.web.RequestHandler):
 class BgHandler(tornado.web.RequestHandler):
     def get(self, id):
         # Logging the request IP address
-        # Logging the request IP address
         print("")
         try:
             real_ip = self.request.headers["Cf-Connecting-Ip"]
@@ -69,7 +67,6 @@ class BgHandler(tornado.web.RequestHandler):
 class ThumbHandler(tornado.web.RequestHandler):
     def get(self, id):
         # Logging the request IP address
-        # Logging the request IP address
         print("")
         try:
             real_ip = self.request.headers["Cf-Connecting-Ip"]
@@ -89,7 +86,6 @@ class ThumbHandler(tornado.web.RequestHandler):
 
 class PreviewHandler(tornado.web.RequestHandler):
     def get(self, id):
-        # Logging the request IP address
         # Logging the request IP address
         print("")
         try:
@@ -111,7 +107,6 @@ class PreviewHandler(tornado.web.RequestHandler):
 class AudioHandler(tornado.web.RequestHandler):
     def get(self, id):
         # Logging the request IP address
-        # Logging the request IP address
         print("")
         try:
             real_ip = self.request.headers["Cf-Connecting-Ip"]
@@ -131,7 +126,6 @@ class AudioHandler(tornado.web.RequestHandler):
 
 class VideoHandler(tornado.web.RequestHandler):
     def get(self, id):
-        # Logging the request IP address
         # Logging the request IP address
         print("")
         try:
@@ -156,7 +150,6 @@ class VideoHandler(tornado.web.RequestHandler):
 
 class OszHandler(tornado.web.RequestHandler):
     def get(self, id):
-        # Logging the request IP address
         # Logging the request IP address
         print("")
         try:
@@ -183,7 +176,6 @@ class OszHandler(tornado.web.RequestHandler):
 class OszBHandler(tornado.web.RequestHandler):
     def get(self, id):
         # Logging the request IP address
-        # Logging the request IP address
         print("")
         try:
             real_ip = self.request.headers["Cf-Connecting-Ip"]
@@ -209,7 +201,6 @@ class OszBHandler(tornado.web.RequestHandler):
 class OsuHandler(tornado.web.RequestHandler):
     def get(self, id):
         # Logging the request IP address
-        # Logging the request IP address
         print("")
         try:
             real_ip = self.request.headers["Cf-Connecting-Ip"]
@@ -232,7 +223,6 @@ class OsuHandler(tornado.web.RequestHandler):
 class FaviconHandler(tornado.web.RequestHandler):
     def get(self):
         # Logging the request IP address
-        # Logging the request IP address
         print("")
         try:
             real_ip = self.request.headers["Cf-Connecting-Ip"]
@@ -253,7 +243,6 @@ class FaviconHandler(tornado.web.RequestHandler):
 class StaticHandler(tornado.web.RequestHandler):
     def get(self, item):
         # Logging the request IP address
-        # Logging the request IP address
         print("")
         try:
             real_ip = self.request.headers["Cf-Connecting-Ip"]
@@ -270,6 +259,26 @@ class StaticHandler(tornado.web.RequestHandler):
         with open(f"static/{item}", 'rb') as f:
                 self.write(f.read())
 
+class robots_txt(tornado.web.RequestHandler):
+    def get(self):
+        # Logging the request IP address
+        print("")
+        try:
+            real_ip = self.request.headers["Cf-Connecting-Ip"]
+            request_uri = self.request.headers["X-Forwarded-Proto"] + "://" + self.request.host + self.request.uri
+            country_code = self.request.headers["Cf-Ipcountry"]
+        except:
+            log.warning("cloudflare를 거치지 않아서 real_ip, country_code 조회가 안댐")
+            real_ip = "0.0.0.0"
+            request_uri = self.request.protocol + "://" + self.request.host + self.request.uri
+            country_code = "XX"
+        client_ip = self.request.remote_ip
+        User_Agent = self.request.headers["User-Agent"]
+        log.info(f"Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_uri} | From: {User_Agent}")
+        with open("robots.txt", 'rb') as f:
+                self.set_header("Content-Type", "text/plain")
+                self.write(f.read())
+
 def make_app():
     return tornado.web.Application([
         (r"/", MainHandler),
@@ -284,6 +293,7 @@ def make_app():
         (r"/osu/([^/]+)", OsuHandler),
         (r"/favicon.ico", FaviconHandler),
         (r"/static/(.*)", StaticHandler),
+        (r"/robots.txt", robots_txt),
     ])
 
 if __name__ == "__main__":
