@@ -44,7 +44,7 @@ def get_osz_fullName(setID):
     except:
         return 0
 
-def osu_file_read(setID, moving=False):
+def osu_file_read(setID, rq_type, moving=False):
     zipfile.ZipFile(f'data/dl/{get_osz_fullName(setID)}').extractall(f'data/dl/{setID}')
     
     file_list = os.listdir(f"data/dl/{setID}")
@@ -111,29 +111,29 @@ def osu_file_read(setID, moving=False):
                 elif first_bid > spaceFilter:
                     first_bid = spaceFilter
 
-            elif "AudioFilename" in line:
+            elif "AudioFilename" in line and (rq_type == "audio" or rq_type == "preview"):
                 spaceFilter = line.replace("AudioFilename:", "").replace("\n", "")
                 if spaceFilter.startswith(" "):
                     spaceFilter = spaceFilter.replace(" ", "", 1)
                 temp["AudioFilename"] = spaceFilter
-            elif "PreviewTime" in line:
+            elif "PreviewTime" in line and (rq_type == "audio" or rq_type == "preview"):
                 spaceFilter = line.replace("PreviewTime:", "").replace("\n", "")
                 if spaceFilter.startswith(" "):
                     spaceFilter = spaceFilter.replace(" ", "", 1)
                 temp["PreviewTime"] = spaceFilter
             #비트맵별 BG 파일이름
-            elif ('"' and ".jpg") in lineCheck and not bg_ignore:
+            elif ('"' and ".jpg") in lineCheck and not bg_ignore and rq_type == "bg":
                 temp["BeatmapBG"] = line[line.find('"') + 1 : line.find('"', line.find('"') + 1)]
                 bg_ignore = True
-            elif ('"' and ".png") in lineCheck and not bg_ignore:
+            elif ('"' and ".png") in lineCheck and not bg_ignore and rq_type == "bg":
                 temp["BeatmapBG"] = line[line.find('"') + 1 : line.find('"', line.find('"') + 1)]
                 bg_ignore = True
-            elif ('"' and ".jpeg") in lineCheck and not bg_ignore:
+            elif ('"' and ".jpeg") in lineCheck and not bg_ignore and rq_type == "bg":
                 temp["BeatmapBG"] = line[line.find('"') + 1 : line.find('"', line.find('"') + 1)]
                 bg_ignore = True
             #비트맵별 video 파일이름
             #elif '"' and "Video" and ".mp4" in line:
-            elif '"' and "video" and ".mp4" in lineCheck:
+            elif '"' and "video" and ".mp4" in lineCheck and rq_type == "video":
                 temp["BeatmapVideo"] = line[line.find('"') + 1 : line.find('"', line.find('"') + 1)]
             temp["beatmapName"] = beatmapName
 
@@ -146,31 +146,31 @@ def osu_file_read(setID, moving=False):
         shutil.rmtree(f"data/dl/{setID}")
     return result
 
-def move_files(setID):
-        result = osu_file_read(setID, moving=True)
+def move_files(setID, rq_type):
+        result = osu_file_read(setID, rq_type, moving=True)
         #필요한 파일만 각 폴더로 이동
         for item in result[2]:
             #아래 코드 에러 방지용 (폴더가 없으면 에러남)
-            if not os.path.isdir(f"data/bg/{setID}"):
+            if not os.path.isdir(f"data/bg/{setID}") and rq_type == "bg":
                 os.mkdir(f"data/bg/{setID}")
                 log.info(f"data/bg/{setID} 폴더 생성 완료!")
-            if not os.path.isdir(f"data/thumb/{setID}"):
+            if not os.path.isdir(f"data/thumb/{setID}") and rq_type == "thumb":
                 os.mkdir(f"data/thumb/{setID}")
                 log.info(f"data/thumb/{setID} 폴더 생성 완료!")
-            if not os.path.isdir(f"data/audio/{setID}"):
+            if not os.path.isdir(f"data/audio/{setID}") and rq_type == "audio":
                 os.mkdir(f"data/audio/{setID}")
                 log.info(f"data/audio/{setID} 폴더 생성 완료!")
-            if not os.path.isdir(f"data/preview/{setID}"):
+            if not os.path.isdir(f"data/preview/{setID}") and rq_type == "preview":
                 os.mkdir(f"data/preview/{setID}")
                 log.info(f"data/preview/{setID} 폴더 생성 완료!")
             try:
-                if not os.path.isdir(f"data/video/{setID}") and item["BeatmapVideo"] is not None:
+                if not os.path.isdir(f"data/video/{setID}") and item["BeatmapVideo"] is not None and rq_type == "video":
                     os.mkdir(f"data/video/{setID}")
                     log.info(f"data/video/{setID} 폴더 생성 완료!")
             except:
                 #log.warning(f"{item['BeatmapID']} bid no video")
                 pass
-            if not os.path.isdir(f"data/osu/{setID}") and not IS_YOU_HAVE_OSU_PRIVATE_SERVER:
+            if not os.path.isdir(f"data/osu/{setID}") and not IS_YOU_HAVE_OSU_PRIVATE_SERVER and rq_type == "osu":
                 os.mkdir(f"data/osu/{setID}")
                 log.info(f"data/osu/{setID} 폴더 생성 완료!")
 
@@ -179,47 +179,57 @@ def move_files(setID):
             #BeatmapSetID용 미리듣기 + BG (b.redstar.moe/preview?예정)
             #if item["BeatmapID"] == result[2][0]["BeatmapID"]:
             if item["BeatmapID"] == result[1]:
+                if rq_type == "bg":
+                    try:
+                        shutil.copy(f"data/dl/{setID}/{item['BeatmapBG']}", f"data/bg/{setID}/+{setID}{item['BeatmapBG'][item['BeatmapBG'].find('.'):]}")
+                        log.info(f"{setID} 비트맵셋, {item['BeatmapID']} 비트맵 | BG 처리함")
+                    except:
+                        log.error(f"{setID} 비트맵셋은 BG가 없음 | no image.png로 저장함")
+                        shutil.copy(f"static/img/no image.png", f"data/bg/{setID}/+{setID}.png")
+
+                if rq_type == "audio":
+                    try:
+                        shutil.copy(f"data/dl/{setID}/{item['AudioFilename']}", f"data/audio/{setID}/+{setID}.mp3")
+                    except:
+                        log.error(f"{setID} 비트맵셋은 audio가 없음 | no audio.mp3로 저장함")
+                        shutil.copy(f"static/audio/no audio.mp3", f"data/audio/{setID}/+{setID}.mp3")
+                
+                if rq_type == "preview":
+                    try:
+                        shutil.copy(f"data/dl/{setID}/{item['AudioFilename']}", f"data/preview/{setID}/source_{setID}.mp3")
+                        log.info(f"{setID} 비트맵셋, {item['BeatmapID']} 비트맵 | audio source_{setID} 처리함")
+                    except:
+                        shutil.copy(f"static/audio/no audio.mp3", f"data/preview/{setID}/{setID}.mp3")
+                        log.error(f"{setID} 비트맵셋은 audio가 없음 | no audio.mp3로 저장하고, preview도 처리함")
+
+            if rq_type == "bg":
                 try:
-                    shutil.copy(f"data/dl/{setID}/{item['BeatmapBG']}", f"data/bg/{setID}/+{setID}{item['BeatmapBG'][item['BeatmapBG'].find('.'):]}")
-                    log.info(f"{setID} 비트맵셋, {item['BeatmapID']} 비트맵 | BG 처리함")
+                    shutil.copy(f"data/dl/{setID}/{item['BeatmapBG']}", f"data/bg/{setID}/{item['BeatmapID']}{item['BeatmapBG'][item['BeatmapBG'].find('.'):]}")
                 except:
-                    log.error(f"{setID} 비트맵셋은 BG가 없음 | no image.png로 저장함")
-                    shutil.copy(f"static/img/no image.png", f"data/bg/{setID}/+{setID}.png")
+                    log.error(f"{item['BeatmapID']} 비트맵은 BG가 없음 | no image.png로 저장함")
+                    shutil.copy(f"static/img/no image.png", f"data/bg/{setID}/{item['BeatmapID']}.png")
 
+            if rq_type == "audio":
                 try:
-                    shutil.copy(f"data/dl/{setID}/{item['AudioFilename']}", f"data/audio/{setID}/+{setID}.mp3")
-                    shutil.copy(f"data/dl/{setID}/{item['AudioFilename']}", f"data/preview/{setID}/source_{setID}.mp3")
-                    log.info(f"{setID} 비트맵셋, {item['BeatmapID']} 비트맵 | audio source_{setID} 처리함")
+                    shutil.copy(f"data/dl/{setID}/{item['AudioFilename']}", f"data/audio/{setID}/{item['BeatmapID']}.mp3")
                 except:
-                    log.error(f"{setID} 비트맵셋은 audio가 없음 | no audio.mp3로 저장하고, preview도 처리함")
-                    shutil.copy(f"static/audio/no audio.mp3", f"data/audio/{setID}/+{setID}.mp3")
-                    shutil.copy(f"static/audio/no audio.mp3", f"data/preview/{setID}/{setID}.mp3")
+                    log.error(f"{item['BeatmapID']} 비트맵은 audio가 없음 | no audio.mp3로 저장함")
+                    shutil.copy(f"static/audio/no audio.mp3", f"data/audio/{setID}/{item['BeatmapID']}.mp3")
 
-            try:
-                shutil.copy(f"data/dl/{setID}/{item['BeatmapBG']}", f"data/bg/{setID}/{item['BeatmapID']}{item['BeatmapBG'][item['BeatmapBG'].find('.'):]}")
-            except:
-                log.error(f"{item['BeatmapID']} 비트맵은 BG가 없음 | no image.png로 저장함")
-                shutil.copy(f"static/img/no image.png", f"data/bg/{setID}/{item['BeatmapID']}.png")
-
-            try:
-                shutil.copy(f"data/dl/{setID}/{item['AudioFilename']}", f"data/audio/{setID}/{item['BeatmapID']}.mp3")
-            except:
-                log.error(f"{item['BeatmapID']} 비트맵은 audio가 없음 | no audio.mp3로 저장함")
-                shutil.copy(f"static/audio/no audio.mp3", f"data/audio/{setID}/{item['BeatmapID']}.mp3")
-
-            try:
-                shutil.copy(f"data/dl/{setID}/{item['BeatmapVideo']}", f"data/video/{setID}/{item['BeatmapVideo']}")
-                log.info(f"{item['BeatmapID']} 비트맵은 video가 존재함!")
-            except:
-                pass
+            if rq_type == "video":
+                try:
+                    shutil.copy(f"data/dl/{setID}/{item['BeatmapVideo']}", f"data/video/{setID}/{item['BeatmapVideo']}")
+                    log.info(f"{item['BeatmapID']} 비트맵은 video가 존재함!")
+                except:
+                    pass
             
-            if not IS_YOU_HAVE_OSU_PRIVATE_SERVER:
+            if not IS_YOU_HAVE_OSU_PRIVATE_SERVER and rq_type == "osu":
                 shutil.copy(f"data/dl/{setID}/{item['beatmapName']}", f"data/osu/{setID}/{item['BeatmapID']}.osu")
 
         #osu_file_read() 함수에 인자값으로 True를 넣어서 dl/{setID} 가 삭제 되지 않으므로 여기서 폴더 삭제함
         shutil.rmtree(f"data/dl/{setID}")
 
-def check(setID):
+def check(setID, rq_type):
     #.osz는 무조건 새로 받되, Bancho, Redstar**전용** 맵에서 ranked, loved 등등 은 새로 안받아도 댐. (Redstar에서의 랭크상태 여부는 고민중)
     #근데 생각해보니 파일 있으면 걍 이걸 안오는데?
     folder_check()
@@ -239,9 +249,15 @@ def check(setID):
             if res.status_code == 200:
                 with open(save_path + file_name, 'wb') as f:
                     f.write(res.content)
-                log.info(f'{file_name} --> {res.headers["filename"]} 다운로드 완료')
-                os.rename(f"data/dl/{setID} .osz", f"data/dl/{res.headers['filename']}")
-                move_files(setID)
+
+                header_filename = res.headers['content-disposition']
+                newFilename = header_filename[header_filename.find('filename='):].replace("filename=", "").replace('"', "")
+                if site == 1 and  "%20" in newFilename:
+                    newFilename = newFilename.replace("%20", " ")
+
+                log.info(f'{file_name} --> {newFilename} 다운로드 완료')
+                os.rename(f"data/dl/{setID} .osz", f"data/dl/{newFilename}")
+                move_files(setID, rq_type)
             else:
                 log.error(f'{res.status_code}. 파일을 다운로드할 수 없습니다. chimu로 재시도!')
                 limit += 1
@@ -252,7 +268,7 @@ def check(setID):
         dl(0, limit=0)
     else:
         log.info(f"{get_osz_fullName(setID)} 존재함")
-        move_files(setID)
+        move_files(setID, rq_type)
 
 #######################################################################################################################################
 
@@ -274,8 +290,11 @@ def read_list():
     video_file_list = [file for file in os.listdir(f"data/video/")]
     result["video"] = {"list": video_file_list, "count": len(video_file_list)}
 
-    osu_file_list = [file for file in os.listdir(f"data/osu/")]
-    result["osu"] = {"list": osu_file_list, "count": len(osu_file_list)}
+    try:
+        osu_file_list = [file for file in os.listdir(f"data/osu/")]
+        result["osu"] = {"list": osu_file_list, "count": len(osu_file_list)}
+    except:
+        result["osu"] = {"list": "NO FOLDER", "count": 0}
 
     thumb_file_list = [file for file in os.listdir(f"data/thumb/")]
     result["thumb"] = {"list": thumb_file_list, "count": len(thumb_file_list)}
@@ -288,14 +307,14 @@ def read_bg(id):
 
         #bg폴더 파일 체크
         if not os.path.isdir(f"data/bg/{id}"):
-            check(id)
+            check(id, rq_type="bg")
 
         file_list = [file for file in os.listdir(f"data/bg/{id}") if file.startswith("+")]
         try:
             type(file_list[0])
         except:
             log.error(f"bsid = {id} | BG type(file_list[0]) 에러")
-            check(id)
+            check(id, rq_type="bg")
             return read_bg(f"+{id}")
         return f"data/bg/{id}/{file_list[0]}"
     else:
@@ -305,38 +324,43 @@ def read_bg(id):
 
         #bg폴더 파일 체크
         if not os.path.isdir(f"data/bg/{bsid}"):
-            check(bsid)
+            check(bsid, rq_type="bg")
 
         file_list = [file for file in os.listdir(f"data/bg/{bsid}") if file.startswith(str(id))]
         try:
             type(file_list[0])
         except:
             log.error(f"bid = {id} | BG type(file_list[0]) 에러")
-            check(bsid)
+            check(bsid, rq_type="bg")
             return read_bg(id)
         return f"data/bg/{bsid}/{file_list[0]}"
     
 def read_thumb(id):
-    bsid = id.replace("l.jpg", "")
+    if "l.jpg" in id:
+        bsid = id.replace("l.jpg", "")
+        img_size = (160, 120)
+    else:
+        bsid = id.replace(".jpg", "")
+        img_size = (80, 60)
+
     if os.path.isfile(f"data/thumb/{bsid}/{id}"):
         return f"data/thumb/{bsid}/{id}"
     else:
         #thumb폴더 파일 체크
         if not os.path.isdir(f"data/thumb/{bsid}"):
-            check(bsid)
+            check(bsid, rq_type="thumb")
 
         file_list = [file for file in os.listdir(f"data/bg/{bsid}") if file.startswith("+")]
         try:
             type(file_list[0])
         except:
             log.error(f"bsid = {bsid} | thumb type(file_list[0]) 에러")
-            check(bsid)
+            check(bsid, rq_type="thumb")
             return read_thumb(id)
 
         img = Image.open(f"data/bg/{bsid}/{file_list[0]}")
         # 이미지 모드를 RGBA에서 RGB로 변환
-        if img.mode == "RGBA":
-            img = img.convert("RGB")
+        img = img.convert("RGB")
 
         width, height = img.size
         left = (width - (height * (4 / 3))) / 2
@@ -345,7 +369,7 @@ def read_thumb(id):
         bottom = height
         
         img_cropped = img.crop((left,top,right,bottom))
-        img_resize = img_cropped.resize((160, 120), Image.LANCZOS)
+        img_resize = img_cropped.resize(img_size, Image.LANCZOS)
         img_resize.save(f"data/thumb/{bsid}/{id}", quality=100)
 
         return f"data/thumb/{bsid}/{id}"
@@ -357,14 +381,14 @@ def read_audio(id):
 
         #audio폴더 파일 체크
         if not os.path.isdir(f"data/audio/{id}"):
-            check(id)
+            check(id, rq_type="audio")
 
         file_list = [file for file in os.listdir(f"data/audio/{id}") if file.startswith("+")]
         try:
             type(file_list[0])
         except:
             log.error(f"bsid = {id} | audio type(file_list[0]) 에러")
-            check(id)
+            check(id, rq_type="audio")
             return read_audio(f"+{id}")
         return f"data/audio/{id}/{file_list[0]}"
     else:
@@ -374,7 +398,7 @@ def read_audio(id):
 
         #audio폴더 파일 체크
         if not os.path.isdir(f"data/audio/{bsid}"):
-            check(bsid)
+           check(bsid, rq_type="audio")
 
         file_list = [file for file in os.listdir(f"data/audio/{bsid}") if file.startswith(str(id))]
         try:
@@ -384,7 +408,7 @@ def read_audio(id):
             type(file_list[0])
         except:
             log.error(f"bid = {id} | audio type(file_list[0]) 에러")
-            check(bsid)
+            check(bsid, rq_type="audio")
             return read_audio(id)
         return f"data/audio/{bsid}/{file_list[0]}"
 
@@ -394,11 +418,15 @@ def read_preview(id):
     setID = id.replace(".mp3", "")
         
     if not os.path.isfile(f"data/preview/{setID}/{id}"):
-        check(setID)
+        check(setID, rq_type="preview")
 
         #음원 하이라이트 가져오기, 밀리초라서 / 1000 함
         PreviewTime = -1
-        j = osu_file_read(setID)
+        j = osu_file_read(setID, rq_type="preview")
+        #위에서 오디오 없어서 이미 처리댐
+        if os.path.isfile(f"data/preview/{setID}/{id}"):
+            return f"data/preview/{setID}/{id}"
+        
         for i in j[2]:
             if j[1] == i["BeatmapID"]:
                 PreviewTime = int(i["PreviewTime"]) / 1000
@@ -419,7 +447,7 @@ def read_video(id):
 
                 log.warning(f"{id} 해당 비트맵은 반초 API에서 조회가 되지 않습니다! | .osu 파일에 비디오 있나 체크")
                 log.info(f"{id} bid Redstar API 조회로 {bsid} bsid 얻음")
-                ismp4 = osu_file_read(bsid)
+                ismp4 = osu_file_read(bsid, rq_type="video")
                 #사실 의미 없음
                 hasVideo = ismp4[2][0]["BeatmapVideo"]
             except:
@@ -432,7 +460,7 @@ def read_video(id):
         
         #video폴더 파일 체크
         if not os.path.isdir(f"data/video/{bsid}"):
-            check(bsid)
+            check(bsid, rq_type="video")
 
         #임시로 try 박아둠, 나중에 반초라던지 비디오 있나 요청하는거로 바꾸기
         try:
@@ -442,7 +470,7 @@ def read_video(id):
                 type(file_list[0])
             except:
                 log.error(f"bid = {id} | video type(file_list[0]) 에러")
-                check(bsid)
+                check(bsid, rq_type="video")
                 return read_video(id)
             return f"data/video/{bsid}/{file_list[0]}"
         except:
@@ -452,7 +480,7 @@ def read_osz(id):
     if os.path.isfile(f"data/dl/{get_osz_fullName(id)}"):
         return {"path": f"data/dl/{get_osz_fullName(id)}", "filename": get_osz_fullName(id)}
     else:
-        check(id)
+        check(id, rq_type="osz")
         if os.path.isfile(f"data/dl/{get_osz_fullName(id)}"):
             return {"path": f"data/dl/{get_osz_fullName(id)}", "filename": get_osz_fullName(id)}
         else:
@@ -466,7 +494,7 @@ def read_osz_b(id):
     if os.path.isfile(f"data/dl/{get_osz_fullName(bsid)}"):
         return {"path": f"data/dl/{get_osz_fullName(bsid)}", "filename": get_osz_fullName(bsid)}
     else:
-        check(bsid)
+        check(bsid, osz)
         if os.path.isfile(f"data/dl/{get_osz_fullName(bsid)}"):
             return {"path": f"data/dl/{get_osz_fullName(bsid)}", "filename": get_osz_fullName(bsid)}
         else:
