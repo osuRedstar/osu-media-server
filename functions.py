@@ -122,13 +122,13 @@ def osu_file_read(setID, rq_type, moving=False):
                     spaceFilter = spaceFilter.replace(" ", "", 1)
                 temp["PreviewTime"] = spaceFilter
             #비트맵별 BG 파일이름
-            elif ('"' and ".jpg") in lineCheck and not bg_ignore and rq_type == "bg":
+            elif ('"' and ".jpg") in lineCheck and not bg_ignore and (rq_type == "bg" or rq_type == "thumb"):
                 temp["BeatmapBG"] = line[line.find('"') + 1 : line.find('"', line.find('"') + 1)]
                 bg_ignore = True
-            elif ('"' and ".png") in lineCheck and not bg_ignore and rq_type == "bg":
+            elif ('"' and ".png") in lineCheck and not bg_ignore and (rq_type == "bg" or rq_type == "thumb"):
                 temp["BeatmapBG"] = line[line.find('"') + 1 : line.find('"', line.find('"') + 1)]
                 bg_ignore = True
-            elif ('"' and ".jpeg") in lineCheck and not bg_ignore and rq_type == "bg":
+            elif ('"' and ".jpeg") in lineCheck and not bg_ignore and (rq_type == "bg" or rq_type == "thumb"):
                 temp["BeatmapBG"] = line[line.find('"') + 1 : line.find('"', line.find('"') + 1)]
                 bg_ignore = True
             #비트맵별 video 파일이름
@@ -181,11 +181,21 @@ def move_files(setID, rq_type):
             if item["BeatmapID"] == result[1]:
                 if rq_type == "bg":
                     try:
-                        shutil.copy(f"data/dl/{setID}/{item['BeatmapBG']}", f"data/bg/{setID}/+{setID}{item['BeatmapBG'][item['BeatmapBG'].find('.'):]}")
+                        extension = item["BeatmapBG"][-5:][item["BeatmapBG"][-5:].find("."):]
+                        shutil.copy(f"data/dl/{setID}/{item['BeatmapBG']}", f"data/bg/{setID}/+{setID}{extension}")
                         log.info(f"{setID} 비트맵셋, {item['BeatmapID']} 비트맵 | BG 처리함")
                     except:
                         log.error(f"{setID} 비트맵셋은 BG가 없음 | no image.png로 저장함")
                         shutil.copy(f"static/img/no image.png", f"data/bg/{setID}/+{setID}.png")
+
+                if rq_type == "thumb":
+                    try:
+                        extension = item["BeatmapBG"][-5:][item["BeatmapBG"][-5:].find("."):]
+                        shutil.copy(f"data/dl/{setID}/{item['BeatmapBG']}", f"data/thumb/{setID}/+{setID}{extension}")
+                        log.info(f"{setID} 비트맵셋, {item['BeatmapID']} 비트맵 | thumb 처리함")
+                    except:
+                        log.error(f"{setID} 비트맵셋은 thumb가 없음 | no image.png로 저장함")
+                        shutil.copy(f"static/img/no image.png", f"data/thumb/{setID}/+{setID}.png")
 
                 if rq_type == "audio":
                     try:
@@ -204,7 +214,8 @@ def move_files(setID, rq_type):
 
             if rq_type == "bg":
                 try:
-                    shutil.copy(f"data/dl/{setID}/{item['BeatmapBG']}", f"data/bg/{setID}/{item['BeatmapID']}{item['BeatmapBG'][item['BeatmapBG'].find('.'):]}")
+                    extension = item["BeatmapBG"][-5:][item["BeatmapBG"][-5:].find("."):]
+                    shutil.copy(f"data/dl/{setID}/{item['BeatmapBG']}", f"data/bg/{setID}/{item['BeatmapID']}{extension}")
                 except:
                     log.error(f"{item['BeatmapID']} 비트맵은 BG가 없음 | no image.png로 저장함")
                     shutil.copy(f"static/img/no image.png", f"data/bg/{setID}/{item['BeatmapID']}.png")
@@ -350,7 +361,7 @@ def read_thumb(id):
         if not os.path.isdir(f"data/thumb/{bsid}"):
             check(bsid, rq_type="thumb")
 
-        file_list = [file for file in os.listdir(f"data/bg/{bsid}") if file.startswith("+")]
+        file_list = [file for file in os.listdir(f"data/thumb/{bsid}") if file.startswith("+")]
         try:
             type(file_list[0])
         except:
@@ -358,7 +369,7 @@ def read_thumb(id):
             check(bsid, rq_type="thumb")
             return read_thumb(id)
 
-        img = Image.open(f"data/bg/{bsid}/{file_list[0]}")
+        img = Image.open(f"data/thumb/{bsid}/{file_list[0]}")
         # 이미지 모드를 RGBA에서 RGB로 변환
         img = img.convert("RGB")
 
@@ -371,6 +382,8 @@ def read_thumb(id):
         img_cropped = img.crop((left,top,right,bottom))
         img_resize = img_cropped.resize(img_size, Image.LANCZOS)
         img_resize.save(f"data/thumb/{bsid}/{id}", quality=100)
+
+        os.remove(f"data/thumb/{bsid}/{file_list[0]}")
 
         return f"data/thumb/{bsid}/{id}"
 
@@ -505,6 +518,15 @@ def read_osu(id):
     if os.path.isfile(f"B:/redstar/lets/.data/beatmaps/{id}.osu"):
         log.info(f"{id}.osu 파일을 B:/redstar/lets/.data/beatmaps/{id}.osu에서 먼저 찾아서 반환함")
         return {"path": f"B:/redstar/lets/.data/beatmaps/{id}.osu", "filename": f"{id}.osu"}
+    else:
+        pp = requests.get(f"https://old.redstar.moe/letsapi/v1/pp?b={id}")
+        pp = requests.get(f"https://old.redstar.moe/letsapi/v1/pp?b={id}")
+        pp = bsid.json()
+        if pp["status"] == 200:
+            log.info(f"{id} Beatmap PP = {pp['pp']}")
+            return read_osu(id)
+        else:
+            log.warning(f"RedstarOSU API로 DB 등록중 에러 | {pp}")
     
     if os.path.isfile(f"data/osu/{bsid}/{id}.osu"):
         return {"path": f"data/osu/{bsid}/{id}.osu", "filename": f"{id}.osu"}
@@ -512,4 +534,4 @@ def read_osu(id):
         bsid = requests.get(f"https://redstar.moe/api/v1/get_beatmaps?b={id}")
         bsid = bsid.json()[0]["beatmapset_id"]
         log.info(f"{id} bid Redstar API 조회로 {bsid} bsid 얻음")
-        check(bsid)
+        check(bsid, rq_type="osu")
