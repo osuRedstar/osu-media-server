@@ -207,10 +207,10 @@ def move_files(setID, rq_type):
                 if rq_type == "preview":
                     try:
                         shutil.copy(f"data/dl/{setID}/{item['AudioFilename']}", f"data/preview/{setID}/source_{setID}.mp3")
-                        log.info(f"{setID} 비트맵셋, {item['BeatmapID']} 비트맵 | audio source_{setID} 처리함")
+                        log.info(f"{setID} 비트맵셋, {item['BeatmapID']} 비트맵 | preview source_{setID} 처리함")
                     except:
                         shutil.copy(f"static/audio/no audio.mp3", f"data/preview/{setID}/{setID}.mp3")
-                        log.error(f"{setID} 비트맵셋은 audio가 없음 | no audio.mp3로 저장하고, preview도 처리함")
+                        log.error(f"{setID} 비트맵셋은 preview가 없음 | no audio.mp3로 저장하고, preview도 처리함")
 
             if rq_type == "bg":
                 try:
