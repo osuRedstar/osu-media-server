@@ -279,6 +279,24 @@ class robots_txt(tornado.web.RequestHandler):
                 self.set_header("Content-Type", "text/plain")
                 self.write(f.read())
 
+class StatusHandler(tornado.web.RequestHandler):
+    def get(self):
+        # Logging the request IP address
+        print("")
+        try:
+            real_ip = self.request.headers["Cf-Connecting-Ip"]
+            request_uri = self.request.headers["X-Forwarded-Proto"] + "://" + self.request.host + self.request.uri
+            country_code = self.request.headers["Cf-Ipcountry"]
+        except:
+            log.warning("cloudflare를 거치지 않아서 real_ip, country_code 조회가 안댐")
+            real_ip = "0.0.0.0"
+            request_uri = self.request.protocol + "://" + self.request.host + self.request.uri
+            country_code = "XX"
+        client_ip = self.request.remote_ip
+        User_Agent = self.request.headers["User-Agent"]
+        log.info(f"Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_uri} | From: {User_Agent}")
+        self.write({"code": 200, "oszCount": read_list()["osz"]["count"]})
+
 def make_app():
     return tornado.web.Application([
         (r"/", MainHandler),
@@ -294,6 +312,7 @@ def make_app():
         (r"/favicon.ico", FaviconHandler),
         (r"/static/(.*)", StaticHandler),
         (r"/robots.txt", robots_txt),
+        (r"/status", StatusHandler),
     ])
 
 if __name__ == "__main__":
