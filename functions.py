@@ -251,12 +251,13 @@ def check(setID, rq_type):
         log.warning(f"{setID} 맵셋 osz 존재하지 않음. 다운로드중...")
         
         url = [f'https://proxy.nerinyan.moe/d/{setID}', f"https://chimu.moe/d/{setID}"]
+        headers = {"User-Agent": "RedstarOSU's MediaServer (python request) | https://b.redstar.moe"}
         limit = 0
         def dl(site, limit):
             #우선 setID .osz로 다운받고 나중에 파일 이름 변경
             file_name = f'{setID} .osz' #919187 765 MILLION ALLSTARS - UNION!!.osz, 2052147 (Love Live! series) - Colorful Dreams! Colorful Smiles! _  TV2
             save_path = 'data/dl/'  # 원하는 저장 경로로 변경
-            res = requests.get(url[site])
+            res = requests.get(url[site], headers=headers)
             if res.status_code == 200:
                 with open(save_path + file_name, 'wb') as f:
                     f.write(res.content)
