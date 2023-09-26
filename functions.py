@@ -6,6 +6,7 @@ import requests
 from urllib.request import urlretrieve
 import config
 from PIL import Image
+import pymysql
 
 conf = config.config("config.ini")
 #lets.py 형태의 사설서버를 소유중이면 lets\.data\beatmaps 에서만 .osu 파일을 가져옴
@@ -517,14 +518,17 @@ def read_osz_b(id):
             return 0
 
 def read_osu(id):
+    filename = requests.get(f"https://old.redstar.moe/letsapi/v1/pp?b={id}").json()
+    filename = filename["song_name"] + ".osu"
+
     #B:\redstar\lets\.data\beatmaps 우선시함
     if os.path.isfile(f"B:/redstar/lets/.data/beatmaps/{id}.osu"):
         log.info(f"{id}.osu 파일을 B:/redstar/lets/.data/beatmaps/{id}.osu에서 먼저 찾아서 반환함")
-        return {"path": f"B:/redstar/lets/.data/beatmaps/{id}.osu", "filename": f"{id}.osu"}
+        return {"path": f"B:/redstar/lets/.data/beatmaps/{id}.osu", "filename": filename}
     else:
         pp = requests.get(f"https://old.redstar.moe/letsapi/v1/pp?b={id}")
         pp = requests.get(f"https://old.redstar.moe/letsapi/v1/pp?b={id}")
-        pp = bsid.json()
+        pp = pp.json()
         if pp["status"] == 200:
             log.info(f"{id} Beatmap PP = {pp['pp']}")
             return read_osu(id)
@@ -532,9 +536,34 @@ def read_osu(id):
             log.warning(f"RedstarOSU API로 DB 등록중 에러 | {pp}")
     
     if os.path.isfile(f"data/osu/{bsid}/{id}.osu"):
-        return {"path": f"data/osu/{bsid}/{id}.osu", "filename": f"{id}.osu"}
+        return {"path": f"data/osu/{bsid}/{id}.osu", "filename": filename}
     else:
         bsid = requests.get(f"https://redstar.moe/api/v1/get_beatmaps?b={id}")
         bsid = bsid.json()[0]["beatmapset_id"]
         log.info(f"{id} bid Redstar API 조회로 {bsid} bsid 얻음")
         check(bsid, rq_type="osu")
+
+def read_osu_filename(filename):
+    try:
+        dbc = pymysql.connect(host=conf.config["db"]["host"], port=int(conf.config["db"]["port"]), user=conf.config["db"]["username"], passwd=conf.config["db"]["password"], db=conf.config["db"]["database-cheesegull"], charset='utf8')
+        cursor = dbc.cursor()
+    except:
+        log.error("read_osu_filename() | DB 연결 실패!")
+    try:
+        artist = filename[:filename.find(" - ")]
+        title = filename[(filename.find(" - ") + 3):filename.find(" (")]
+        creator = filename[(filename.find(" (") + 1 + 1):(filename.find(") ["))]
+        version = filename[(filename.find(") [") + 1 + 2):filename.find("].osu")]
+    except:
+        log.error("read_osu_filename | osu filename에서 추출중 에러")
+
+    cursor.execute(f'''
+        SELECT b.id, b.parent_set_id, b.diff_name
+        FROM beatmaps AS b
+        JOIN sets AS s ON b.parent_set_id = s.id
+        WHERE s.artist = "{artist}" AND s.title = "{title}" AND s.creator = "{creator}" AND b.diff_name = "{version}"
+    ''')
+    result = cursor.fetchone()
+    dbc.close()
+    bid = result[0]
+    return read_osu(bid)

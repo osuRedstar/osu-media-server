@@ -47,6 +47,13 @@ class config:
 
 			self.config.get("osu","APIKEY")
 			self.config.get("osu","IS_YOU_HAVE_OSU_PRIVATE_SERVER_WITH_lets.py")
+
+			self.config.get("db","host")
+			self.config.get("db","port")
+			self.config.get("db","username")
+			self.config.get("db","password")
+			self.config.get("db","database")
+			self.config.get("db","database-cheesegull")
 			return True
 		except:
 			return False
@@ -67,6 +74,14 @@ class config:
 		self.config.add_section("osu")
 		self.config.set("osu", "APIKEY", "Your_OSU_APIKEY")
 		self.config.set("osu", "IS_YOU_HAVE_OSU_PRIVATE_SERVER_WITH_lets.py", "True")
+
+		self.config.add_section("db")
+		self.config.set("db", "host", "localhost")
+		self.config.set("db", "port", "3306")
+		self.config.set("db", "username", "root")
+		self.config.set("db", "password", "")
+		self.config.set("db", "database", "redstar")
+		self.config.set("db", "database-cheesegull", "cheesegull")
 
 		# Write ini to file and close
 		self.config.write(f)
