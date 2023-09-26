@@ -7,6 +7,20 @@ from urllib.request import urlretrieve
 import config
 from PIL import Image
 import pymysql
+import hashlib
+
+#beatmap_md5
+def calculate_md5(filename):
+    md5 = hashlib.md5()
+    with open(filename, "rb") as file:
+        while True:
+            data = file.read(8192)
+            if not data:
+                break
+            md5.update(data)
+    return md5.hexdigest()
+
+requestHeaders = {"User-Agent": "RedstarOSU's MediaServer (python request) | https://b.redstar.moe"}
 
 conf = config.config("config.ini")
 #lets.py 형태의 사설서버를 소유중이면 lets\.data\beatmaps 에서만 .osu 파일을 가져옴
@@ -62,6 +76,7 @@ def osu_file_read(setID, rq_type, moving=False):
         log.info(beatmapName)
         temp = {}
         bg_ignore = False
+        beatmap_md5 = calculate_md5(f"data/dl/{setID}/{beatmapName}")
         f = open(f"data/dl/{setID}/{beatmapName}", 'r', encoding="utf-8")
         while True:
             line = f.readline()
@@ -80,25 +95,17 @@ def osu_file_read(setID, rq_type, moving=False):
                 if int(osu_file_format_version) < 10:
                     underV10 = True
                     log.error(f"{setID} 비트맵셋의 어떤 비트맵은 시이이이이발 osu file format 이 10이하 ({osu_file_format_version}) 이네요? 시발련들아?")
-                    oldMapInfo = requests.get(f"https://redstar.moe/api/v1/get_beatmaps?s={setID}")
+                    oldMapInfo = requests.get(f"https://cheesegull.redstar.moe/api/md5/{beatmap_md5}", headers=requestHeaders)
                     oldMapInfo = oldMapInfo.json()
-                    log.info(f"{setID} 틀딱곡 Redstar에서 조회완료")
-            if "Version" in line and underV10:
-                #local variable 방지
-                temp["BeatmapID"] = ""
-
-                spaceFilter = line.replace("Version:", "").replace("\n", "")
-                if spaceFilter.startswith(" "):
-                    spaceFilter = spaceFilter.replace(" ", "", 1)
-                for i in oldMapInfo:
-                    if spaceFilter == i["version"]:
-                        temp["BeatmapID"] = i["beatmap_id"]
-                        log.warning(f"{setID}/{temp['BeatmapID']} 틀딱곡 BeatmapID 세팅 완료")
-                        #first_bid 선별
-                        if first_bid == 0:
-                            first_bid = temp["BeatmapID"]
-                        elif first_bid > temp["BeatmapID"]:
-                            first_bid = temp["BeatmapID"]
+                    log.info(f"{setID} 틀딱곡 Redstar cheesegull에서 조회완료")
+            
+                    temp["BeatmapID"] = oldMapInfo["BeatmapID"]
+                    log.warning(f"{setID}/{temp['BeatmapID']} 틀딱곡 BeatmapID 세팅 완료")
+                    #first_bid 선별
+                    if first_bid == 0:
+                        first_bid = temp["BeatmapID"]
+                    elif first_bid > temp["BeatmapID"]:
+                        first_bid = temp["BeatmapID"]
 
             if "BeatmapID" in line and not underV10:
                 spaceFilter = line.replace("BeatmapID:", "").replace("\n", "")
@@ -133,8 +140,11 @@ def osu_file_read(setID, rq_type, moving=False):
                 temp["BeatmapBG"] = line[line.find('"') + 1 : line.find('"', line.find('"') + 1)]
                 bg_ignore = True
             #비트맵별 video 파일이름
+            #.avi 추가하기
             #elif '"' and "Video" and ".mp4" in line:
             elif '"' and "video" and ".mp4" in lineCheck and rq_type == "video":
+                temp["BeatmapVideo"] = line[line.find('"') + 1 : line.find('"', line.find('"') + 1)]
+            elif '"' and ".mp4" in lineCheck and rq_type == "video" and underV10:
                 temp["BeatmapVideo"] = line[line.find('"') + 1 : line.find('"', line.find('"') + 1)]
             temp["beatmapName"] = beatmapName
 
@@ -238,6 +248,15 @@ def move_files(setID, rq_type):
             if not IS_YOU_HAVE_OSU_PRIVATE_SERVER and rq_type == "osu":
                 shutil.copy(f"data/dl/{setID}/{item['beatmapName']}", f"data/osu/{setID}/{item['BeatmapID']}.osu")
 
+            #lets | read_osu
+            if rq_type.startswith("read_osu"):
+                bid = int(rq_type.replace("read_osu_", ""))
+                if int(item['BeatmapID']) == bid:
+                    log.info(rq_type)
+                    shutil.copy(f"data/dl/{setID}/{item['beatmapName']}", f"B:/redstar/lets/.data/beatmaps/{bid}.osu")
+                    shutil.rmtree(f"data/dl/{setID}")
+                    return 0
+
         #osu_file_read() 함수에 인자값으로 True를 넣어서 dl/{setID} 가 삭제 되지 않으므로 여기서 폴더 삭제함
         shutil.rmtree(f"data/dl/{setID}")
 
@@ -252,13 +271,13 @@ def check(setID, rq_type):
         log.warning(f"{setID} 맵셋 osz 존재하지 않음. 다운로드중...")
         
         url = [f'https://proxy.nerinyan.moe/d/{setID}', f"https://chimu.moe/d/{setID}"]
-        headers = {"User-Agent": "RedstarOSU's MediaServer (python request) | https://b.redstar.moe"}
+        
         limit = 0
         def dl(site, limit):
             #우선 setID .osz로 다운받고 나중에 파일 이름 변경
             file_name = f'{setID} .osz' #919187 765 MILLION ALLSTARS - UNION!!.osz, 2052147 (Love Live! series) - Colorful Dreams! Colorful Smiles! _  TV2
             save_path = 'data/dl/'  # 원하는 저장 경로로 변경
-            res = requests.get(url[site], headers=headers)
+            res = requests.get(url[site], headers=requestHeaders)
             if res.status_code == 200:
                 with open(save_path + file_name, 'wb') as f:
                     f.write(res.content)
@@ -331,7 +350,7 @@ def read_bg(id):
             return read_bg(f"+{id}")
         return f"data/bg/{id}/{file_list[0]}"
     else:
-        bsid = requests.get(f"https://redstar.moe/api/v1/get_beatmaps?b={id}")
+        bsid = requests.get(f"https://redstar.moe/api/v1/get_beatmaps?b={id}", headers=requestHeaders)
         bsid = bsid.json()[0]["beatmapset_id"]
         log.info(f"{id} bid Redstar API 조회로 {bsid} bsid 얻음")
 
@@ -407,7 +426,7 @@ def read_audio(id):
             return read_audio(f"+{id}")
         return f"data/audio/{id}/{file_list[0]}"
     else:
-        bsid = requests.get(f"https://redstar.moe/api/v1/get_beatmaps?b={id}")
+        bsid = requests.get(f"https://redstar.moe/api/v1/get_beatmaps?b={id}", headers=requestHeaders)
         bsid = bsid.json()[0]["beatmapset_id"]
         log.info(f"{id} bid Redstar API 조회로 {bsid} bsid 얻음")
 
@@ -453,15 +472,14 @@ def read_preview(id):
     return f"data/preview/{setID}/{id}"
 
 def read_video(id):
+        bsid = requests.get(f"https://redstar.moe/api/v1/get_beatmaps?b={id}", headers=requestHeaders)
+        bsid = bsid.json()[0]["beatmapset_id"]
         try:
             apikey = conf.config["osu"]["apikey"]
-            hasVideo = requests.get(f"https://osu.ppy.sh/api/get_beatmaps?k={apikey}&b={id}")
+            hasVideo = requests.get(f"https://osu.ppy.sh/api/get_beatmaps?k={apikey}&b={id}", headers=requestHeaders)
             hasVideo = hasVideo.json()[0]["video"]
         except:
             try:
-                bsid = requests.get(f"https://redstar.moe/api/v1/get_beatmaps?b={id}")
-                bsid = bsid.json()[0]["beatmapset_id"]
-
                 log.warning(f"{id} 해당 비트맵은 반초 API에서 조회가 되지 않습니다! | .osu 파일에 비디오 있나 체크")
                 log.info(f"{id} bid Redstar API 조회로 {bsid} bsid 얻음")
                 ismp4 = osu_file_read(bsid, rq_type="video")
@@ -504,7 +522,7 @@ def read_osz(id):
             return 0
 
 def read_osz_b(id):
-    bsid = requests.get(f"https://redstar.moe/api/v1/get_beatmaps?b={id}")
+    bsid = requests.get(f"https://redstar.moe/api/v1/get_beatmaps?b={id}", headers=requestHeaders)
     bsid = bsid.json()[0]["beatmapset_id"]
     log.info(f"{id} bid Redstar API 조회로 {bsid} bsid 얻음")
 
@@ -518,30 +536,25 @@ def read_osz_b(id):
             return 0
 
 def read_osu(id):
-    filename = requests.get(f"https://old.redstar.moe/letsapi/v1/pp?b={id}").json()
+    filename = requests.get(f"https://old.redstar.moe/letsapi/v1/pp?b={id}", headers=requestHeaders).json()
     filename = filename["song_name"] + ".osu"
+    bsid = requests.get(f"https://redstar.moe/api/v1/get_beatmaps?b={id}", headers=requestHeaders)
+    bsid = bsid.json()[0]["beatmapset_id"]
+    log.info(f"{id} bid Redstar API 조회로 {bsid} bsid 얻음")
 
     #B:\redstar\lets\.data\beatmaps 우선시함
     if os.path.isfile(f"B:/redstar/lets/.data/beatmaps/{id}.osu"):
         log.info(f"{id}.osu 파일을 B:/redstar/lets/.data/beatmaps/{id}.osu에서 먼저 찾아서 반환함")
         return {"path": f"B:/redstar/lets/.data/beatmaps/{id}.osu", "filename": filename}
     else:
-        pp = requests.get(f"https://old.redstar.moe/letsapi/v1/pp?b={id}")
-        pp = requests.get(f"https://old.redstar.moe/letsapi/v1/pp?b={id}")
-        pp = pp.json()
-        if pp["status"] == 200:
-            log.info(f"{id} Beatmap PP = {pp['pp']}")
-            return read_osu(id)
-        else:
-            log.warning(f"RedstarOSU API로 DB 등록중 에러 | {pp}")
+        check(bsid, rq_type=f"read_osu_{id}")
+        return read_osu(id)
     
     if os.path.isfile(f"data/osu/{bsid}/{id}.osu"):
         return {"path": f"data/osu/{bsid}/{id}.osu", "filename": filename}
     else:
-        bsid = requests.get(f"https://redstar.moe/api/v1/get_beatmaps?b={id}")
-        bsid = bsid.json()[0]["beatmapset_id"]
-        log.info(f"{id} bid Redstar API 조회로 {bsid} bsid 얻음")
-        check(bsid, rq_type="osu")
+        check(bsid, rq_type=f"read_osu_{id}")
+        return read_osu(id)
 
 def read_osu_filename(filename):
     try:
@@ -557,12 +570,14 @@ def read_osu_filename(filename):
     except:
         log.error("read_osu_filename | osu filename에서 추출중 에러")
 
-    cursor.execute(f'''
+    # filename에 / 가 들어가면 에러남 (http 요청시 / 가 사라짐)
+    sql = f'''
         SELECT b.id, b.parent_set_id, b.diff_name
         FROM beatmaps AS b
         JOIN sets AS s ON b.parent_set_id = s.id
         WHERE s.artist = "{artist}" AND s.title = "{title}" AND s.creator = "{creator}" AND b.diff_name = "{version}"
-    ''')
+    '''
+    cursor.execute(sql)
     result = cursor.fetchone()
     dbc.close()
     bid = result[0]
