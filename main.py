@@ -29,8 +29,8 @@ def request_msg(self):
     try:
         User_Agent = self.request.headers["User-Agent"]
     except:
+        log.error("User-Agent 값이 존재하지 않음!")
         User_Agent = ""
-        log.error("User_Agent 값이 없음")
     log.info(f"Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_uri} | From: {User_Agent}")
 
 class MainHandler(tornado.web.RequestHandler):
@@ -61,7 +61,7 @@ class ThumbHandler(tornado.web.RequestHandler):
 class PreviewHandler(tornado.web.RequestHandler):
     def get(self, id):
         request_msg(self)
-        self.set_header('Content-Type', 'audio/mpeg')
+        self.set_header('Content-Type', 'audio/mp3')
         with open(read_audio(id), 'rb') as f:
             self.write(f.read())
 
