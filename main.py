@@ -26,7 +26,11 @@ def request_msg(self):
             request_uri = self.request.protocol + "://" + self.request.host + self.request.uri
             country_code = "XX"
     client_ip = self.request.remote_ip
-    User_Agent = self.request.headers["User-Agent"]
+    try:
+        User_Agent = self.request.headers["User-Agent"]
+    except:
+        User_Agent = ""
+        log.error("User_Agent 값이 없음")
     log.info(f"Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_uri} | From: {User_Agent}")
 
 class MainHandler(tornado.web.RequestHandler):
