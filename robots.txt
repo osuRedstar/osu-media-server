@@ -1,7 +1,14 @@
-User-agent: *
-Disallow: /
 User-agent: osu!
 Allow: /
+
+User-agent: *
+Disallow: /
+
+User-agent: PetalBot
+Disallow: /
+
+User-agent: AhrefsBot
+Disallow: /
 
 
 
