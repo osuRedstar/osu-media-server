@@ -1,9 +1,6 @@
 User-agent: osu!
 Allow: /
 
-User-agent: *
-Disallow: /
-
 User-agent: PetalBot
 Disallow: /
 
