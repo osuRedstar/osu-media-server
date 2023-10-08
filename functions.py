@@ -91,7 +91,7 @@ def osu_file_read(setID, rq_type, moving=False):
                 # BOM 문자 제거
                 if osu_file_format_version.startswith('\ufeff'):
                     osu_file_format_version = osu_file_format_version[1:]
-                    log.warning("\nBOM 문자 제거\n")
+                    log.warning("BOM 문자 제거")
                 if int(osu_file_format_version) < 10:
                     underV10 = True
                     log.error(f"{setID} 비트맵셋의 어떤 비트맵은 시이이이이발 osu file format 이 10이하 ({osu_file_format_version}) 이네요? 시발련들아?")
@@ -99,25 +99,34 @@ def osu_file_read(setID, rq_type, moving=False):
                     oldMapInfo = oldMapInfo.json()
                     log.info(f"{setID} 틀딱곡 Redstar cheesegull에서 조회완료")
             
-                    temp["BeatmapID"] = oldMapInfo["BeatmapID"]
+                    temp["BeatmapID"] = int(oldMapInfo["BeatmapID"])
                     log.warning(f"{setID}/{temp['BeatmapID']} 틀딱곡 BeatmapID 세팅 완료")
                     #first_bid 선별
                     if first_bid == 0:
                         first_bid = temp["BeatmapID"]
-                    elif first_bid > temp["BeatmapID"]:
+                    elif first_bid > temp["BeatmapID"] and temp["BeatmapID"] > 0:
                         first_bid = temp["BeatmapID"]
 
             if "BeatmapID" in line and not underV10:
                 spaceFilter = line.replace("BeatmapID:", "").replace("\n", "")
                 if spaceFilter.startswith(" "):
                     spaceFilter = spaceFilter.replace(" ", "", 1)
-                temp["BeatmapID"] = spaceFilter
+                temp["BeatmapID"] = int(spaceFilter)
+
+                for i in beatmap_info:
+                    #중복 bid, bid <= 0
+                    if int(i["BeatmapID"]) == temp["BeatmapID"] or temp["BeatmapID"] <= 0:
+                        #확실하게 bid 얻기
+                        oldMapInfo = requests.get(f"https://cheesegull.redstar.moe/api/md5/{beatmap_md5}", headers=requestHeaders)
+                        oldMapInfo = oldMapInfo.json()
+                        log.error(f".osu 파일들에서 중복 bid 감지! or .osu 파일에서 bid 값이 <= 0 임 | cheesegull에서 bid 조회함")
+                        temp["BeatmapID"] = int(oldMapInfo["BeatmapID"])
 
                 #first_bid 선별
                 if first_bid == 0:
-                    first_bid = spaceFilter
-                elif first_bid > spaceFilter:
-                    first_bid = spaceFilter
+                    first_bid = temp["BeatmapID"]
+                elif first_bid > temp["BeatmapID"] and temp["BeatmapID"] > 0:
+                    first_bid = temp["BeatmapID"]
 
             elif "AudioFilename" in line and (rq_type == "audio" or rq_type == "preview"):
                 spaceFilter = line.replace("AudioFilename:", "").replace("\n", "")
@@ -210,10 +219,10 @@ def move_files(setID, rq_type):
 
                 if rq_type == "audio":
                     try:
-                        shutil.copy(f"data/dl/{setID}/{item['AudioFilename']}", f"data/audio/{setID}/+{setID}.mp3")
+                        shutil.copy(f"data/dl/{setID}/{item['AudioFilename']}", f"data/audio/{setID}/{item['AudioFilename']}")
                     except:
                         log.error(f"{setID} 비트맵셋은 audio가 없음 | no audio.mp3로 저장함")
-                        shutil.copy(f"static/audio/no audio.mp3", f"data/audio/{setID}/+{setID}.mp3")
+                        shutil.copy(f"static/audio/no audio.mp3", f"data/audio/{setID}/no audio.mp3")
                 
                 if rq_type == "preview":
                     try:
@@ -233,10 +242,10 @@ def move_files(setID, rq_type):
 
             if rq_type == "audio":
                 try:
-                    shutil.copy(f"data/dl/{setID}/{item['AudioFilename']}", f"data/audio/{setID}/{item['BeatmapID']}.mp3")
+                    shutil.copy(f"data/dl/{setID}/{item['AudioFilename']}", f"data/audio/{setID}/{item['AudioFilename']}")
                 except:
                     log.error(f"{item['BeatmapID']} 비트맵은 audio가 없음 | no audio.mp3로 저장함")
-                    shutil.copy(f"static/audio/no audio.mp3", f"data/audio/{setID}/{item['BeatmapID']}.mp3")
+                    shutil.copy(f"static/audio/no audio.mp3", f"data/audio/{setID}/no audio.mp3")
 
             if rq_type == "video":
                 try:
@@ -417,7 +426,7 @@ def read_audio(id):
         if not os.path.isdir(f"data/audio/{id}"):
             check(id, rq_type="audio")
 
-        file_list = [file for file in os.listdir(f"data/audio/{id}") if file.startswith("+")]
+        file_list = [file for file in os.listdir(f"data/audio/{id}")]
         try:
             type(file_list[0])
         except:
@@ -434,7 +443,7 @@ def read_audio(id):
         if not os.path.isdir(f"data/audio/{bsid}"):
            check(bsid, rq_type="audio")
 
-        file_list = [file for file in os.listdir(f"data/audio/{bsid}") if file.startswith(str(id))]
+        file_list = [file for file in os.listdir(f"data/audio/{bsid}")]
         try:
             #루한루프 잡자
             #type(file_list[0])
@@ -538,8 +547,11 @@ def read_osz_b(id):
 def read_osu(id):
     filename = requests.get(f"https://old.redstar.moe/letsapi/v1/pp?b={id}", headers=requestHeaders).json()
     filename = filename["song_name"] + ".osu"
-    bsid = requests.get(f"https://cheesegull.redstar.moe/api/b/{id}", headers=requestHeaders)
-    bsid = bsid.json()["ParentSetID"]
+
+    bsid = requests.get(f"https://cheesegull.redstar.moe/api/s/{bsid}", headers=requestHeaders)
+    bsid = bsid.json()["SetID"]
+
+
     log.info(f"{id} bid Redstar API 조회로 {bsid} bsid 얻음")
 
     #B:\redstar\lets\.data\beatmaps 우선시함
