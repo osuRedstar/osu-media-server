@@ -350,8 +350,8 @@ def read_bg(id):
             return read_bg(f"+{id}")
         return f"data/bg/{id}/{file_list[0]}"
     else:
-        bsid = requests.get(f"https://redstar.moe/api/v1/get_beatmaps?b={id}", headers=requestHeaders)
-        bsid = bsid.json()[0]["beatmapset_id"]
+        bsid = requests.get(f"https://cheesegull.redstar.moe/api/b/{id}", headers=requestHeaders)
+        bsid = bsid.json()["ParentSetID"]
         log.info(f"{id} bid Redstar API 조회로 {bsid} bsid 얻음")
 
         #bg폴더 파일 체크
@@ -426,8 +426,8 @@ def read_audio(id):
             return read_audio(f"+{id}")
         return f"data/audio/{id}/{file_list[0]}"
     else:
-        bsid = requests.get(f"https://redstar.moe/api/v1/get_beatmaps?b={id}", headers=requestHeaders)
-        bsid = bsid.json()[0]["beatmapset_id"]
+        bsid = requests.get(f"https://cheesegull.redstar.moe/api/b/{id}", headers=requestHeaders)
+        bsid = bsid.json()["ParentSetID"]
         log.info(f"{id} bid Redstar API 조회로 {bsid} bsid 얻음")
 
         #audio폴더 파일 체크
@@ -472,8 +472,8 @@ def read_preview(id):
     return f"data/preview/{setID}/{id}"
 
 def read_video(id):
-        bsid = requests.get(f"https://redstar.moe/api/v1/get_beatmaps?b={id}", headers=requestHeaders)
-        bsid = bsid.json()[0]["beatmapset_id"]
+        bsid = requests.get(f"https://cheesegull.redstar.moe/api/b/{id}", headers=requestHeaders)
+        bsid = bsid.json()["ParentSetID"]
         try:
             apikey = conf.config["osu"]["apikey"]
             hasVideo = requests.get(f"https://osu.ppy.sh/api/get_beatmaps?k={apikey}&b={id}", headers=requestHeaders)
@@ -522,8 +522,8 @@ def read_osz(id):
             return 0
 
 def read_osz_b(id):
-    bsid = requests.get(f"https://redstar.moe/api/v1/get_beatmaps?b={id}", headers=requestHeaders)
-    bsid = bsid.json()[0]["beatmapset_id"]
+    bsid = requests.get(f"https://cheesegull.redstar.moe/api/b/{id}", headers=requestHeaders)
+    bsid = bsid.json()["ParentSetID"]
     log.info(f"{id} bid Redstar API 조회로 {bsid} bsid 얻음")
 
     if os.path.isfile(f"data/dl/{get_osz_fullName(bsid)}"):
@@ -538,8 +538,8 @@ def read_osz_b(id):
 def read_osu(id):
     filename = requests.get(f"https://old.redstar.moe/letsapi/v1/pp?b={id}", headers=requestHeaders).json()
     filename = filename["song_name"] + ".osu"
-    bsid = requests.get(f"https://redstar.moe/api/v1/get_beatmaps?b={id}", headers=requestHeaders)
-    bsid = bsid.json()[0]["beatmapset_id"]
+    bsid = requests.get(f"https://cheesegull.redstar.moe/api/b/{id}", headers=requestHeaders)
+    bsid = bsid.json()["ParentSetID"]
     log.info(f"{id} bid Redstar API 조회로 {bsid} bsid 얻음")
 
     #B:\redstar\lets\.data\beatmaps 우선시함
