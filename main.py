@@ -91,7 +91,7 @@ class OszHandler(tornado.web.RequestHandler):
             self.write("ERROR")
         else:
             self.set_header('Content-Type', 'application/x-osu-beatmap-archive')
-            self.set_header('Content-Disposition', f'attachment; filename={path["filename"]}')
+            self.set_header('Content-Disposition', f'attachment; filename="{path["filename"]}"')
             with open(path['path'], 'rb') as f:
                 self.write(f.read())
 
@@ -103,7 +103,7 @@ class OszBHandler(tornado.web.RequestHandler):
             self.write("ERROR")
         else:
             self.set_header('Content-Type', 'application/x-osu-beatmap-archive')
-            self.set_header('Content-Disposition', f'attachment; filename={path["filename"]}')
+            self.set_header('Content-Disposition', f'attachment; filename="{path["filename"]}"')
             with open(path['path'], 'rb') as f:
                 self.write(f.read())
 
@@ -112,7 +112,7 @@ class OsuHandler(tornado.web.RequestHandler):
         request_msg(self)
         path = read_osu(id)
         self.set_header('Content-Type', 'application/x-osu-beatmap')
-        self.set_header('Content-Disposition', f'attachment; filename={path["filename"]}')
+        self.set_header('Content-Disposition', f'attachment; filename="{path["filename"]}"')
         with open(path['path'], 'rb') as f:
             self.write(f.read())
 
@@ -147,7 +147,7 @@ class webMapsHandler(tornado.web.RequestHandler):
 
         path = read_osu_filename(filename)
         self.set_header('Content-Type', 'application/x-osu-beatmap')
-        self.set_header('Content-Disposition', f'attachment; filename={path["filename"]}')
+        self.set_header('Content-Disposition', f'attachment; filename="{path["filename"]}"')
         with open(path['path'], 'rb') as f:
             self.write(f.read())
 
