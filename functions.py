@@ -361,7 +361,7 @@ def read_bg(id):
     else:
         bsid = requests.get(f"https://cheesegull.redstar.moe/api/b/{id}", headers=requestHeaders)
         bsid = bsid.json()["ParentSetID"]
-        log.info(f"{id} bid Redstar API 조회로 {bsid} bsid 얻음")
+        log.info(f"{id} bid Redstar cheesegull 조회로 {bsid} bsid 얻음")
 
         #bg폴더 파일 체크
         if not os.path.isdir(f"data/bg/{bsid}"):
@@ -437,7 +437,7 @@ def read_audio(id):
     else:
         bsid = requests.get(f"https://cheesegull.redstar.moe/api/b/{id}", headers=requestHeaders)
         bsid = bsid.json()["ParentSetID"]
-        log.info(f"{id} bid Redstar API 조회로 {bsid} bsid 얻음")
+        log.info(f"{id} bid Redstar cheesegull 조회로 {bsid} bsid 얻음")
 
         #audio폴더 파일 체크
         if not os.path.isdir(f"data/audio/{bsid}"):
@@ -490,7 +490,7 @@ def read_video(id):
         except:
             try:
                 log.warning(f"{id} 해당 비트맵은 반초 API에서 조회가 되지 않습니다! | .osu 파일에 비디오 있나 체크")
-                log.info(f"{id} bid Redstar API 조회로 {bsid} bsid 얻음")
+                log.info(f"{id} bid Redstar cheesegull 조회로 {bsid} bsid 얻음")
                 ismp4 = osu_file_read(bsid, rq_type="video")
                 #사실 의미 없음
                 hasVideo = ismp4[2][0]["BeatmapVideo"]
@@ -533,7 +533,7 @@ def read_osz(id):
 def read_osz_b(id):
     bsid = requests.get(f"https://cheesegull.redstar.moe/api/b/{id}", headers=requestHeaders)
     bsid = bsid.json()["ParentSetID"]
-    log.info(f"{id} bid Redstar API 조회로 {bsid} bsid 얻음")
+    log.info(f"{id} bid Redstar cheesegull 조회로 {bsid} bsid 얻음")
 
     if os.path.isfile(f"data/dl/{get_osz_fullName(bsid)}"):
         return {"path": f"data/dl/{get_osz_fullName(bsid)}", "filename": get_osz_fullName(bsid)}
@@ -545,18 +545,16 @@ def read_osz_b(id):
             return 0
 
 def read_osu(id):
-    filename = requests.get(f"https://old.redstar.moe/letsapi/v1/pp?b={id}", headers=requestHeaders).json()
-    filename = filename["song_name"] + ".osu"
+    bsid = requests.get(f"https://cheesegull.redstar.moe/api/b/{id}", headers=requestHeaders)
+    bsid = bsid.json()["ParentSetID"]
 
-    bsid = requests.get(f"https://cheesegull.redstar.moe/api/s/{bsid}", headers=requestHeaders)
-    bsid = bsid.json()["SetID"]
-
-
-    log.info(f"{id} bid Redstar API 조회로 {bsid} bsid 얻음")
+    log.info(f"{id} bid Redstar cheesegull 조회로 {bsid} bsid 얻음")
 
     #B:\redstar\lets\.data\beatmaps 우선시함
     if os.path.isfile(f"B:/redstar/lets/.data/beatmaps/{id}.osu"):
         log.info(f"{id}.osu 파일을 B:/redstar/lets/.data/beatmaps/{id}.osu에서 먼저 찾아서 반환함")
+        filename = requests.get(f"https://old.redstar.moe/letsapi/v1/pp?b={id}", headers=requestHeaders).json()
+        filename = filename["song_name"] + ".osu"
         return {"path": f"B:/redstar/lets/.data/beatmaps/{id}.osu", "filename": filename}
     else:
         check(bsid, rq_type=f"read_osu_{id}")
