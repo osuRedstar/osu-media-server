@@ -589,6 +589,7 @@ def read_osu_filename(filename):
     '''
     cursor.execute(sql)
     result = cursor.fetchone()
-    dbc.close()
+    if result is None:
+        return None
     bid = result[0]
     return read_osu(bid)
