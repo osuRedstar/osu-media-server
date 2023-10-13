@@ -146,6 +146,8 @@ class webMapsHandler(tornado.web.RequestHandler):
         request_msg(self)
 
         path = read_osu_filename(filename)
+        if path is None:
+            return None
         self.set_header('Content-Type', 'application/x-osu-beatmap')
         self.set_header('Content-Disposition', f'attachment; filename="{path["filename"]}"')
         with open(path['path'], 'rb') as f:
