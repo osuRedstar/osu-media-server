@@ -153,6 +153,12 @@ class webMapsHandler(tornado.web.RequestHandler):
         with open(path['path'], 'rb') as f:
             self.write(f.read())
 
+class searchHandler(tornado.web.RequestHandler):
+    def get(self, q):
+        request_msg(self)
+        log.debug(self.request.uri)
+        self.render("templates/mirror.html", cheesegullUrlParam=self.request.uri)
+
 def make_app():
     return tornado.web.Application([
         (r"/", MainHandler),
@@ -170,6 +176,7 @@ def make_app():
         (r"/robots.txt", robots_txt),
         (r"/status", StatusHandler),
         (r"/web/maps/(.*)", webMapsHandler),
+        (r"/search(.*)", searchHandler),
     ])
 
 if __name__ == "__main__":
