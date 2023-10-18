@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RedstarOSU's mediaserver mirror</title>
+</head>
+<body>
+    <div id = "div" style="text-align: center;">
+        <h1 id = "h1id">
+            "Roading..."
+        </h1>
+    </div>
+
+    <!-- <script src="../static/js/index.js"></script> -->
+
+    <script>
+        function rs() {
+            let h = window.outerHeight
+            let w = window.outerWidth
+            console.log(`${w} x ${h}`)
+
+            const img = document.getElementById("rsm")
+            img.style.marginTop = `${h / 4}px`
+
+            const img_resize = document.getElementsByClassName("image")
+            for (let i = 0; i < img_resize.length; i++) {
+                img_resize[i].height = h / 10
+            }
+        }
+        rs()
+        window.addEventListener("resize", rs)
+
+        function imgRs(w) {
+            return w / 3.2
+        }
+    </script>
+
+    <script>
+        const url = `https://cheesegull.redstar.moe/api{{ cheesegullUrlParam }}`
+        fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            const div = document.getElementById("div")
+
+            console.log(url)
+            console.log(data)
+            //console.log(data[0]["Title"])
+            for (const i of data) {
+                //console.log(i["Title"])
+
+                const h1 = document.createElement("h1")
+                const a = document.createElement("a")
+                const img = document.createElement("img")
+                const br = document.createElement("br")
+
+                a.href = `https://redstar.moe/d/${i["SetID"]}`
+                a.target = "_blank"
+                a.style.color = "green"
+
+                img.src = `https://b.redstar.moe/bg/+${i["SetID"]}`
+                img.width = imgRs(window.outerWidth)
+
+                a.appendChild(img)
+                a.appendChild(br)
+
+                a.appendChild(document.createTextNode(`${i["Artist"]} - ${i["Title"]}`)) // 텍스트 노드를 추가합니다.
+
+                h1.appendChild(a)
+
+                div.appendChild(h1)
+                div.appendChild(document.createElement("br"))
+                div.appendChild(document.createElement("br"))
+            }
+        })
+        .catch(error => {
+            console.error('데이터 가져오기 실패', error);
+        });
+    </script>
+</body>
+</html>
