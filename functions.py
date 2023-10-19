@@ -20,11 +20,34 @@ def calculate_md5(filename):
             md5.update(data)
     return md5.hexdigest()
 
+def getDB(val, fro, where, where_val, fetchall=False):
+    sql = f"SELECT {val} FROM {fro} WHERE {where} = '{where_val}'"
+    cursor.execute(sql)
+    if fetchall:
+        return cursor.fetchall()
+    else:
+        return cursor.fetchone()[0]
+
 requestHeaders = {"User-Agent": "RedstarOSU's MediaServer (python request) | https://b.redstar.moe"}
 
 conf = config.config("config.ini")
+
+DB_HOST = conf.config["db"]["host"]
+DB_PORT = int(conf.config["db"]["port"])
+DB_USERNAME = conf.config["db"]["username"]
+DB_PASSWORD = conf.config["db"]["password"]
+DB_DATABASE = conf.config["db"]["database"]
+DB_DATABASE_CHEESEGULL = conf.config["db"]["database-cheesegull"]
+OSU_APIKEY = conf.config["osu"]["apikey"]
 #lets.py 형태의 사설서버를 소유중이면 lets\.data\beatmaps 에서만 .osu 파일을 가져옴
 IS_YOU_HAVE_OSU_PRIVATE_SERVER = bool(conf.config["osu"]["IS_YOU_HAVE_OSU_PRIVATE_SERVER_WITH_lets.py"])
+
+try:
+    db = pymysql.connect(host=DB_HOST, port=DB_PORT, user=DB_USERNAME, passwd=DB_PASSWORD, db=DB_DATABASE_CHEESEGULL, charset='utf8')
+    cursor = db.cursor()
+except:
+    log.error("cheesegull DB 연결 실패!")
+    exit()
 
 def folder_check():
     if not os.path.isdir("data"):
@@ -85,7 +108,7 @@ def osu_file_read(setID, rq_type, moving=False):
             if not line: break
 
             #ㅈ같은 osu file format < osu file format v10 은 거르쟈 시발련들아
-            if "osu file format" in line and not underV10:
+            if "osu file format" in line:
                 osu_file_format_version = line.replace("osu file format v", "")
 
                 # BOM 문자 제거
@@ -95,11 +118,10 @@ def osu_file_read(setID, rq_type, moving=False):
                 if int(osu_file_format_version) < 10:
                     underV10 = True
                     log.error(f"{setID} 비트맵셋의 어떤 비트맵은 시이이이이발 osu file format 이 10이하 ({osu_file_format_version}) 이네요? 시발련들아?")
-                    oldMapInfo = requests.get(f"https://cheesegull.redstar.moe/api/md5/{beatmap_md5}", headers=requestHeaders)
-                    oldMapInfo = oldMapInfo.json()
-                    log.info(f"{setID} 틀딱곡 Redstar cheesegull에서 조회완료")
-            
-                    temp["BeatmapID"] = int(oldMapInfo["BeatmapID"])
+
+                    temp["BeatmapID"] = getDB(val="id", fro="cheesegull.beatmaps", where="file_md5", where_val=beatmap_md5, fetchall=False)
+
+                    log.info(f"{setID} 틀딱곡 cheesegull db에서 조회완료")
                     log.warning(f"{setID}/{temp['BeatmapID']} 틀딱곡 BeatmapID 세팅 완료")
                     #first_bid 선별
                     if first_bid == 0:
@@ -117,10 +139,8 @@ def osu_file_read(setID, rq_type, moving=False):
                     #중복 bid, bid <= 0
                     if int(i["BeatmapID"]) == temp["BeatmapID"] or temp["BeatmapID"] <= 0:
                         #확실하게 bid 얻기
-                        oldMapInfo = requests.get(f"https://cheesegull.redstar.moe/api/md5/{beatmap_md5}", headers=requestHeaders)
-                        oldMapInfo = oldMapInfo.json()
-                        log.error(f".osu 파일들에서 중복 bid 감지! or .osu 파일에서 bid 값이 <= 0 임 | cheesegull에서 bid 조회함")
-                        temp["BeatmapID"] = int(oldMapInfo["BeatmapID"])
+                        temp["BeatmapID"] = getDB(val="id", fro="cheesegull.beatmaps", where="file_md5", where_val=beatmap_md5, fetchall=False)
+                        log.error(f".osu 파일들에서 중복 bid 감지! or .osu 파일에서 bid 값이 <= 0 임 | cheesegull db에서 bid 조회함")
 
                 #first_bid 선별
                 if first_bid == 0:
@@ -302,7 +322,7 @@ def check(setID, rq_type):
             else:
                 log.error(f'{res.status_code}. 파일을 다운로드할 수 없습니다. chimu로 재시도!')
                 limit += 1
-                if limit < 5:
+                if limit < 3:
                     dl(1, limit)
                 else:
                     log.warning(f"다운로드 요청 자체 limit 걸음! {limit}번 요청함")
@@ -359,9 +379,8 @@ def read_bg(id):
             return read_bg(f"+{id}")
         return f"data/bg/{id}/{file_list[0]}"
     else:
-        bsid = requests.get(f"https://cheesegull.redstar.moe/api/b/{id}", headers=requestHeaders)
-        bsid = bsid.json()["ParentSetID"]
-        log.info(f"{id} bid Redstar cheesegull 조회로 {bsid} bsid 얻음")
+        bsid = getDB(val="parent_set_id", fro="cheesegull.beatmaps", where="id", where_val=id, fetchall=False)
+        log.info(f"{id} bid cheesegull db 조회로 {bsid} bsid 얻음")
 
         #bg폴더 파일 체크
         if not os.path.isdir(f"data/bg/{bsid}"):
@@ -435,9 +454,8 @@ def read_audio(id):
             return read_audio(f"+{id}")
         return f"data/audio/{id}/{file_list[0]}"
     else:
-        bsid = requests.get(f"https://cheesegull.redstar.moe/api/b/{id}", headers=requestHeaders)
-        bsid = bsid.json()["ParentSetID"]
-        log.info(f"{id} bid Redstar cheesegull 조회로 {bsid} bsid 얻음")
+        bsid = getDB(val="parent_set_id", fro="cheesegull.beatmaps", where="id", where_val=id, fetchall=False)
+        log.info(f"{id} bid cheesegull db 조회로 {bsid} bsid 얻음")
 
         #audio폴더 파일 체크
         if not os.path.isdir(f"data/audio/{bsid}"):
@@ -481,16 +499,16 @@ def read_preview(id):
     return f"data/preview/{setID}/{id}"
 
 def read_video(id):
-        bsid = requests.get(f"https://cheesegull.redstar.moe/api/b/{id}", headers=requestHeaders)
-        bsid = bsid.json()["ParentSetID"]
+        bsid = getDB(val="parent_set_id", fro="cheesegull.beatmaps", where="id", where_val=id, fetchall=False)
         try:
-            apikey = conf.config["osu"]["apikey"]
-            hasVideo = requests.get(f"https://osu.ppy.sh/api/get_beatmaps?k={apikey}&b={id}", headers=requestHeaders)
+            #hasVideo = getDB(val="has_video", fro="cheesegull.sets", where="id", where_val=bsid, fetchall=False)
+            #반초로 조회함
+            hasVideo = requests.get(f"https://osu.ppy.sh/api/get_beatmaps?k={OSU_APIKEY}&b={id}", headers=requestHeaders)
             hasVideo = hasVideo.json()[0]["video"]
         except:
             try:
                 log.warning(f"{id} 해당 비트맵은 반초 API에서 조회가 되지 않습니다! | .osu 파일에 비디오 있나 체크")
-                log.info(f"{id} bid Redstar cheesegull 조회로 {bsid} bsid 얻음")
+                log.info(f"{id} bid cheesegull db 조회로 {bsid} bsid 얻음")
                 ismp4 = osu_file_read(bsid, rq_type="video")
                 #사실 의미 없음
                 hasVideo = ismp4[2][0]["BeatmapVideo"]
@@ -498,8 +516,8 @@ def read_video(id):
                 log.error(f"{id} 해당 비트맵은 .osu 파일에서도 mp4가 발견되지 않음")
                 return f"{id} Beatmap doesn't exist on Bancho API!"
             
-        #type = str
-        if hasVideo == "0":
+        #type = str --> type = int
+        if hasVideo == 0:
             return f"{id} Beatmap has no video!"
         
         #video폴더 파일 체크
@@ -518,7 +536,7 @@ def read_video(id):
                 return read_video(id)
             return f"data/video/{bsid}/{file_list[0]}"
         except:
-            return "NODATA"
+            return "ERROR NODATA"
 
 def read_osz(id):
     if os.path.isfile(f"data/dl/{get_osz_fullName(id)}"):
@@ -531,9 +549,8 @@ def read_osz(id):
             return 0
 
 def read_osz_b(id):
-    bsid = requests.get(f"https://cheesegull.redstar.moe/api/b/{id}", headers=requestHeaders)
-    bsid = bsid.json()["ParentSetID"]
-    log.info(f"{id} bid Redstar cheesegull 조회로 {bsid} bsid 얻음")
+    bsid = getDB(val="parent_set_id", fro="cheesegull.beatmaps", where="id", where_val=id, fetchall=False)
+    log.info(f"{id} bid cheesegull db 조회로 {bsid} bsid 얻음")
 
     if os.path.isfile(f"data/dl/{get_osz_fullName(bsid)}"):
         return {"path": f"data/dl/{get_osz_fullName(bsid)}", "filename": get_osz_fullName(bsid)}
@@ -545,10 +562,9 @@ def read_osz_b(id):
             return 0
 
 def read_osu(id):
-    bsid = requests.get(f"https://cheesegull.redstar.moe/api/b/{id}", headers=requestHeaders)
-    bsid = bsid.json()["ParentSetID"]
+    bsid = getDB(val="parent_set_id", fro="cheesegull.beatmaps", where="id", where_val=id, fetchall=False)
 
-    log.info(f"{id} bid Redstar cheesegull 조회로 {bsid} bsid 얻음")
+    log.info(f"{id} bid cheesegull db 조회로 {bsid} bsid 얻음")
 
     #B:\redstar\lets\.data\beatmaps 우선시함
     if os.path.isfile(f"B:/redstar/lets/.data/beatmaps/{id}.osu"):
@@ -567,11 +583,6 @@ def read_osu(id):
         return read_osu(id)
 
 def read_osu_filename(filename):
-    try:
-        dbc = pymysql.connect(host=conf.config["db"]["host"], port=int(conf.config["db"]["port"]), user=conf.config["db"]["username"], passwd=conf.config["db"]["password"], db=conf.config["db"]["database-cheesegull"], charset='utf8')
-        cursor = dbc.cursor()
-    except:
-        log.error("read_osu_filename() | DB 연결 실패!")
     try:
         artist = filename[:filename.find(" - ")]
         title = filename[(filename.find(" - ") + 3):filename.find(" (")]
