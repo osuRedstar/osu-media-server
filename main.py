@@ -81,6 +81,7 @@ class VideoHandler(tornado.web.RequestHandler):
             with open(readed_read_video, 'rb') as f:
                 self.write(f.read())
         else:
+            self.set_status(404)
             self.write({"code": 404, "message": "Sorry Beatmap has no videos", "funcmsg": readed_read_video})
 
 class OszHandler(tornado.web.RequestHandler):
