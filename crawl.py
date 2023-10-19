@@ -5,6 +5,14 @@ import time
 from lets_common_log import logUtils as log
 import config
 import pymysql
+from time import localtime, strftime
+
+def txtLOG_errorAdded(msg):
+    # .txt로 로그 남기기
+    # 파일을 추가 모드로 열고 데이터 추가하기
+    log.error(msg)
+    with open('crawl log.txt', 'a') as file:
+        file.write(f'[{strftime("%Y-%m-%d %H:%M:%S", localtime())}] - {msg}\n\n')
 
 start = time.time()
 
@@ -37,7 +45,7 @@ Header = {
         i = i[0]
         r = requests.get(f"https://b.redstar.moe/bg/+{i}", headers=Header)
         if r.status_code != 200:
-            log.error(f"bsid = +{i} | status_code = {r.status_code}")
+            txtLOG_errorAdded(f"bsid = +{i} | status_code = {r.status_code}")
 
         time.sleep(1) """
 
@@ -46,11 +54,11 @@ def thumb():
         i = i[0]
         r = requests.get(f"https://b.redstar.moe/thumb/{i}l.jpg", headers=Header)
         if r.status_code != 200:
-            log.error(f"bsid = {i}l.jpg | status_code = {r.status_code}")
+            txtLOG_errorAdded(f"bsid = {i}l.jpg | status_code = {r.status_code}")
 
         r2 = requests.get(f"https://b.redstar.moe/thumb/{i}.jpg", headers=Header)
         if r2.status_code != 200:
-            log.error(f"bsid = {i}.jpg | status_code = {r2.status_code}")
+            txtLOG_errorAdded(f"bsid = {i}.jpg | status_code = {r2.status_code}")
 
         time.sleep(1)
 
@@ -59,7 +67,7 @@ def preview():
         i = i[0]
         r = requests.get(f"https://b.redstar.moe/preview/{i}.mp3", headers=Header)
         if r.status_code != 200:
-            log.error(f"bsid = {i}.mp3 | status_code = {r.status_code}")
+            txtLOG_errorAdded(f"bsid = {i}.mp3 | status_code = {r.status_code}")
 
         time.sleep(1)
 
