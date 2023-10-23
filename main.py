@@ -42,7 +42,7 @@ class MainHandler(tornado.web.RequestHandler):
 class ListHandler(tornado.web.RequestHandler):
     def get(self):
         request_msg(self)
-        self.set_header("return-filename", None)
+        self.set_header("return-filename", "")
         self.write(read_list())
 
 class BgHandler(tornado.web.RequestHandler):
@@ -138,7 +138,7 @@ class FaviconHandler(tornado.web.RequestHandler):
 class StaticHandler(tornado.web.RequestHandler):
     def get(self, item):
         request_msg(self)
-        self.set_header("return-filename", None)
+        self.set_header("return-filename", "")
         with open(f"static/{item}", 'rb') as f:
                 self.write(f.read())
 
@@ -153,7 +153,7 @@ class robots_txt(tornado.web.RequestHandler):
 class StatusHandler(tornado.web.RequestHandler):
     def get(self):
         request_msg(self)
-        self.set_header("return-filename", None)
+        self.set_header("return-filename", "")
         self.write({"code": 200, "oszCount": read_list()["osz"]["count"]})
 
 class webMapsHandler(tornado.web.RequestHandler):
