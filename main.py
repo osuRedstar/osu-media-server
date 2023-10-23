@@ -36,16 +36,19 @@ def request_msg(self):
 class MainHandler(tornado.web.RequestHandler):
     def get(self):
         request_msg(self)
+        self.set_header("return-filename", "index.html")
         self.render("templates/index.html")
 
 class ListHandler(tornado.web.RequestHandler):
     def get(self):
         request_msg(self)
+        self.set_header("return-filename", None)
         self.write(read_list())
 
 class BgHandler(tornado.web.RequestHandler):
     def get(self, id):
         request_msg(self)
+        self.set_header("return-filename", id)
         self.set_header('Content-Type', 'image/jpeg')
         with open(read_bg(id), 'rb') as f:
             self.write(f.read())
@@ -54,6 +57,7 @@ class BgHandler(tornado.web.RequestHandler):
 class ThumbHandler(tornado.web.RequestHandler):
     def get(self, id):
         request_msg(self)
+        self.set_header("return-filename", id)
         self.set_header('Content-Type', 'image/jpeg')
         with open(read_thumb(id), 'rb') as f:
             self.write(f.read())
@@ -61,6 +65,7 @@ class ThumbHandler(tornado.web.RequestHandler):
 class PreviewHandler(tornado.web.RequestHandler):
     def get(self, id):
         request_msg(self)
+        self.set_header("return-filename", id)
         self.set_header('Content-Type', 'audio/mp3')
         with open(read_audio(id), 'rb') as f:
             self.write(f.read())
@@ -68,6 +73,7 @@ class PreviewHandler(tornado.web.RequestHandler):
 class AudioHandler(tornado.web.RequestHandler):
     def get(self, id):
         request_msg(self)
+        self.set_header("return-filename", id)
         self.set_header('Content-Type', 'audio/mpeg')
         with open(read_preview(id), 'rb') as f:
             self.write(f.read())
@@ -77,6 +83,7 @@ class VideoHandler(tornado.web.RequestHandler):
         request_msg(self)
         readed_read_video = read_video(id)
         if readed_read_video.endswith(".mp4"):
+            self.set_header("return-filename", id)
             self.set_header('Content-Type', 'video/mp4')
             with open(readed_read_video, 'rb') as f:
                 self.write(f.read())
@@ -91,6 +98,7 @@ class OszHandler(tornado.web.RequestHandler):
         if path == 0:
             self.write("ERROR")
         else:
+            self.set_header("return-filename", path["filename"])
             self.set_header('Content-Type', 'application/x-osu-beatmap-archive')
             self.set_header('Content-Disposition', f'attachment; filename="{path["filename"]}"')
             with open(path['path'], 'rb') as f:
@@ -103,6 +111,7 @@ class OszBHandler(tornado.web.RequestHandler):
         if path == 0:
             self.write("ERROR")
         else:
+            self.set_header("return-filename", path["filename"])
             self.set_header('Content-Type', 'application/x-osu-beatmap-archive')
             self.set_header('Content-Disposition', f'attachment; filename="{path["filename"]}"')
             with open(path['path'], 'rb') as f:
@@ -112,6 +121,7 @@ class OsuHandler(tornado.web.RequestHandler):
     def get(self, id):
         request_msg(self)
         path = read_osu(id)
+        self.set_header("return-filename", path["filename"])
         self.set_header('Content-Type', 'application/x-osu-beatmap')
         self.set_header('Content-Disposition', f'attachment; filename="{path["filename"]}"')
         with open(path['path'], 'rb') as f:
@@ -120,6 +130,7 @@ class OsuHandler(tornado.web.RequestHandler):
 class FaviconHandler(tornado.web.RequestHandler):
     def get(self):
         request_msg(self)
+        self.set_header("return-filename", "favicon.png")
         self.set_header('Content-Type', 'image/png')
         with open("static/img/favicon.png", 'rb') as f:
             self.write(f.read())
@@ -127,6 +138,7 @@ class FaviconHandler(tornado.web.RequestHandler):
 class StaticHandler(tornado.web.RequestHandler):
     def get(self, item):
         request_msg(self)
+        self.set_header("return-filename", None)
         with open(f"static/{item}", 'rb') as f:
                 self.write(f.read())
 
@@ -134,12 +146,14 @@ class robots_txt(tornado.web.RequestHandler):
     def get(self):
         request_msg(self)
         with open("robots.txt", 'rb') as f:
+                self.set_header("return-filename", "robots.txt")
                 self.set_header("Content-Type", "text/plain")
                 self.write(f.read())
 
 class StatusHandler(tornado.web.RequestHandler):
     def get(self):
         request_msg(self)
+        self.set_header("return-filename", None)
         self.write({"code": 200, "oszCount": read_list()["osz"]["count"]})
 
 class webMapsHandler(tornado.web.RequestHandler):
@@ -149,6 +163,7 @@ class webMapsHandler(tornado.web.RequestHandler):
         path = read_osu_filename(filename)
         if path is None:
             return None
+        self.set_header("return-filename", path["filename"])
         self.set_header('Content-Type', 'application/x-osu-beatmap')
         self.set_header('Content-Disposition', f'attachment; filename="{path["filename"]}"')
         with open(path['path'], 'rb') as f:
@@ -158,6 +173,7 @@ class searchHandler(tornado.web.RequestHandler):
     def get(self, q):
         request_msg(self)
         log.debug(self.request.uri)
+        self.set_header("return-filename", "mirror.html")
         self.render("templates/mirror.html", cheesegullUrlParam=self.request.uri)
 
 def make_app():
