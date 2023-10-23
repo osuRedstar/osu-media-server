@@ -319,7 +319,7 @@ def check(setID, rq_type):
 
                 # tqdm을 사용하여 진행률 표시
                 with open(save_path + file_name, 'wb') as file:
-                    with tqdm(total=file_size, unit='B', unit_scale=True, unit_divisor=1024) as pbar:
+                    with tqdm(total=file_size, unit='B', unit_scale=True, unit_divisor=1024, ncols=120) as pbar:
                         for data in res.iter_content(1024):
                             file.write(data)
                             pbar.update(len(data))
