@@ -300,6 +300,10 @@ def check(setID, rq_type):
     fullSongName = get_osz_fullName(setID)
     log.debug(fullSongName)
 
+    if fullSongName == f"{setID} .osz":
+        log.error(f"{fullSongName} | 존재는 하나 꺠지거나 문제가 있음. 재 다운로드중...")
+        fullSongName = 0
+
     if fullSongName == 0:
         log.warning(f"{setID} 맵셋 osz 존재하지 않음. 다운로드중...")
         
