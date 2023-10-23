@@ -9,6 +9,7 @@ import config
 from PIL import Image
 import pymysql
 import hashlib
+import re
 
 #beatmap_md5
 def calculate_md5(filename):
@@ -581,9 +582,19 @@ def read_osu(id):
     #B:\redstar\lets\.data\beatmaps 우선시함
     if os.path.isfile(f"B:/redstar/lets/.data/beatmaps/{id}.osu"):
         log.info(f"{id}.osu 파일을 B:/redstar/lets/.data/beatmaps/{id}.osu에서 먼저 찾아서 반환함")
-        filename = requests.get(f"https://old.redstar.moe/letsapi/v1/pp?b={id}", headers=requestHeaders).json()
-        filename = filename["song_name"] + ".osu"
-        return {"path": f"B:/redstar/lets/.data/beatmaps/{id}.osu", "filename": filename}
+        
+        sql = f'''
+            SELECT CONCAT(s.artist, ' - ', s.title, ' (', s.creator, ') [', b.diff_name, ']' '.osu') AS filename
+            FROM sets AS s
+            JOIN beatmaps AS b ON s.id = b.parent_set_id
+            WHERE b.id = {id}
+        '''
+        cursor.execute(sql)
+        filename = cursor.fetchone()
+        if filename is None:
+            log.error(f"filename is None | sql = {sql}")
+            return None
+        return {"path": f"B:/redstar/lets/.data/beatmaps/{id}.osu", "filename": filename[0]}
     else:
         check(bsid, rq_type=f"read_osu_{id}")
         return read_osu(id)
@@ -596,12 +607,35 @@ def read_osu(id):
 
 def filename_to_GetCheesegullDB(filename):
     try:
+        parentheses = filename.count(" (")
+        if parentheses == 1:
+            # 정규식 패턴
+            pattern = r"^(.+) - (.+) \(([^)]+)\) \[([^]]+)\]\.osu$"
+            match = re.match(pattern, filename)
+
+            artist = match.group(1)
+            title = match.group(2)
+            creator = match.group(3)
+            version = match.group(4)
+        else:
+            # 정규식 패턴
+            pattern = r"^(.+) - (.+) (\([^()]+\)) \(([^()]+)\) \[([^]]+)\]\.osu$"
+            match = re.match(pattern, filename)
+
+            artist = match.group(1)
+            title = f"{match.group(2)} {match.group(3)}"
+            creator = match.group(4)
+            version = match.group(5)
+    except:
+        log.error("osu filename에서 artist, title, creator, version 추출중 에러")
+
+    """ try:
         artist = filename[:filename.find(" - ")]
         title = filename[(filename.find(" - ") + 3):filename.find(" (")]
         creator = filename[(filename.find(" (") + 1 + 1):(filename.find(") ["))]
         version = filename[(filename.find(") [") + 1 + 2):filename.find("].osu")]
     except:
-        log.error("osu filename에서 artist, title, creator, version 추출중 에러")
+        log.error("osu filename에서 artist, title, creator, version 추출중 에러") """
 
     # filename에 / 가 들어가면 에러남 (http 요청시 / 가 사라짐)
     sql = f'''
@@ -613,11 +647,12 @@ def filename_to_GetCheesegullDB(filename):
     cursor.execute(sql)
     result = cursor.fetchone()
     if result is None:
+        log.error(f"result is None | sql = {sql}")
         return None
     return result
 
 def read_osu_filename(filename):
-    result = filename_to_cheesegullDB(filename)
+    result = filename_to_GetCheesegullDB(filename)
     if result is None:
         return None
     bid = result[0]
