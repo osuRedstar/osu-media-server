@@ -3,6 +3,7 @@ import zipfile
 import os
 import shutil
 import requests
+from tqdm import tqdm
 from urllib.request import urlretrieve
 import config
 from PIL import Image
@@ -119,7 +120,8 @@ def osu_file_read(setID, rq_type, moving=False):
                     underV10 = True
                     log.error(f"{setID} 비트맵셋의 어떤 비트맵은 시이이이이발 osu file format 이 10이하 ({osu_file_format_version}) 이네요? 시발련들아?")
 
-                    temp["BeatmapID"] = getDB(val="id", fro="cheesegull.beatmaps", where="file_md5", where_val=beatmap_md5, fetchall=False)
+                    #temp["BeatmapID"] = getDB(val="id", fro="cheesegull.beatmaps", where="file_md5", where_val=beatmap_md5, fetchall=False)
+                    temp["BeatmapID"] = filename_to_GetCheesegullDB(beatmapName)[0]
 
                     log.info(f"{setID} 틀딱곡 cheesegull db에서 조회완료")
                     log.warning(f"{setID}/{temp['BeatmapID']} 틀딱곡 BeatmapID 세팅 완료")
@@ -139,7 +141,8 @@ def osu_file_read(setID, rq_type, moving=False):
                     #중복 bid, bid <= 0
                     if int(i["BeatmapID"]) == temp["BeatmapID"] or temp["BeatmapID"] <= 0:
                         #확실하게 bid 얻기
-                        temp["BeatmapID"] = getDB(val="id", fro="cheesegull.beatmaps", where="file_md5", where_val=beatmap_md5, fetchall=False)
+                        #temp["BeatmapID"] = getDB(val="id", fro="cheesegull.beatmaps", where="file_md5", where_val=beatmap_md5, fetchall=False)
+                        temp["BeatmapID"] = filename_to_GetCheesegullDB(beatmapName)[0]
                         log.error(f".osu 파일들에서 중복 bid 감지! or .osu 파일에서 bid 값이 <= 0 임 | cheesegull db에서 bid 조회함")
 
                 #first_bid 선별
@@ -306,10 +309,19 @@ def check(setID, rq_type):
             #우선 setID .osz로 다운받고 나중에 파일 이름 변경
             file_name = f'{setID} .osz' #919187 765 MILLION ALLSTARS - UNION!!.osz, 2052147 (Love Live! series) - Colorful Dreams! Colorful Smiles! _  TV2
             save_path = 'data/dl/'  # 원하는 저장 경로로 변경
-            res = requests.get(url[site], headers=requestHeaders)
+            
+            # 파일 다운로드 요청
+            res = requests.get(url[site], headers=requestHeaders, stream=True)
             if res.status_code == 200:
-                with open(save_path + file_name, 'wb') as f:
-                    f.write(res.content)
+                # 파일 크기를 얻습니다.
+                file_size = int(res.headers.get('content-length', 0))
+
+                # tqdm을 사용하여 진행률 표시
+                with open(save_path + file_name, 'wb') as file:
+                    with tqdm(total=file_size, unit='B', unit_scale=True, unit_divisor=1024) as pbar:
+                        for data in res.iter_content(1024):
+                            file.write(data)
+                            pbar.update(len(data))
 
                 header_filename = res.headers['content-disposition']
                 newFilename = header_filename[header_filename.find('filename='):].replace("filename=", "").replace('"', "")
@@ -582,14 +594,14 @@ def read_osu(id):
         check(bsid, rq_type=f"read_osu_{id}")
         return read_osu(id)
 
-def read_osu_filename(filename):
+def filename_to_GetCheesegullDB(filename):
     try:
         artist = filename[:filename.find(" - ")]
         title = filename[(filename.find(" - ") + 3):filename.find(" (")]
         creator = filename[(filename.find(" (") + 1 + 1):(filename.find(") ["))]
         version = filename[(filename.find(") [") + 1 + 2):filename.find("].osu")]
     except:
-        log.error("read_osu_filename | osu filename에서 추출중 에러")
+        log.error("osu filename에서 artist, title, creator, version 추출중 에러")
 
     # filename에 / 가 들어가면 에러남 (http 요청시 / 가 사라짐)
     sql = f'''
@@ -600,6 +612,12 @@ def read_osu_filename(filename):
     '''
     cursor.execute(sql)
     result = cursor.fetchone()
+    if result is None:
+        return None
+    return result
+
+def read_osu_filename(filename):
+    result = filename_to_cheesegullDB(filename)
     if result is None:
         return None
     bid = result[0]
