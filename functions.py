@@ -556,12 +556,14 @@ def read_video(id):
             return "ERROR NODATA"
 
 def read_osz(id):
-    if os.path.isfile(f"data/dl/{get_osz_fullName(id)}"):
-        return {"path": f"data/dl/{get_osz_fullName(id)}", "filename": get_osz_fullName(id)}
+    filename = get_osz_fullName(id)
+    if filename != f"{id} .osz" and os.path.isfile(f"data/dl/{filename}"):
+        return {"path": f"data/dl/{filename}", "filename": filename}
     else:
         check(id, rq_type="osz")
-        if os.path.isfile(f"data/dl/{get_osz_fullName(id)}"):
-            return {"path": f"data/dl/{get_osz_fullName(id)}", "filename": get_osz_fullName(id)}
+        newFilename = get_osz_fullName(id)
+        if os.path.isfile(f"data/dl/{newFilename}"):
+            return {"path": f"data/dl/{newFilename}", "filename": newFilename}
         else:
             return 0
 
@@ -569,12 +571,14 @@ def read_osz_b(id):
     bsid = getDB(val="parent_set_id", fro="cheesegull.beatmaps", where="id", where_val=id, fetchall=False)
     log.info(f"{id} bid cheesegull db 조회로 {bsid} bsid 얻음")
 
-    if os.path.isfile(f"data/dl/{get_osz_fullName(bsid)}"):
-        return {"path": f"data/dl/{get_osz_fullName(bsid)}", "filename": get_osz_fullName(bsid)}
+    filename = get_osz_fullName(bsid)
+    if filename != f"{bsid} .osz" and os.path.isfile(f"data/dl/{filename}"):
+        return {"path": f"data/dl/{filename}", "filename": filename}
     else:
         check(bsid, "osz")
-        if os.path.isfile(f"data/dl/{get_osz_fullName(bsid)}"):
-            return {"path": f"data/dl/{get_osz_fullName(bsid)}", "filename": get_osz_fullName(bsid)}
+        newFilename = get_osz_fullName(bsid)
+        if os.path.isfile(f"data/dl/{newFilename}"):
+            return {"path": f"data/dl/{newFilename}", "filename": newFilename}
         else:
             return 0
 
