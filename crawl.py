@@ -31,7 +31,7 @@ except:
     log.error("DB 연결 실패!")
 
 
-cursor.execute(f"SELECT id FROM cheesegull.sets WHERE id >= 8016 ORDER BY id")
+cursor.execute(f"SELECT id FROM cheesegull.sets WHERE id >= 35975 ORDER BY id")
 SetID = cursor.fetchall()
 
 log.debug(f"len(SetID) = {len(SetID)}")
@@ -43,7 +43,7 @@ Header = {
 """ def bg():
     for i in SetID:
         i = i[0]
-        r = requests.get(f"https://b.redstar.moe/bg/+{i}", headers=Header)
+        r = requests.get(f"http://localhost:6199/bg/+{i}", headers=Header)
         if r.status_code != 200:
             txtLOG_errorAdded(f"bsid = +{i} | status_code = {r.status_code}")
 
@@ -52,11 +52,11 @@ Header = {
 def thumb():
     for i in SetID:
         i = i[0]
-        r = requests.get(f"https://b.redstar.moe/thumb/{i}l.jpg", headers=Header)
+        r = requests.get(f"http://localhost:6199/thumb/{i}l.jpg", headers=Header)
         if r.status_code != 200:
             txtLOG_errorAdded(f"bsid = {i}l.jpg | status_code = {r.status_code}")
 
-        r2 = requests.get(f"https://b.redstar.moe/thumb/{i}.jpg", headers=Header)
+        r2 = requests.get(f"http://localhost:6199/thumb/{i}.jpg", headers=Header)
         if r2.status_code != 200:
             txtLOG_errorAdded(f"bsid = {i}.jpg | status_code = {r2.status_code}")
 
@@ -65,7 +65,7 @@ def thumb():
 def preview():
     for i in SetID:
         i = i[0]
-        r = requests.get(f"https://b.redstar.moe/preview/{i}.mp3", headers=Header)
+        r = requests.get(f"http://localhost:6199/preview/{i}.mp3", headers=Header)
         if r.status_code != 200:
             txtLOG_errorAdded(f"bsid = {i}.mp3 | status_code = {r.status_code}")
 
