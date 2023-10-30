@@ -122,7 +122,20 @@ def osu_file_read(setID, rq_type, moving=False):
                     log.error(f"{setID} 비트맵셋의 어떤 비트맵은 시이이이이발 osu file format 이 10이하 ({osu_file_format_version}) 이네요? 시발련들아?")
 
                     #temp["BeatmapID"] = getDB(val="id", fro="cheesegull.beatmaps", where="file_md5", where_val=beatmap_md5, fetchall=False)
-                    temp["BeatmapID"] = filename_to_GetCheesegullDB(beatmapName)[0]
+                    #temp["BeatmapID"] = filename_to_GetCheesegullDB(beatmapName)[0]
+
+                    # 정규식 패턴
+                    pattern = r'\[([^\]]+)\]\.osu$'
+                    match = re.search(pattern, beatmapName)
+                    if match:
+                        diffname = match.group(1)
+                        sql = "SELECT id FROM beatmaps WHERE parent_set_id = %s AND diff_name = %s"
+                        cursor.execute(sql, (setID, diffname))
+                        result = cursor.fetchone()
+                        if result is None:
+                            log.error(f"result is None | sql = {sql}")
+                            return None
+                        temp["BeatmapID"] = result[0]
 
                     log.info(f"{setID} 틀딱곡 cheesegull db에서 조회완료")
                     log.warning(f"{setID}/{temp['BeatmapID']} 틀딱곡 BeatmapID 세팅 완료")
@@ -143,8 +156,21 @@ def osu_file_read(setID, rq_type, moving=False):
                     if int(i["BeatmapID"]) == temp["BeatmapID"] or temp["BeatmapID"] <= 0:
                         #확실하게 bid 얻기
                         #temp["BeatmapID"] = getDB(val="id", fro="cheesegull.beatmaps", where="file_md5", where_val=beatmap_md5, fetchall=False)
-                        temp["BeatmapID"] = filename_to_GetCheesegullDB(beatmapName)[0]
-                        log.error(f".osu 파일들에서 중복 bid 감지! or .osu 파일에서 bid 값이 <= 0 임 | cheesegull db에서 bid 조회함")
+                        #temp["BeatmapID"] = filename_to_GetCheesegullDB(beatmapName)[0]
+                        # 정규식 패턴
+                        pattern = r'\[([^\]]+)\]\.osu$'
+                        match = re.search(pattern, beatmapName)
+                        if match:
+                            diffname = match.group(1)
+                            sql = "SELECT id FROM beatmaps WHERE parent_set_id = %s AND diff_name = %s"
+                            cursor.execute(sql, (setID, diffname))
+                            result = cursor.fetchone()
+                            if result is None:
+                                log.error(f"result is None | sql = {sql}")
+                                return None
+                            temp["BeatmapID"] = result[0]
+
+                        log.error(f"{i['BeatmapID']} | .osu 파일들에서 중복 bid 감지! or .osu 파일에서 bid 값이 <= 0 임 | cheesegull db에서 bid 조회함")
 
                 #first_bid 선별
                 if first_bid == 0:
