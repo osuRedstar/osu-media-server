@@ -18,10 +18,8 @@ class db:
 
         if DBType.lower() == "redstar":
             self.DB_DATABASE_NOW = self.DB_DATABASE
-            log.debug(f"{DBType} DB로 연결함")
         elif DBType.lower() == "cheesegull":
             self.DB_DATABASE_NOW = self.DB_DATABASE_CHEESEGULL
-            log.debug(f"{DBType} DB로 연결함")
         else:
             self.DB_DATABASE_NOW = self.DB_DATABASE_CHEESEGULL
             log.debug(f"예외 | {DBType} DB로 연결함")
