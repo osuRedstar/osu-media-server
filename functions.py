@@ -342,10 +342,11 @@ def check(setID, rq_type):
                 log.error(f'{res.status_code}. 파일을 다운로드할 수 없습니다. chimu로 재시도!')
                 limit += 1
                 if limit < 3:
-                    dl(1, limit)
+                    return dl(1, limit)
                 else:
                     log.warning(f"다운로드 요청 자체 limit 걸음! {limit}번 요청함")
-        dl(0, limit=0)
+                    return res.status_code
+        return dl(0, limit=0)
     else:
         log.info(f"{get_osz_fullName(setID)} 존재함")
         move_files(setID, rq_type)
@@ -387,14 +388,19 @@ def read_bg(id):
 
         #bg폴더 파일 체크
         if not os.path.isdir(f"data/bg/{id}"):
-            check(id, rq_type="bg")
+            #파일 다운로드시에 500 뜨면 500 코드로 반환 예정, 만약 우리서버 문제면 main.py 에서 503 코드로 반환
+            ck = check(id, rq_type="bg")
+            if ck is not None:
+                return ck
 
         file_list = [file for file in os.listdir(f"data/bg/{id}") if file.startswith("+")]
         try:
             type(file_list[0])
         except:
             log.error(f"bsid = {id} | BG type(file_list[0]) 에러")
-            check(id, rq_type="bg")
+            ck = check(id, rq_type="bg")
+            if ck is not None:
+                return ck
             return read_bg(f"+{id}")
         return f"data/bg/{id}/{file_list[0]}"
     else:
@@ -403,14 +409,18 @@ def read_bg(id):
 
         #bg폴더 파일 체크
         if not os.path.isdir(f"data/bg/{bsid}"):
-            check(bsid, rq_type="bg")
+            ck = check(bsid, rq_type="bg")
+            if ck is not None:
+                return ck
 
         file_list = [file for file in os.listdir(f"data/bg/{bsid}") if file.startswith(str(id))]
         try:
             type(file_list[0])
         except:
             log.error(f"bid = {id} | BG type(file_list[0]) 에러")
-            check(bsid, rq_type="bg")
+            ck = check(bsid, rq_type="bg")
+            if ck is not None:
+                return ck
             return read_bg(id)
         return f"data/bg/{bsid}/{file_list[0]}"
     
@@ -427,14 +437,18 @@ def read_thumb(id):
     else:
         #thumb폴더 파일 체크
         if not os.path.isdir(f"data/thumb/{bsid}"):
-            check(bsid, rq_type="thumb")
+            ck = check(bsid, rq_type="thumb")
+            if ck is not None:
+                return ck
 
         file_list = [file for file in os.listdir(f"data/thumb/{bsid}") if file.startswith("+")]
         try:
             type(file_list[0])
         except:
             log.error(f"bsid = {bsid} | thumb type(file_list[0]) 에러")
-            check(bsid, rq_type="thumb")
+            ck = check(bsid, rq_type="thumb")
+            if ck is not None:
+                return ck
             return read_thumb(id)
 
         img = Image.open(f"data/thumb/{bsid}/{file_list[0]}")
@@ -469,7 +483,9 @@ def read_audio(id):
             type(file_list[0])
         except:
             log.error(f"bsid = {id} | audio type(file_list[0]) 에러")
-            check(id, rq_type="audio")
+            ck = check(id, rq_type="audio")
+            if ck is not None:
+                return ck
             return read_audio(f"+{id}")
         return f"data/audio/{id}/{file_list[0]}"
     else:
@@ -478,7 +494,9 @@ def read_audio(id):
 
         #audio폴더 파일 체크
         if not os.path.isdir(f"data/audio/{bsid}"):
-           check(bsid, rq_type="audio")
+            ck = check(bsid, rq_type="audio")
+            if ck is not None:
+                return ck
 
         file_list = [file for file in os.listdir(f"data/audio/{bsid}")]
         try:
@@ -488,7 +506,9 @@ def read_audio(id):
             type(file_list[0])
         except:
             log.error(f"bid = {id} | audio type(file_list[0]) 에러")
-            check(bsid, rq_type="audio")
+            ck = check(bsid, rq_type="audio")
+            if ck is not None:
+                return ck
             return read_audio(id)
         return f"data/audio/{bsid}/{file_list[0]}"
 
@@ -498,7 +518,9 @@ def read_preview(id):
     setID = id.replace(".mp3", "")
         
     if not os.path.isfile(f"data/preview/{setID}/{id}"):
-        check(setID, rq_type="preview")
+        ck = check(setID, rq_type="preview")
+        if ck is not None:
+            return ck
 
         #음원 하이라이트 가져오기, 밀리초라서 / 1000 함
         PreviewTime = -1
@@ -541,7 +563,9 @@ def read_video(id):
         
         #video폴더 파일 체크
         if not os.path.isdir(f"data/video/{bsid}"):
-            check(bsid, rq_type="video")
+            ck = check(bsid, rq_type="video")
+            if ck is not None:
+                return ck
 
         #임시로 try 박아둠, 나중에 반초라던지 비디오 있나 요청하는거로 바꾸기
         try:
@@ -551,7 +575,9 @@ def read_video(id):
                 type(file_list[0])
             except:
                 log.error(f"bid = {id} | video type(file_list[0]) 에러")
-                check(bsid, rq_type="video")
+                ck = check(bsid, rq_type="video")
+                if ck is not None:
+                    return ck
                 return read_video(id)
             return f"data/video/{bsid}/{file_list[0]}"
         except:
@@ -562,7 +588,9 @@ def read_osz(id):
     if filename != f"{id} .osz" and os.path.isfile(f"data/dl/{filename}"):
         return {"path": f"data/dl/{filename}", "filename": filename}
     else:
-        check(id, rq_type="osz")
+        ck = check(id, rq_type="osz")
+        if ck is not None:
+            return ck
         newFilename = get_osz_fullName(id)
         if os.path.isfile(f"data/dl/{newFilename}"):
             return {"path": f"data/dl/{newFilename}", "filename": newFilename}
@@ -577,7 +605,9 @@ def read_osz_b(id):
     if filename != f"{bsid} .osz" and os.path.isfile(f"data/dl/{filename}"):
         return {"path": f"data/dl/{filename}", "filename": filename}
     else:
-        check(bsid, "osz")
+        ck = check(bsid, rq_type="osz")
+        if ck is not None:
+            return ck
         newFilename = get_osz_fullName(bsid)
         if os.path.isfile(f"data/dl/{newFilename}"):
             return {"path": f"data/dl/{newFilename}", "filename": newFilename}
@@ -606,13 +636,17 @@ def read_osu(id):
             return None
         return {"path": f"B:/redstar/lets/.data/beatmaps/{id}.osu", "filename": filename["filename"]}
     else:
-        check(bsid, rq_type=f"read_osu_{id}")
+        ck = check(bsid, rq_type=f"read_osu_{id}")
+        if ck is not None:
+            return ck
         return read_osu(id)
     
     if os.path.isfile(f"data/osu/{bsid}/{id}.osu"):
         return {"path": f"data/osu/{bsid}/{id}.osu", "filename": filename}
     else:
-        check(bsid, rq_type=f"read_osu_{id}")
+        ck = check(bsid, rq_type=f"read_osu_{id}")
+        if ck is not None:
+            return ck
         return read_osu(id)
 
 def filename_to_GetCheesegullDB(filename):
