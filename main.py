@@ -48,84 +48,164 @@ class ListHandler(tornado.web.RequestHandler):
 class BgHandler(tornado.web.RequestHandler):
     def get(self, id):
         request_msg(self)
-        self.set_header("return-filename", id)
-        self.set_header('Content-Type', 'image/jpeg')
-        with open(read_bg(id), 'rb') as f:
-            self.write(f.read())
-        
+        try:
+            file = read_bg(id)
+            if file == 500:
+                self.set_status(500)
+                self.set_header("return-filename", "500.html")
+                self.render("templates/500.html", input=id)
+            else: 
+                self.set_header("return-filename", id)
+                self.set_header('Content-Type', 'image/jpeg')
+                with open(file, 'rb') as f:
+                    self.write(f.read())
+        except:
+            self.set_status(503)
+            self.set_header("return-filename", "503.html")
+            self.render("templates/503.html", input=id)
 
 class ThumbHandler(tornado.web.RequestHandler):
     def get(self, id):
         request_msg(self)
         self.set_header("return-filename", id)
         self.set_header('Content-Type', 'image/jpeg')
-        with open(read_thumb(id), 'rb') as f:
-            self.write(f.read())
+        try:
+            file = read_thumb(id)
+            if file == 500:
+                self.set_status(500)
+                self.set_header("return-filename", "500.html")
+                self.render("templates/500.html", input=id)
+            else:
+                with open(file, 'rb') as f:
+                    self.write(f.read())
+        except:
+            self.set_status(503)
+            self.set_header("return-filename", "503.html")
+            self.render("templates/503.html", input=id)
 
 class PreviewHandler(tornado.web.RequestHandler):
     def get(self, id):
         request_msg(self)
         self.set_header("return-filename", id)
         self.set_header('Content-Type', 'audio/mp3')
-        with open(read_audio(id), 'rb') as f:
-            self.write(f.read())
+        try:
+            file = read_audio(id)
+            if file == 500:
+                self.set_status(500)
+                self.set_header("return-filename", "500.html")
+                self.render("templates/500.html", input=id)
+            else:
+                with open(file, 'rb') as f:
+                    self.write(f.read())
+        except:
+            self.set_status(503)
+            self.set_header("return-filename", "503.html")
+            self.render("templates/503.html", input=id)
 
 class AudioHandler(tornado.web.RequestHandler):
     def get(self, id):
         request_msg(self)
         self.set_header("return-filename", id)
         self.set_header('Content-Type', 'audio/mpeg')
-        with open(read_preview(id), 'rb') as f:
-            self.write(f.read())
+        try:
+            file = read_preview(id)
+            if file == 500:
+                self.set_status(500)
+                self.set_header("return-filename", "500.html")
+                self.render("templates/500.html", input=id)
+            else:
+                with open(file, 'rb') as f:
+                    self.write(f.read())
+        except:
+            self.set_status(503)
+            self.set_header("return-filename", "503.html")
+            self.render("templates/503.html", input=id)
 
 class VideoHandler(tornado.web.RequestHandler):
     def get(self, id):
         request_msg(self)
-        readed_read_video = read_video(id)
-        if readed_read_video.endswith(".mp4"):
-            self.set_header("return-filename", id)
-            self.set_header('Content-Type', 'video/mp4')
-            with open(readed_read_video, 'rb') as f:
-                self.write(f.read())
-        else:
-            self.set_status(404)
-            self.write({"code": 404, "message": "Sorry Beatmap has no videos", "funcmsg": readed_read_video})
+        self.set_header("return-filename", id)
+        self.set_header('Content-Type', 'video/mp4')
+        try:
+            readed_read_video = read_video(id)
+            if readed_read_video == 500:
+                self.set_status(500)
+                self.set_header("return-filename", "500.html")
+                self.render("templates/500.html", input=id)
+            elif readed_read_video.endswith(".mp4"):
+                with open(readed_read_video, 'rb') as f:
+                    self.write(f.read())
+            else:
+                self.set_status(404)
+                self.write({"code": 404, "message": "Sorry Beatmap has no videos", "funcmsg": readed_read_video})
+        except:
+            self.set_status(503)
+            self.set_header("return-filename", "503.html")
+            self.render("templates/503.html", input=id)
 
 class OszHandler(tornado.web.RequestHandler):
     def get(self, id):
         request_msg(self)
-        path = read_osz(id)
-        if path == 0:
-            self.write("ERROR")
-        else:
-            self.set_header("return-filename", path["filename"])
-            self.set_header('Content-Type', 'application/x-osu-beatmap-archive')
-            self.set_header('Content-Disposition', f'attachment; filename="{path["filename"]}"')
-            with open(path['path'], 'rb') as f:
-                self.write(f.read())
+        try:
+            path = read_osz(id)
+            if path == 500:
+                self.set_status(500)
+                self.set_header("return-filename", "500.html")
+                self.render("templates/500.html", input=id)
+            elif path == 0:
+                self.write("ERROR")
+            else:
+                self.set_header("return-filename", path["filename"])
+                self.set_header('Content-Type', 'application/x-osu-beatmap-archive')
+                self.set_header('Content-Disposition', f'attachment; filename="{path["filename"]}"')
+                with open(path['path'], 'rb') as f:
+                    self.write(f.read())
+        except:
+            self.set_status(503)
+            self.set_header("return-filename", "503.html")
+            self.render("templates/503.html", input=id)
 
 class OszBHandler(tornado.web.RequestHandler):
     def get(self, id):
         request_msg(self)
-        path = read_osz_b(id)
-        if path == 0:
-            self.write("ERROR")
-        else:
-            self.set_header("return-filename", path["filename"])
-            self.set_header('Content-Type', 'application/x-osu-beatmap-archive')
-            self.set_header('Content-Disposition', f'attachment; filename="{path["filename"]}"')
-            with open(path['path'], 'rb') as f:
-                self.write(f.read())
+        try:
+            path = read_osz_b(id)
+            if path == 500:
+                self.set_status(500)
+                self.set_header("return-filename", "500.html")
+                self.render("templates/500.html", input=id)
+            elif path == 0:
+                self.write("ERROR")
+            else:
+                self.set_header("return-filename", path["filename"])
+                self.set_header('Content-Type', 'application/x-osu-beatmap-archive')
+                self.set_header('Content-Disposition', f'attachment; filename="{path["filename"]}"')
+                with open(path['path'], 'rb') as f:
+                    self.write(f.read())
+        except:
+            self.set_status(503)
+            self.set_header("return-filename", "503.html")
+            self.render("templates/503.html", input=id)
 
 class OsuHandler(tornado.web.RequestHandler):
     def get(self, id):
         request_msg(self)
-        path = read_osu(id)
-        self.set_header("return-filename", path["filename"])
-        self.set_header('Content-Type', 'application/x-osu-beatmap')
-        self.set_header('Content-Disposition', f'attachment; filename="{path["filename"]}"')
-        with open(path['path'], 'rb') as f:
-            self.write(f.read())
+        try:
+            path = read_osu(id)
+            if path == 500:
+                self.set_status(500)
+                self.set_header("return-filename", "500.html")
+                self.render("templates/500.html", input=id)
+            else:
+                self.set_header("return-filename", path["filename"])
+                self.set_header('Content-Type', 'application/x-osu-beatmap')
+                self.set_header('Content-Disposition', f'attachment; filename="{path["filename"]}"')
+                with open(path['path'], 'rb') as f:
+                    self.write(f.read())
+        except:
+            self.set_status(503)
+            self.set_header("return-filename", "503.html")
+            self.render("templates/503.html", input=id)
 
 class FaviconHandler(tornado.web.RequestHandler):
     def get(self):
@@ -145,10 +225,10 @@ class StaticHandler(tornado.web.RequestHandler):
 class robots_txt(tornado.web.RequestHandler):
     def get(self):
         request_msg(self)
+        self.set_header("return-filename", "robots.txt")
+        self.set_header("Content-Type", "text/plain")
         with open("robots.txt", 'rb') as f:
-                self.set_header("return-filename", "robots.txt")
-                self.set_header("Content-Type", "text/plain")
-                self.write(f.read())
+            self.write(f.read())
 
 class StatusHandler(tornado.web.RequestHandler):
     def get(self):
@@ -159,15 +239,24 @@ class StatusHandler(tornado.web.RequestHandler):
 class webMapsHandler(tornado.web.RequestHandler):
     def get(self, filename):
         request_msg(self)
-
-        path = read_osu_filename(filename)
-        if path is None:
-            return None
-        self.set_header("return-filename", path["filename"])
-        self.set_header('Content-Type', 'application/x-osu-beatmap')
-        self.set_header('Content-Disposition', f'attachment; filename="{path["filename"]}"')
-        with open(path['path'], 'rb') as f:
-            self.write(f.read())
+        try:
+            path = read_osu_filename(filename)
+            if path == 500:
+                self.set_status(500)
+                self.set_header("return-filename", "500.html")
+                self.render("templates/500.html", input=id)
+            elif path is None:
+                return None
+            else:
+                self.set_header("return-filename", path["filename"])
+                self.set_header('Content-Type', 'application/x-osu-beatmap')
+                self.set_header('Content-Disposition', f'attachment; filename="{path["filename"]}"')
+                with open(path['path'], 'rb') as f:
+                    self.write(f.read())
+        except:
+            self.set_status(503)
+            self.set_header("return-filename", "503.html")
+            self.render("templates/503.html", input=id)
 
 class searchHandler(tornado.web.RequestHandler):
     def get(self, q):
