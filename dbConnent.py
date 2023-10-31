@@ -59,8 +59,11 @@ class db:
                 d.append(data)
             return d
         
-    def execute(self, sql):
+    def execute(self, sql, param):
         cursor = self.pydb.cursor()
-        cursor.execute(sql)
+        if param is None or param == "":
+            cursor.execute(sql)
+        else:
+            cursor.execute(sql, param)
         self.pydb.commit()
         self.pydb.close()
