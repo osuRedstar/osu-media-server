@@ -1,4 +1,5 @@
 from lets_common_log import logUtils as log
+from dbConnent import db
 import zipfile
 import os
 import shutil
@@ -22,34 +23,13 @@ def calculate_md5(filename):
             md5.update(data)
     return md5.hexdigest()
 
-def getDB(val, fro, where, where_val, fetchall=False):
-    sql = f"SELECT {val} FROM {fro} WHERE {where} = '{where_val}'"
-    cursor.execute(sql)
-    if fetchall:
-        return cursor.fetchall()
-    else:
-        return cursor.fetchone()[0]
-
 requestHeaders = {"User-Agent": "RedstarOSU's MediaServer (python request) | https://b.redstar.moe"}
 
 conf = config.config("config.ini")
 
-DB_HOST = conf.config["db"]["host"]
-DB_PORT = int(conf.config["db"]["port"])
-DB_USERNAME = conf.config["db"]["username"]
-DB_PASSWORD = conf.config["db"]["password"]
-DB_DATABASE = conf.config["db"]["database"]
-DB_DATABASE_CHEESEGULL = conf.config["db"]["database-cheesegull"]
 OSU_APIKEY = conf.config["osu"]["apikey"]
 #lets.py 형태의 사설서버를 소유중이면 lets\.data\beatmaps 에서만 .osu 파일을 가져옴
 IS_YOU_HAVE_OSU_PRIVATE_SERVER = bool(conf.config["osu"]["IS_YOU_HAVE_OSU_PRIVATE_SERVER_WITH_lets.py"])
-
-try:
-    db = pymysql.connect(host=DB_HOST, port=DB_PORT, user=DB_USERNAME, passwd=DB_PASSWORD, db=DB_DATABASE_CHEESEGULL, charset='utf8')
-    cursor = db.cursor()
-except:
-    log.error("cheesegull DB 연결 실패!")
-    exit()
 
 def folder_check():
     if not os.path.isdir("data"):
@@ -121,8 +101,7 @@ def osu_file_read(setID, rq_type, moving=False):
                     underV10 = True
                     log.error(f"{setID} 비트맵셋의 어떤 비트맵은 시이이이이발 osu file format 이 10이하 ({osu_file_format_version}) 이네요? 시발련들아?")
 
-                    #temp["BeatmapID"] = getDB(val="id", fro="cheesegull.beatmaps", where="file_md5", where_val=beatmap_md5, fetchall=False)
-                    #temp["BeatmapID"] = filename_to_GetCheesegullDB(beatmapName)[0]
+                    #temp["BeatmapID"] = filename_to_GetCheesegullDB(beatmapName)["id"]
 
                     # 정규식 패턴
                     pattern = r'\[([^\]]+)\]\.osu$'
@@ -130,12 +109,11 @@ def osu_file_read(setID, rq_type, moving=False):
                     if match:
                         diffname = match.group(1)
                         sql = "SELECT id FROM beatmaps WHERE parent_set_id = %s AND diff_name = %s"
-                        cursor.execute(sql, (setID, diffname))
-                        result = cursor.fetchone()
+                        result = db("cheesegull").fetch(sql, (setID, diffname))
                         if result is None:
-                            log.error(f"result is None | sql = {sql}")
+                            log.error(f"result is None | sql = {sql, (setID, diffname)}")
                             return None
-                        temp["BeatmapID"] = result[0]
+                        temp["BeatmapID"] = result["id"]
 
                     log.info(f"{setID} 틀딱곡 cheesegull db에서 조회완료")
                     log.warning(f"{setID}/{temp['BeatmapID']} 틀딱곡 BeatmapID 세팅 완료")
@@ -155,20 +133,18 @@ def osu_file_read(setID, rq_type, moving=False):
                     #중복 bid, bid <= 0
                     if int(i["BeatmapID"]) == temp["BeatmapID"] or temp["BeatmapID"] <= 0:
                         #확실하게 bid 얻기
-                        #temp["BeatmapID"] = getDB(val="id", fro="cheesegull.beatmaps", where="file_md5", where_val=beatmap_md5, fetchall=False)
-                        #temp["BeatmapID"] = filename_to_GetCheesegullDB(beatmapName)[0]
+                        #temp["BeatmapID"] = filename_to_GetCheesegullDB(beatmapName)["id"]
                         # 정규식 패턴
                         pattern = r'\[([^\]]+)\]\.osu$'
                         match = re.search(pattern, beatmapName)
                         if match:
                             diffname = match.group(1)
                             sql = "SELECT id FROM beatmaps WHERE parent_set_id = %s AND diff_name = %s"
-                            cursor.execute(sql, (setID, diffname))
-                            result = cursor.fetchone()
+                            result = db("cheesegull").fetch(sql, (setID, diffname))
                             if result is None:
                                 log.error(f"result is None | sql = {sql}")
                                 return None
-                            temp["BeatmapID"] = result[0]
+                            temp["BeatmapID"] = result["id"]
 
                         log.error(f"{i['BeatmapID']} | .osu 파일들에서 중복 bid 감지! or .osu 파일에서 bid 값이 <= 0 임 | cheesegull db에서 bid 조회함")
 
@@ -422,7 +398,7 @@ def read_bg(id):
             return read_bg(f"+{id}")
         return f"data/bg/{id}/{file_list[0]}"
     else:
-        bsid = getDB(val="parent_set_id", fro="cheesegull.beatmaps", where="id", where_val=id, fetchall=False)
+        bsid = db("cheesegull").fetch("SELECT parent_set_id FROM cheesegull.beatmaps WHERE id = %s", (id))["parent_set_id"]
         log.info(f"{id} bid cheesegull db 조회로 {bsid} bsid 얻음")
 
         #bg폴더 파일 체크
@@ -497,7 +473,7 @@ def read_audio(id):
             return read_audio(f"+{id}")
         return f"data/audio/{id}/{file_list[0]}"
     else:
-        bsid = getDB(val="parent_set_id", fro="cheesegull.beatmaps", where="id", where_val=id, fetchall=False)
+        bsid = db("cheesegull").fetch("SELECT parent_set_id FROM cheesegull.beatmaps WHERE id = %s", (id))["parent_set_id"]
         log.info(f"{id} bid cheesegull db 조회로 {bsid} bsid 얻음")
 
         #audio폴더 파일 체크
@@ -542,9 +518,9 @@ def read_preview(id):
     return f"data/preview/{setID}/{id}"
 
 def read_video(id):
-        bsid = getDB(val="parent_set_id", fro="cheesegull.beatmaps", where="id", where_val=id, fetchall=False)
+        bsid = db("cheesegull").fetch("SELECT parent_set_id FROM cheesegull.beatmaps WHERE id = %s", (id))["parent_set_id"]
         try:
-            #hasVideo = getDB(val="has_video", fro="cheesegull.sets", where="id", where_val=bsid, fetchall=False)
+            #hasVideo = db("cheesegull").fetch("SELECT has_video FROM cheesegull.sets WHERE id = %s", (bsid))["has_video"]
             #반초로 조회함
             hasVideo = requests.get(f"https://osu.ppy.sh/api/get_beatmaps?k={OSU_APIKEY}&b={id}", headers=requestHeaders)
             hasVideo = hasVideo.json()[0]["video"]
@@ -594,7 +570,7 @@ def read_osz(id):
             return 0
 
 def read_osz_b(id):
-    bsid = getDB(val="parent_set_id", fro="cheesegull.beatmaps", where="id", where_val=id, fetchall=False)
+    bsid = db("cheesegull").fetch("SELECT parent_set_id FROM cheesegull.beatmaps WHERE id = %s", (id))["parent_set_id"]
     log.info(f"{id} bid cheesegull db 조회로 {bsid} bsid 얻음")
 
     filename = get_osz_fullName(bsid)
@@ -609,7 +585,7 @@ def read_osz_b(id):
             return 0
 
 def read_osu(id):
-    bsid = getDB(val="parent_set_id", fro="cheesegull.beatmaps", where="id", where_val=id, fetchall=False)
+    bsid = db("cheesegull").fetch("SELECT parent_set_id FROM cheesegull.beatmaps WHERE id = %s", (id))["parent_set_id"]
 
     log.info(f"{id} bid cheesegull db 조회로 {bsid} bsid 얻음")
 
@@ -617,18 +593,18 @@ def read_osu(id):
     if os.path.isfile(f"B:/redstar/lets/.data/beatmaps/{id}.osu"):
         log.info(f"{id}.osu 파일을 B:/redstar/lets/.data/beatmaps/{id}.osu에서 먼저 찾아서 반환함")
         
-        sql = f'''
+        sql = '''
             SELECT CONCAT(s.artist, ' - ', s.title, ' (', s.creator, ') [', b.diff_name, ']' '.osu') AS filename
             FROM sets AS s
             JOIN beatmaps AS b ON s.id = b.parent_set_id
-            WHERE b.id = {id}
+            WHERE b.id = %s
         '''
-        cursor.execute(sql)
-        filename = cursor.fetchone()
+        filename = db("cheesegull").fetch(sql, (id))
+        log.debug(filename)
         if filename is None:
             log.error(f"filename is None | sql = {sql}")
             return None
-        return {"path": f"B:/redstar/lets/.data/beatmaps/{id}.osu", "filename": filename[0]}
+        return {"path": f"B:/redstar/lets/.data/beatmaps/{id}.osu", "filename": filename["filename"]}
     else:
         check(bsid, rq_type=f"read_osu_{id}")
         return read_osu(id)
@@ -672,14 +648,13 @@ def filename_to_GetCheesegullDB(filename):
         log.error("osu filename에서 artist, title, creator, version 추출중 에러") """
 
     # filename에 / 가 들어가면 에러남 (http 요청시 / 가 사라짐)
-    sql = f'''
+    sql = '''
         SELECT b.id, b.parent_set_id, b.diff_name
         FROM beatmaps AS b
         JOIN sets AS s ON b.parent_set_id = s.id
-        WHERE s.artist = "{artist}" AND s.title = "{title}" AND s.creator = "{creator}" AND b.diff_name = "{version}"
+        WHERE s.artist = %s AND s.title = %s AND s.creator = %s AND b.diff_name = %s
     '''
-    cursor.execute(sql)
-    result = cursor.fetchone()
+    result = db("cheesegull").fetch(sql, (artist, title, creator, version))
     if result is None:
         log.error(f"result is None | sql = {sql}")
         return None
@@ -689,5 +664,5 @@ def read_osu_filename(filename):
     result = filename_to_GetCheesegullDB(filename)
     if result is None:
         return None
-    bid = result[0]
+    bid = result["id"]
     return read_osu(bid)
