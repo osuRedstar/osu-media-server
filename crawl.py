@@ -6,6 +6,7 @@ from lets_common_log import logUtils as log
 import config
 import pymysql
 from time import localtime, strftime
+from dbConnent import db
 
 def txtLOG_errorAdded(msg):
     # .txt로 로그 남기기
@@ -16,23 +17,7 @@ def txtLOG_errorAdded(msg):
 
 start = time.time()
 
-conf = config.config("config.ini")
-
-host = conf.config["db"]["host"]
-port = int(conf.config["db"]["port"])
-username = conf.config["db"]["username"]
-password = conf.config["db"]["password"]
-database = conf.config["db"]["database-cheesegull"]
-
-try:
-    db = pymysql.connect(host=host, port=port, user=username, passwd=password, db=database, charset='utf8')
-    cursor = db.cursor()
-except:
-    log.error("DB 연결 실패!")
-
-
-cursor.execute(f"SELECT id FROM cheesegull.sets WHERE id >= 35975 ORDER BY id")
-SetID = cursor.fetchall()
+SetID = db("cheesegull").fetch("SELECT id FROM sets WHERE id >= %s ORDER BY id", (1))
 
 log.debug(f"len(SetID) = {len(SetID)}")
 
@@ -40,18 +25,35 @@ Header = {
     "User-Agent": "mediaserver self crawl"
 }
 
+def insertDBStatusCode(bsid, status_code):
+    sql = '''
+        SELECT CONCAT(s.artist, ' - ', s.title, ' (', s.creator, ')') AS filename
+        FROM sets AS s
+        WHERE s.id = %s
+    '''
+    filename = db("cheesegull").fetch(sql, (bsid))["filename"]
+    result = db("cheesegull").fetch("SELECT * FROM download_status WHERE bsid = %s", (bsid))
+    nowTime = time.time()
+    if result is None:
+        db("cheesegull").execute("INSERT INTO download_status (id, bsid, filename, http_statusCode, update_time) VALUE (%s, %s, %s, %s, %s)", ("NULL", bsid, filename, status_code, nowTime))
+    else:
+        log.warning(f"cheesegull.download_status 테이블이 이미 {bsid} 비트맵셋에 대한 정보가 있음")
+        db("cheesegull").execute("UPDATE download_status SET http_statusCode = %s, update_time = %s WHERE bsid = %s", (status_code, nowTime, bsid))
+
 """ def bg():
     for i in SetID:
-        i = i[0]
+        i = i["id"]
         r = requests.get(f"http://localhost:6199/bg/+{i}", headers=Header)
         if r.status_code != 200:
             txtLOG_errorAdded(f"bsid = +{i} | status_code = {r.status_code}")
+
+        insertDBStatusCode(i, r.status_code)
 
         time.sleep(1) """
 
 def thumb():
     for i in SetID:
-        i = i[0]
+        i = i["id"]
         r = requests.get(f"http://localhost:6199/thumb/{i}l.jpg", headers=Header)
         if r.status_code != 200:
             txtLOG_errorAdded(f"bsid = {i}l.jpg | status_code = {r.status_code}")
@@ -59,15 +61,19 @@ def thumb():
         r2 = requests.get(f"http://localhost:6199/thumb/{i}.jpg", headers=Header)
         if r2.status_code != 200:
             txtLOG_errorAdded(f"bsid = {i}.jpg | status_code = {r2.status_code}")
+    
+        insertDBStatusCode(i, r.status_code)
 
         time.sleep(1)
 
 def preview():
     for i in SetID:
-        i = i[0]
+        i = i["id"]
         r = requests.get(f"http://localhost:6199/preview/{i}.mp3", headers=Header)
         if r.status_code != 200:
             txtLOG_errorAdded(f"bsid = {i}.mp3 | status_code = {r.status_code}")
+
+        insertDBStatusCode(i, r.status_code)
 
         time.sleep(1)
 
