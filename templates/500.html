@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>500 file Download ERROR</title>
+</head>
+<body>
+    <div style="text-align: center;">
+        <h1>500 .osz Download Fail!</h1>
+        <br>
+        <h1 id="inputid">Loading...</h1>
+    </div>
+
+    <script>
+        const inputVal = "{{ input }}"
+        const inputid = document.getElementById("inputid")
+
+        if (inputVal.startsWith("+")) {
+            inputid.innerText = `BeatmapSetID = ${inputVal.substring(1)}`
+        } else {
+            inputid.innerText = `BeatmapID = ${inputVal}`
+        }
+    </script>
+</body>
+</html>
