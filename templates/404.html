@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 file Download ERROR (chimu.moe)</title>
+</head>
+<body>
+    <div style="text-align: center;">
+        <h1>404 .osz Download Fail! From <a target="_blank" id="inputid2" href="/">Loading...</a></h1>
+        <br>
+        <h1 id="inputid">Loading...</h1>
+    </div>
+
+    <script>
+        let inputVal = "{{ input }}"
+        const inputType = "{{ inputType }}"
+        const inputid = document.getElementById("inputid")
+        const inputid2 = document.getElementById("inputid2")
+
+        if (inputType != "filename") {
+            if (inputVal.startsWith("+")) {
+                inputVal = Number(inputVal.substring(1))
+            } else if (inputVal.endsWith("l.jpg")) {
+                inputVal = Number(inputVal.replace("l.jpg", ""))
+            } else if (inputVal.endsWith(".jpg")) {
+                inputVal = Number(inputVal.replace(".jpg", ""))
+            } else if (inputVal.endsWith(".mp4")) {
+                inputVal = Number(inputVal.replace(".mp3", ""))
+            } else {
+                inputVal = Number(inputVal)
+            }
+        }
+
+        if (inputType == "bsid") {
+            inputid.innerText = `BeatmapSetID = ${inputVal}`
+            inputid2.innerText = `https://chimu.moe/d/${inputVal}`
+            inputid2.href = `https://chimu.moe/d/${inputVal}`
+        } else if (inputType == "filename") {
+            inputid.innerText = `Filename = ${inputVal}`
+            inputid2.innerText = "https://chimu.moe"
+            inputid2.href = "https://chimu.moe"
+        } else {
+            inputid.innerText = `BeatmapID = ${inputVal}`
+            inputid2.innerText = "https://chimu.moe"
+            inputid2.href = "https://chimu.moe"
+        }
+    </script>
+</body>
+</html>
