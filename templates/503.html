@@ -13,11 +13,29 @@
     </div>
 
     <script>
-        const inputVal = "{{ input }}"
+        let inputVal = "{{ input }}"
+        const inputType = "{{ inputType }}"
         const inputid = document.getElementById("inputid")
+        const inputid2 = document.getElementById("inputid2")
 
-        if (inputVal.startsWith("+")) {
-            inputid.innerText = `BeatmapSetID = ${inputVal.substring(1)}`
+        if (inputType != "filename") {
+            if (inputVal.startsWith("+")) {
+                inputVal = Number(inputVal.substring(1))
+            } else if (inputVal.endsWith("l.jpg")) {
+                inputVal = Number(inputVal.replace("l.jpg", ""))
+            } else if (inputVal.endsWith(".jpg")) {
+                inputVal = Number(inputVal.replace(".jpg", ""))
+            } else if (inputVal.endsWith(".mp4")) {
+                inputVal = Number(inputVal.replace(".mp3", ""))
+            } else {
+                inputVal = Number(inputVal)
+            }
+        }
+
+        if (inputType == "bsid") {
+            inputid.innerText = `BeatmapSetID = ${inputVal}`
+        } else if (inputType == "filename") {
+            inputid.innerText = `Filename = ${inputVal}`
         } else {
             inputid.innerText = `BeatmapID = ${inputVal}`
         }
