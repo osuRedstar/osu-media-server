@@ -402,7 +402,7 @@ def read_bg(id):
             if ck is not None:
                 return ck
             return read_bg(f"+{id}")
-        return f"data/bg/{id}/{file_list[0]}"
+        return {"path": f"data/bg/{id}/{file_list[0]}", "inputType": "bsid"}
     else:
         bsid = db("cheesegull").fetch("SELECT parent_set_id FROM cheesegull.beatmaps WHERE id = %s", (id))["parent_set_id"]
         log.info(f"{id} bid cheesegull db 조회로 {bsid} bsid 얻음")
@@ -422,7 +422,7 @@ def read_bg(id):
             if ck is not None:
                 return ck
             return read_bg(id)
-        return f"data/bg/{bsid}/{file_list[0]}"
+        return {"path": f"data/bg/{bsid}/{file_list[0]}", "inputType": "bid"}
     
 def read_thumb(id):
     if "l.jpg" in id:
@@ -487,7 +487,8 @@ def read_audio(id):
             if ck is not None:
                 return ck
             return read_audio(f"+{id}")
-        return f"data/audio/{id}/{file_list[0]}"
+        return {"path": f"data/audio/{id}/{file_list[0]}", "inputType": "bsid"}
+    
     else:
         bsid = db("cheesegull").fetch("SELECT parent_set_id FROM cheesegull.beatmaps WHERE id = %s", (id))["parent_set_id"]
         log.info(f"{id} bid cheesegull db 조회로 {bsid} bsid 얻음")
@@ -510,7 +511,7 @@ def read_audio(id):
             if ck is not None:
                 return ck
             return read_audio(id)
-        return f"data/audio/{bsid}/{file_list[0]}"
+        return {"path": f"data/audio/{bsid}/{file_list[0]}", "inputType": "bid"}
 
 def read_preview(id):
     #source_{bsid}.mp3 먼저 확인시키기 ㄴㄴ audio에서 가져오기
