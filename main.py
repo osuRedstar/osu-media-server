@@ -66,16 +66,16 @@ class BgHandler(tornado.web.RequestHandler):
         try:
             file = read_bg(id)
             if file == 500:
-                send500(self, file["inputType"], id)
+                return send500(self, file["inputType"], id)
             elif file == 404:
-                send404(self, file["inputType"], id)
+                return send404(self, file["inputType"], id)
             else: 
                 self.set_header("return-filename", id)
                 self.set_header('Content-Type', 'image/jpeg')
                 with open(file["path"], 'rb') as f:
                     self.write(f.read())
         except:
-            send503(self, file["inputType"], id)
+            return send503(self, file["inputType"], id)
 
 class ThumbHandler(tornado.web.RequestHandler):
     def get(self, id):
@@ -83,16 +83,16 @@ class ThumbHandler(tornado.web.RequestHandler):
         try:
             file = read_thumb(id)
             if file == 500:
-                send500(self,"bsid", id)
+                return send500(self,"bsid", id)
             elif file == 404:
-                send404(self, "bsid", id)
+                return send404(self, "bsid", id)
             else:
                 self.set_header("return-filename", id)
                 self.set_header('Content-Type', 'image/jpeg')
                 with open(file, 'rb') as f:
                     self.write(f.read())
         except:
-            send503(self, "bsid", id)
+            return send503(self, "bsid", id)
 
 class PreviewHandler(tornado.web.RequestHandler):
     def get(self, id):
@@ -100,16 +100,16 @@ class PreviewHandler(tornado.web.RequestHandler):
         try:
             file = read_preview(id)
             if file == 500:
-                send500(self, "bsid", id)
+                return send500(self, "bsid", id)
             elif file == 404:
-                send404(self, "bsid", id)
+                return send404(self, "bsid", id)
             else:
                 self.set_header("return-filename", id)
                 self.set_header('Content-Type', 'audio/mp3')
                 with open(file, 'rb') as f:
                     self.write(f.read())
         except:
-            send503(self, "bsid", id)
+            return send503(self, "bsid", id)
 
 class AudioHandler(tornado.web.RequestHandler):
     def get(self, id):
@@ -117,16 +117,16 @@ class AudioHandler(tornado.web.RequestHandler):
         try:
             file = read_audio(id)
             if file == 500:
-                send500(self, file["inputType"], id)
+                return send500(self, file["inputType"], id)
             elif file == 404:
-                send404(self, file["inputType"], id)
+                return send404(self, file["inputType"], id)
             else:
                 self.set_header("return-filename", id)
                 self.set_header('Content-Type', 'audio/mp3')
                 with open(file["path"], 'rb') as f:
                     self.write(f.read())
         except:
-            send503(self, file["inputType"], id)
+            return send503(self, file["inputType"], id)
 
 class VideoHandler(tornado.web.RequestHandler):
     def get(self, id):
@@ -134,9 +134,9 @@ class VideoHandler(tornado.web.RequestHandler):
         try:
             readed_read_video = read_video(id)
             if readed_read_video == 500:
-                send500(self, "bid", id)
+                return send500(self, "bid", id)
             elif readed_read_video == 404:
-                send404(self, "bid", id)
+                return send404(self, "bid", id)
             elif readed_read_video.endswith(".mp4"):
                 self.set_header("return-filename", id)
                 self.set_header('Content-Type', 'video/mp4')
@@ -146,7 +146,7 @@ class VideoHandler(tornado.web.RequestHandler):
                 self.set_status(404)
                 self.write({"code": 404, "message": "Sorry Beatmap has no videos", "funcmsg": readed_read_video})
         except:
-            send503(self, "bid", id)
+            return send503(self, "bid", id)
 
 class OszHandler(tornado.web.RequestHandler):
     def get(self, id):
@@ -154,9 +154,9 @@ class OszHandler(tornado.web.RequestHandler):
         try:
             path = read_osz(id)
             if path == 500:
-                send500(self, "bsid", id)
+                return send500(self, "bsid", id)
             elif path == 404:
-                send404(self, "bsid", id)
+                return send404(self, "bsid", id)
             elif path == 0:
                 self.write("ERROR")
             else:
@@ -166,7 +166,7 @@ class OszHandler(tornado.web.RequestHandler):
                 with open(path['path'], 'rb') as f:
                     self.write(f.read())
         except:
-            send503(self, "bsid", id)
+            return send503(self, "bsid", id)
 
 class OszBHandler(tornado.web.RequestHandler):
     def get(self, id):
@@ -174,9 +174,9 @@ class OszBHandler(tornado.web.RequestHandler):
         try:
             path = read_osz_b(id)
             if path == 500:
-                send500(self, "bid", id)
+                return send500(self, "bid", id)
             elif path == 404:
-                send404(self, "bid", id)
+                return send404(self, "bid", id)
             elif path == 0:
                 self.write("ERROR")
             else:
@@ -186,7 +186,7 @@ class OszBHandler(tornado.web.RequestHandler):
                 with open(path['path'], 'rb') as f:
                     self.write(f.read())
         except:
-            send503(self, "bid", id)
+            return send503(self, "bid", id)
 
 class OsuHandler(tornado.web.RequestHandler):
     def get(self, id):
@@ -194,9 +194,9 @@ class OsuHandler(tornado.web.RequestHandler):
         try:
             path = read_osu(id)
             if path == 500:
-                send500(self, "bid", id)
+                return send500(self, "bid", id)
             elif path == 404:
-                send404(self, "bid", id)
+                return send404(self, "bid", id)
             else:
                 self.set_header("return-filename", path["filename"])
                 self.set_header('Content-Type', 'application/x-osu-beatmap')
@@ -204,7 +204,7 @@ class OsuHandler(tornado.web.RequestHandler):
                 with open(path['path'], 'rb') as f:
                     self.write(f.read())
         except:
-            send503(self, "bid", id)
+            return send503(self, "bid", id)
 
 class FaviconHandler(tornado.web.RequestHandler):
     def get(self):
@@ -241,9 +241,9 @@ class webMapsHandler(tornado.web.RequestHandler):
         try:
             path = read_osu_filename(filename)
             if path == 500:
-                send500(self, "filename", filename)
+                return send500(self, "filename", filename)
             elif path == 404:
-                send404(self, "filename", filename)
+                return send404(self, "filename", filename)
             elif path is None:
                 return None
             else:
@@ -253,7 +253,7 @@ class webMapsHandler(tornado.web.RequestHandler):
                 with open(path['path'], 'rb') as f:
                     self.write(f.read())
         except:
-            send503(self, "filename", filename)
+            return send503(self, "filename", filename)
 
 class searchHandler(tornado.web.RequestHandler):
     def get(self, q):
