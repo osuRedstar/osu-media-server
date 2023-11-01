@@ -17,7 +17,7 @@ def txtLOG_errorAdded(msg):
 
 start = time.time()
 
-start_bid = 1
+start_bid = 2149
 SetID = db("cheesegull").fetch("SELECT id FROM sets WHERE id >= %s ORDER BY id", (start_bid))
 
 log.debug(f"len(SetID) = {len(SetID)}")
@@ -54,15 +54,20 @@ def insertDBStatusCode(bsid, status_code):
 
 def thumb():
     for i in SetID:
+        thumbLock = False
         i = i["id"]
         r = requests.get(f"http://localhost:6199/thumb/{i}l.jpg", headers=Header)
         if r.status_code != 200:
             txtLOG_errorAdded(f"bsid = {i}l.jpg | status_code = {r.status_code}")
+            thumbLock = True
 
-        r2 = requests.get(f"http://localhost:6199/thumb/{i}.jpg", headers=Header)
-        if r2.status_code != 200:
-            txtLOG_errorAdded(f"bsid = {i}.jpg | status_code = {r2.status_code}")
-    
+        if not thumbLock:
+            r2 = requests.get(f"http://localhost:6199/thumb/{i}.jpg", headers=Header)
+            if r2.status_code != 200:
+                txtLOG_errorAdded(f"bsid = {i}.jpg | status_code = {r2.status_code}")
+        else:
+            log.warning(f"{i} | 코드 {r.status_code}으로 thumb 1번만 요청함")
+        
         insertDBStatusCode(i, r.status_code)
 
         time.sleep(1)
