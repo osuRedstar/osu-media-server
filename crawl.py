@@ -17,7 +17,7 @@ def txtLOG_errorAdded(msg):
 
 start = time.time()
 
-start_bid = 2211
+start_bid = 2540
 SetID = db("cheesegull").fetch("SELECT id FROM sets WHERE id >= %s ORDER BY id", (start_bid))
 
 log.debug(f"len(SetID) = {len(SetID)}")
@@ -41,10 +41,12 @@ def insertDBStatusCode(bsid, status_code):
         log.warning(f"cheesegull.download_status 테이블이 이미 {bsid} 비트맵셋에 대한 정보가 있음")
         db("cheesegull").execute("UPDATE download_status SET http_statusCode = %s, update_time = %s WHERE bsid = %s", (status_code, nowTime, bsid))
 
+host = "http://localhost:6199"
+
 """ def bg():
     for i in SetID:
         i = i["id"]
-        r = requests.get(f"http://localhost:6199/bg/+{i}", headers=Header)
+        r = requests.get(f"{host}/bg/+{i}", headers=Header)
         if r.status_code != 200:
             txtLOG_errorAdded(f"bsid = +{i} | status_code = {r.status_code}")
 
@@ -56,13 +58,13 @@ def thumb():
     for i in SetID:
         thumbLock = False
         i = i["id"]
-        r = requests.get(f"http://localhost:6199/thumb/{i}l.jpg", headers=Header)
+        r = requests.get(f"{host}/thumb/{i}l.jpg", headers=Header)
         if r.status_code != 200:
             txtLOG_errorAdded(f"bsid = {i}l.jpg | status_code = {r.status_code}")
             thumbLock = True
 
         if not thumbLock:
-            r2 = requests.get(f"http://localhost:6199/thumb/{i}.jpg", headers=Header)
+            r2 = requests.get(f"{host}/thumb/{i}.jpg", headers=Header)
             if r2.status_code != 200:
                 txtLOG_errorAdded(f"bsid = {i}.jpg | status_code = {r2.status_code}")
         else:
@@ -75,7 +77,7 @@ def thumb():
 def preview():
     for i in SetID:
         i = i["id"]
-        r = requests.get(f"http://localhost:6199/preview/{i}.mp3", headers=Header)
+        r = requests.get(f"{host}/preview/{i}.mp3", headers=Header)
         if r.status_code != 200:
             txtLOG_errorAdded(f"bsid = {i}.mp3 | status_code = {r.status_code}")
 
