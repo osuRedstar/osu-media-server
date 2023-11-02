@@ -17,7 +17,7 @@ def txtLOG_errorAdded(msg):
 
 start = time.time()
 
-start_bid = 2540
+start_bid = 1
 SetID = db("cheesegull").fetch("SELECT id FROM sets WHERE id >= %s ORDER BY id", (start_bid))
 
 log.debug(f"len(SetID) = {len(SetID)}")
