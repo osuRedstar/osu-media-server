@@ -111,7 +111,6 @@ def osu_file_read(setID, rq_type, moving=False):
                         sql = "SELECT id FROM beatmaps WHERE parent_set_id = %s AND diff_name = %s"
                         result = db("cheesegull").fetch(sql, (setID, diffname))
                         if result is None:
-                            log.error(f"result is None | sql = {sql, (setID, diffname)}")
                             return None
                         temp["BeatmapID"] = result["id"]
 
@@ -142,7 +141,6 @@ def osu_file_read(setID, rq_type, moving=False):
                             sql = "SELECT id FROM beatmaps WHERE parent_set_id = %s AND diff_name = %s"
                             result = db("cheesegull").fetch(sql, (setID, diffname))
                             if result is None:
-                                log.error(f"result is None | sql = {sql}")
                                 return None
                             temp["BeatmapID"] = result["id"]
 
@@ -322,10 +320,11 @@ def check(setID, rq_type):
                 res = requests.get(url[site], headers=requestHeaders, timeout=5, stream=True)
                 statusCode = res.status_code
             except requests.exceptions.ReadTimeout as e:
-                log.warning(f"{url[site]} Timeout!")
+                log.warning(f"{url[site]} Timeout! | e = {e}")
                 statusCode = 504
             except:
                 log.error(f"파일다운 기본 예외처리 | url = {url[site]}")
+
             if statusCode == 200:
                 # 파일 크기를 얻습니다.
                 file_size = int(res.headers.get('content-length', 0))
@@ -698,7 +697,6 @@ def filename_to_GetCheesegullDB(filename):
     '''
     result = db("cheesegull").fetch(sql, (artist, title, creator, version))
     if result is None:
-        log.error(f"result is None | sql = {sql}")
         return None
     return result
 
