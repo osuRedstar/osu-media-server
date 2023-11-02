@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>504 file Download Timeout</title>
+</head>
+<body>
+    <div style="text-align: center;">
+        <h1>504 .osz Download Timeout!</h1>
+        <br>
+        <h1 id="inputid">Loading...</h1>
+        <br>
+        <h1>만약 지금 당신이 이 페이지를 보고 있으면, 높은 확률로 cloudflare 연결을 거치지 않은 것 입니다.</h1>
+        <h1>If you are currently viewing this page, there is a high probability that you are not connected to cloudflare.</h1>
+        <br>
+        <h1>cloudflare →→ <a target="_blank" id="CF-url" href="/">Loading...</a></h1>
+    </div>
+
+    <script>
+        let inputVal = "{{ input }}"
+        const inputType = "{{ inputType }}"
+        const inputid = document.getElementById("inputid")
+        const CF_url = document.getElementById("CF-url")
+
+        CF_url.innerText = `https://b.redstar.moe${location.pathname}`
+        CF_url.href = `https://b.redstar.moe${location.pathname}`
+
+        if (inputType != "filename") {
+            if (inputVal.startsWith("+")) {
+                inputVal = Number(inputVal.substring(1))
+            } else if (inputVal.endsWith("l.jpg")) {
+                inputVal = Number(inputVal.replace("l.jpg", ""))
+            } else if (inputVal.endsWith(".jpg")) {
+                inputVal = Number(inputVal.replace(".jpg", ""))
+            } else if (inputVal.endsWith(".mp4")) {
+                inputVal = Number(inputVal.replace(".mp3", ""))
+            } else {
+                inputVal = Number(inputVal)
+            }
+        }
+
+        if (inputType == "bsid") {
+            inputid.innerText = `BeatmapSetID = ${inputVal}`
+        } else if (inputType == "filename") {
+            inputid.innerText = `Filename = ${inputVal}`
+        } else {
+            inputid.innerText = `BeatmapID = ${inputVal}`
+        }
+    </script>
+</body>
+</html>
