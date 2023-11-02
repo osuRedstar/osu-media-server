@@ -49,6 +49,12 @@ def send503(self, inputType, input):
     self.set_header("return-filename", json.dumps({"filename": "503.html", "path": "templates/503.html"}))
     self.render("templates/503.html", inputType=inputType, input=input)
 
+def send504(self, inputType, input):
+    #cloudflare 504 페이지로 연결됨
+    self.set_status(504)
+    self.set_header("return-filename", json.dumps({"filename": "504.html", "path": "templates/504.html"}))
+    self.render("templates/504.html", inputType=inputType, input=input)
+
 ####################################################################################################
 
 class MainHandler(tornado.web.RequestHandler):
@@ -73,10 +79,12 @@ class BgHandler(tornado.web.RequestHandler):
             idType = "bid"
         try:
             file = read_bg(id)
-            if file == 500:
-                return send500(self, idType, id)
-            elif file == 404:
+            if file == 404:
                 return send404(self, idType, id)
+            elif file == 500:
+                return send500(self, idType, id)
+            elif file == 504:
+                return send504(self, idType, id)
             else: 
                 self.set_header("return-filename", json.dumps({"filename": id, "path": file}))
                 self.set_header('Content-Type', 'image/jpeg')
@@ -90,10 +98,12 @@ class ThumbHandler(tornado.web.RequestHandler):
         request_msg(self)
         try:
             file = read_thumb(id)
-            if file == 500:
-                return send500(self,"bsid", id)
-            elif file == 404:
+            if file == 404:
                 return send404(self, "bsid", id)
+            elif file == 500:
+                return send500(self, "bsid", id)
+            elif file == 504:
+                return send504(self, "bsid", id)
             else:
                 self.set_header("return-filename", json.dumps({"filename": id, "path": file}))
                 self.set_header('Content-Type', 'image/jpeg')
@@ -107,10 +117,12 @@ class PreviewHandler(tornado.web.RequestHandler):
         request_msg(self)
         try:
             file = read_preview(id)
-            if file == 500:
-                return send500(self, "bsid", id)
-            elif file == 404:
+            if file == 404:
                 return send404(self, "bsid", id)
+            elif file == 500:
+                return send500(self, "bsid", id)
+            elif file == 504:
+                return send504(self, "bsid", id)
             else:
                 self.set_header("return-filename", json.dumps({"filename": id, "path": file}))
                 self.set_header('Content-Type', 'audio/mp3')
@@ -128,10 +140,12 @@ class AudioHandler(tornado.web.RequestHandler):
             idType = "bid"
         try:
             file = read_audio(id)
-            if file == 500:
-                return send500(self, idType, id)
-            elif file == 404:
+            if file == 404:
                 return send404(self, idType, id)
+            elif file == 500:
+                return send500(self, idType, id)
+            elif file == 504:
+                return send504(self, idType, id)
             else:
                 self.set_header("return-filename", json.dumps({"filename": id, "path": file}))
                 self.set_header('Content-Type', 'audio/mp3')
@@ -145,10 +159,12 @@ class VideoHandler(tornado.web.RequestHandler):
         request_msg(self)
         try:
             readed_read_video = read_video(id)
-            if readed_read_video == 500:
-                return send500(self, "bid", id)
-            elif readed_read_video == 404:
+            if readed_read_video == 404:
                 return send404(self, "bid", id)
+            elif readed_read_video == 500:
+                return send500(self, "bid", id)
+            elif readed_read_video == 504:
+                return send504(self, "bid", id)
             elif readed_read_video.endswith(".mp4"):
                 self.set_header("return-filename", json.dumps({"filename": id, "path": readed_read_video}))
                 self.set_header('Content-Type', 'video/mp4')
@@ -167,10 +183,12 @@ class OszHandler(tornado.web.RequestHandler):
         request_msg(self)
         try:
             path = read_osz(id)
-            if path == 500:
-                return send500(self, "bsid", id)
-            elif path == 404:
+            if path == 404:
                 return send404(self, "bsid", id)
+            elif path == 500:
+                return send500(self, "bsid", id)
+            elif path == 504:
+                return send504(self, "bsid", id)
             elif path == 0:
                 self.write("ERROR")
             else:
@@ -187,10 +205,12 @@ class OszBHandler(tornado.web.RequestHandler):
         request_msg(self)
         try:
             path = read_osz_b(id)
-            if path == 500:
-                return send500(self, "bid", id)
-            elif path == 404:
+            if path == 404:
                 return send404(self, "bid", id)
+            elif path == 500:
+                return send500(self, "bid", id)
+            elif path == 504:
+                return send504(self, "bid", id)
             elif path == 0:
                 self.write("ERROR")
             else:
@@ -207,10 +227,12 @@ class OsuHandler(tornado.web.RequestHandler):
         request_msg(self)
         try:
             path = read_osu(id)
-            if path == 500:
-                return send500(self, "bid", id)
-            elif path == 404:
+            if path == 404:
                 return send404(self, "bid", id)
+            elif path == 500:
+                return send500(self, "bid", id)
+            elif path == 504:
+                return send504(self, "bid", id)
             else:
                 self.set_header("return-filename", json.dumps({"filename": path["filename"], "path": path["path"]}))
                 self.set_header('Content-Type', 'application/x-osu-beatmap')
@@ -255,10 +277,12 @@ class webMapsHandler(tornado.web.RequestHandler):
         request_msg(self)
         try:
             path = read_osu_filename(filename)
-            if path == 500:
-                return send500(self, "filename", filename)
-            elif path == 404:
-                return send404(self, "filename", filename)
+            if path == 404:
+                return send404(self, "filename", id)
+            elif path == 500:
+                return send500(self, "filename", id)
+            elif path == 504:
+                return send504(self, "filename", id)
             elif path is None:
                 return None
             else:
