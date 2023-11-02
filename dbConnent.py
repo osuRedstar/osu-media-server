@@ -42,6 +42,7 @@ class db:
         self.pydb.close()
 
         if not result:
+            log.error(f"None | SQL = {cursor.mogrify(sql, param)}")
             return None
         elif len(result) == 1:
             data = {}
