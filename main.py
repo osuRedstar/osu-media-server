@@ -49,6 +49,8 @@ def send503(self, inputType, input):
     self.set_header("return-filename", json.dumps({"filename": "503.html", "path": "templates/503.html"}))
     self.render("templates/503.html", inputType=inputType, input=input)
 
+####################################################################################################
+
 class MainHandler(tornado.web.RequestHandler):
     def get(self):
         request_msg(self)
@@ -60,24 +62,28 @@ class ListHandler(tornado.web.RequestHandler):
         request_msg(self)
         self.set_header("return-filename", json.dumps({"filename": "", "path": ""}))
         self.set_header("Content-Type", "application/json")
-        self.write(json.dumps(read_list(), indent=4))
+        self.write(json.dumps(read_list(), indent=2, ensure_ascii=False))
 
 class BgHandler(tornado.web.RequestHandler):
     def get(self, id):
         request_msg(self)
+        if "+" in id:
+            idType = "bsid"
+        else:
+            idType = "bid"
         try:
             file = read_bg(id)
             if file == 500:
-                return send500(self, file["inputType"], id)
+                return send500(self, idType, id)
             elif file == 404:
-                return send404(self, file["inputType"], id)
+                return send404(self, idType, id)
             else: 
-                self.set_header("return-filename", json.dumps({"filename": id, "path": file["path"]}))
+                self.set_header("return-filename", json.dumps({"filename": id, "path": file}))
                 self.set_header('Content-Type', 'image/jpeg')
-                with open(file["path"], 'rb') as f:
+                with open(file, 'rb') as f:
                     self.write(f.read())
         except:
-            return send503(self, file["inputType"], id)
+            return send503(self, idType, id)
 
 class ThumbHandler(tornado.web.RequestHandler):
     def get(self, id):
@@ -116,19 +122,23 @@ class PreviewHandler(tornado.web.RequestHandler):
 class AudioHandler(tornado.web.RequestHandler):
     def get(self, id):
         request_msg(self)
+        if "+" in id:
+            idType = "bsid"
+        else:
+            idType = "bid"
         try:
             file = read_audio(id)
             if file == 500:
-                return send500(self, file["inputType"], id)
+                return send500(self, idType, id)
             elif file == 404:
-                return send404(self, file["inputType"], id)
+                return send404(self, idType, id)
             else:
-                self.set_header("return-filename", json.dumps({"filename": id, "path": file["path"]}))
+                self.set_header("return-filename", json.dumps({"filename": id, "path": file}))
                 self.set_header('Content-Type', 'audio/mp3')
-                with open(file["path"], 'rb') as f:
+                with open(file, 'rb') as f:
                     self.write(f.read())
         except:
-            return send503(self, file["inputType"], id)
+            return send503(self, idType, id)
 
 class VideoHandler(tornado.web.RequestHandler):
     def get(self, id):
@@ -148,7 +158,7 @@ class VideoHandler(tornado.web.RequestHandler):
                 self.set_status(404)
                 self.set_header("return-filename", json.dumps({"filename": id, "path": readed_read_video}))
                 self.set_header("Content-Type", "application/json")
-                self.write(json.dumps({"code": 404, "message": "Sorry Beatmap has no videos", "funcmsg": readed_read_video}, indent=4))
+                self.write(json.dumps({"code": 404, "message": "Sorry Beatmap has no videos", "funcmsg": readed_read_video}, indent=2, ensure_ascii=False))
         except:
             return send503(self, "bid", id)
 
@@ -238,7 +248,7 @@ class StatusHandler(tornado.web.RequestHandler):
         request_msg(self)
         self.set_header("return-filename", json.dumps({"filename": "", "path": ""}))
         self.set_header("Content-Type", "application/json")
-        self.write(json.dumps({"code": 200, "oszCount": read_list()["osz"]["count"]}, indent=4))
+        self.write(json.dumps({"code": 200, "oszCount": read_list()["osz"]["count"]}, indent=2, ensure_ascii=False))
 
 class webMapsHandler(tornado.web.RequestHandler):
     def get(self, filename):
