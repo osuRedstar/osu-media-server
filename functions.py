@@ -318,8 +318,15 @@ def check(setID, rq_type):
             save_path = 'data/dl/'  # 원하는 저장 경로로 변경
             
             # 파일 다운로드 요청
-            res = requests.get(url[site], headers=requestHeaders, stream=True)
-            if res.status_code == 200:
+            try:
+                res = requests.get(url[site], headers=requestHeaders, timeout=5, stream=True)
+                statusCode = res.status_code
+            except requests.exceptions.ReadTimeout as e:
+                log.warning(f"{url[site]} Timeout!")
+                statusCode = 504
+            except:
+                log.error(f"파일다운 기본 예외처리 | url = {url[site]}")
+            if statusCode == 200:
                 # 파일 크기를 얻습니다.
                 file_size = int(res.headers.get('content-length', 0))
 
@@ -339,13 +346,13 @@ def check(setID, rq_type):
                 os.rename(f"data/dl/{setID} .osz", f"data/dl/{newFilename}")
                 move_files(setID, rq_type)
             else:
-                log.error(f'{res.status_code}. 파일을 다운로드할 수 없습니다. chimu로 재시도!')
+                log.error(f'{statusCode}. 파일을 다운로드할 수 없습니다. chimu로 재시도!')
                 limit += 1
                 if limit < 3:
                     return dl(1, limit)
                 else:
                     log.warning(f"다운로드 요청 자체 limit 걸음! {limit}번 요청함")
-                    return res.status_code
+                    return statusCode
         return dl(0, limit=0)
     else:
         log.info(f"{get_osz_fullName(setID)} 존재함")
@@ -402,7 +409,7 @@ def read_bg(id):
             if ck is not None:
                 return ck
             return read_bg(f"+{id}")
-        return {"path": f"data/bg/{id}/{file_list[0]}", "inputType": "bsid"}
+        return f"data/bg/{id}/{file_list[0]}"
     else:
         bsid = db("cheesegull").fetch("SELECT parent_set_id FROM cheesegull.beatmaps WHERE id = %s", (id))["parent_set_id"]
         log.info(f"{id} bid cheesegull db 조회로 {bsid} bsid 얻음")
@@ -422,7 +429,7 @@ def read_bg(id):
             if ck is not None:
                 return ck
             return read_bg(id)
-        return {"path": f"data/bg/{bsid}/{file_list[0]}", "inputType": "bid"}
+        return f"data/bg/{bsid}/{file_list[0]}"
     
 def read_thumb(id):
     if "l.jpg" in id:
@@ -487,7 +494,7 @@ def read_audio(id):
             if ck is not None:
                 return ck
             return read_audio(f"+{id}")
-        return {"path": f"data/audio/{id}/{file_list[0]}", "inputType": "bsid"}
+        return f"data/audio/{id}/{file_list[0]}"
     
     else:
         bsid = db("cheesegull").fetch("SELECT parent_set_id FROM cheesegull.beatmaps WHERE id = %s", (id))["parent_set_id"]
@@ -511,7 +518,7 @@ def read_audio(id):
             if ck is not None:
                 return ck
             return read_audio(id)
-        return {"path": f"data/audio/{bsid}/{file_list[0]}", "inputType": "bid"}
+        return f"data/audio/{bsid}/{file_list[0]}"
 
 def read_preview(id):
     #source_{bsid}.mp3 먼저 확인시키기 ㄴㄴ audio에서 가져오기
