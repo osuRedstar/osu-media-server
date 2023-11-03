@@ -128,26 +128,24 @@ def osu_file_read(setID, rq_type, moving=False):
                     spaceFilter = spaceFilter.replace(" ", "", 1)
                 temp["BeatmapID"] = int(spaceFilter)
 
-                for i in beatmap_info:
-                    #중복 bid, bid <= 0
-                    if int(i["BeatmapID"]) == temp["BeatmapID"] or temp["BeatmapID"] <= 0:
-                        #확실하게 bid 얻기
-                        #temp["BeatmapID"] = filename_to_GetCheesegullDB(beatmapName)["id"]
-                        # 정규식 패턴
-                        pattern = r'\[([^\]]+)\]\.osu$'
-                        match = re.search(pattern, beatmapName)
-                        if match:
-                            diffname = match.group(1)
-                            sql = "SELECT id FROM beatmaps WHERE parent_set_id = %s AND diff_name = %s"
-                            result = db("cheesegull").fetch(sql, (setID, diffname))
-                            if result is None:
-                                return None
-                            temp["BeatmapID"] = result["id"]
+                # 정규식 패턴
+                pattern = r'\[([^\]]+)\]\.osu$'
+                match = re.search(pattern, beatmapName)
+                if match:
+                    diffname = match.group(1)
+                    sql = "SELECT id FROM beatmaps WHERE parent_set_id = %s AND diff_name = %s"
+                    RealBid = db("cheesegull").fetch(sql, (setID, diffname))
+                    if RealBid is None:
+                        log.warning(f"RealBid가 cheesegull에서 조회되지 않음! 스킵함")
+                        RealBid["id"] = temp["BeatmapID"]
 
-                        log.error(f"{i['BeatmapID']} | .osu 파일들에서 중복 bid 감지! or .osu 파일에서 bid 값이 <= 0 임 | cheesegull db에서 bid 조회함")
+                #중?복 bid, bid <= 0 감지
+                if temp["BeatmapID"] != RealBid["id"] or temp["BeatmapID"] <= 0:
+                    log.error(f"{temp['BeatmapID']} --> {RealBid['id']} | .osu 파일들에서 중복 bid 감지! or .osu 파일에서 bid 값이 <= 0 임 | cheesegull db에서 bid 조회함")
+                    temp["BeatmapID"] = RealBid["id"]
 
                 #first_bid 선별
-                if first_bid == 0:
+                if first_bid == 0 and temp["BeatmapID"] > 0:
                     first_bid = temp["BeatmapID"]
                 elif first_bid > temp["BeatmapID"] and temp["BeatmapID"] > 0:
                     first_bid = temp["BeatmapID"]
