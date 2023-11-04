@@ -137,7 +137,7 @@ def osu_file_read(setID, rq_type, moving=False):
                     RealBid = db("cheesegull").fetch(sql, (setID, diffname))
                     if RealBid is None:
                         log.warning(f"RealBid가 cheesegull에서 조회되지 않음! 스킵함")
-                        RealBid["id"] = temp["BeatmapID"]
+                        RealBid = {"id": temp["BeatmapID"]}
 
                 #중?복 bid, bid <= 0 감지
                 if temp["BeatmapID"] != RealBid["id"] or temp["BeatmapID"] <= 0:
