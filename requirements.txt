@@ -3,3 +3,4 @@ flask
 Pillow
 pymysql
 tqdm
+mutagen
