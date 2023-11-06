@@ -11,6 +11,7 @@ from PIL import Image
 import pymysql
 import hashlib
 import re
+from mutagen.mp3 import MP3
 
 #beatmap_md5
 def calculate_md5(filename):
@@ -530,13 +531,19 @@ def read_preview(id):
         #음원 하이라이트 가져오기, 밀리초라서 / 1000 함
         PreviewTime = -1
         j = osu_file_read(setID, rq_type="preview")
-        #위에서 오디오 없어서 이미 처리댐
+        #위에서 오디오 없어서 이미 처리댐 (no audio.mp3)
         if os.path.isfile(f"data/preview/{setID}/{id}"):
             return f"data/preview/{setID}/{id}"
         
         for i in j[2]:
             if j[1] == i["BeatmapID"]:
-                PreviewTime = int(i["PreviewTime"]) / 1000
+                prti = int(i["PreviewTime"])
+                if prti == -1:
+                    log.warning(f"{setID}.mp3 (source_{id}) 의 PreviewTime 값이 {prti} 이므로 TotalLength / 2.5 로 세팅함")
+                    audio = MP3(f"data/preview/{setID}/source_{id}")
+                    PreviewTime = audio.info.length / 2.5
+                else:
+                    PreviewTime = prti / 1000
         
         ffmpeg_msg = f"ffmpeg -i data\preview\{setID}\source_{id} -ss {PreviewTime} -t 30 -acodec libmp3lame data\preview\{setID}\{id}"
         log.chat(f"ffmpeg_msg = {ffmpeg_msg}")
