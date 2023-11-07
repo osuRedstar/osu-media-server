@@ -12,6 +12,8 @@ import pymysql
 import hashlib
 import re
 from mutagen.mp3 import MP3
+import winsound
+import threading
 
 #beatmap_md5
 def calculate_md5(filename):
@@ -341,6 +343,13 @@ def check(setID, rq_type):
                     newFilename = newFilename.replace("%20", " ")
 
                 log.info(f'{file_name} --> {newFilename} 다운로드 완료')
+
+                # WAV 파일 재생을 별도의 스레드에서 수행
+                def play_finished_dl():
+                    winsound.PlaySound("static/audio/match-confirm (mp3cut.net).wav", winsound.SND_FILENAME)
+                play_thread = threading.Thread(target=play_finished_dl)
+                play_thread.start()
+
                 os.rename(f"data/dl/{setID} .osz", f"data/dl/{newFilename}")
                 move_files(setID, rq_type)
             else:
@@ -355,6 +364,7 @@ def check(setID, rq_type):
     else:
         """ exceptOszList = [919187, 871223, 12483, 1197242]
 
+        #이거 redstar DB에 없는 경우 있으니 cheesegull DB에서도 추가로 참고하기
         rankStatus = db("redstar").fetch(f"SELECT ranked FROM beatmaps WHERE beatmapset_id = %s", (setID))["ranked"]
         if rankStatus <= 0 and setID not in exceptOszList:
             oszHash = calculate_md5(f"data/dl/{fullSongName}")
