@@ -539,9 +539,9 @@ def read_preview(id):
             if j[1] == i["BeatmapID"]:
                 prti = int(i["PreviewTime"])
                 if prti == -1:
-                    log.warning(f"{setID}.mp3 (source_{id}) 의 PreviewTime 값이 {prti} 이므로 TotalLength / 2.5 로 세팅함")
                     audio = MP3(f"data/preview/{setID}/source_{id}")
                     PreviewTime = audio.info.length / 2.5
+                    log.warning(f"{setID}.mp3 (source_{id}) 의 PreviewTime 값이 {prti} 이므로 TotalLength / 2.5 == {PreviewTime} 로 세팅함")
                 else:
                     PreviewTime = prti / 1000
         
