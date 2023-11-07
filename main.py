@@ -3,7 +3,7 @@ import config
 import tornado.ioloop
 import tornado.web
 import lets_common_log.logUtils as log
-from functions import read_list, read_bg, read_thumb, read_audio, read_preview, read_video, read_osz, read_osz_b, read_osu, folder_check, read_osu_filename
+from functions import *
 import json
 
 conf = config.config("config.ini")
@@ -36,23 +36,23 @@ def request_msg(self):
 
 def send404(self, inputType, input):
     self.set_status(404)
-    self.set_header("return-filename", json.dumps({"filename": "404.html", "path": "templates/404.html"}))
+    self.set_header("return-fileinfo", json.dumps({"filename": "404.html", "path": "templates/404.html", "fileMd5": calculate_md5("templates/404.html")}))
     self.render("templates/404.html", inputType=inputType, input=input)
 
 def send500(self, inputType, input):
     self.set_status(500)
-    self.set_header("return-filename", json.dumps({"filename": "500.html", "path": "templates/500.html"}))
+    self.set_header("return-fileinfo", json.dumps({"filename": "500.html", "path": "templates/500.html", "fileMd5": calculate_md5("templates/500.html")}))
     self.render("templates/500.html", inputType=inputType, input=input)
 
 def send503(self, inputType, input):
     self.set_status(503)
-    self.set_header("return-filename", json.dumps({"filename": "503.html", "path": "templates/503.html"}))
+    self.set_header("return-fileinfo", json.dumps({"filename": "503.html", "path": "templates/503.html", "fileMd5": calculate_md5("templates/503.html")}))
     self.render("templates/503.html", inputType=inputType, input=input)
 
 def send504(self, inputType, input):
     #cloudflare 504 페이지로 연결됨
     self.set_status(504)
-    self.set_header("return-filename", json.dumps({"filename": "504.html", "path": "templates/504.html"}))
+    self.set_header("return-fileinfo", json.dumps({"filename": "504.html", "path": "templates/504.html", "fileMd5": calculate_md5("templates/504.html")}))
     self.render("templates/504.html", inputType=inputType, input=input)
 
 ####################################################################################################
@@ -60,13 +60,13 @@ def send504(self, inputType, input):
 class MainHandler(tornado.web.RequestHandler):
     def get(self):
         request_msg(self)
-        self.set_header("return-filename", json.dumps({"filename": "index.html", "path": "templates/index.html"}))
+        self.set_header("return-fileinfo", json.dumps({"filename": "index.html", "path": "templates/index.html", "fileMd5": calculate_md5("templates/index.html")}))
         self.render("templates/index.html")
 
 class ListHandler(tornado.web.RequestHandler):
     def get(self):
         request_msg(self)
-        self.set_header("return-filename", json.dumps({"filename": "", "path": ""}))
+        self.set_header("return-fileinfo", json.dumps({"filename": "", "path": "", "fileMd5": ""}))
         self.set_header("Content-Type", "application/json")
         self.write(json.dumps(read_list(), indent=2, ensure_ascii=False))
 
@@ -86,7 +86,7 @@ class BgHandler(tornado.web.RequestHandler):
             elif file == 504:
                 return send504(self, idType, id)
             else: 
-                self.set_header("return-filename", json.dumps({"filename": id, "path": file}))
+                self.set_header("return-fileinfo", json.dumps({"filename": id, "path": file, "fileMd5": calculate_md5(file)}))
                 self.set_header('Content-Type', 'image/jpeg')
                 with open(file, 'rb') as f:
                     self.write(f.read())
@@ -105,7 +105,7 @@ class ThumbHandler(tornado.web.RequestHandler):
             elif file == 504:
                 return send504(self, "bsid", id)
             else:
-                self.set_header("return-filename", json.dumps({"filename": id, "path": file}))
+                self.set_header("return-fileinfo", json.dumps({"filename": id, "path": file, "fileMd5": calculate_md5(file)}))
                 self.set_header('Content-Type', 'image/jpeg')
                 with open(file, 'rb') as f:
                     self.write(f.read())
@@ -124,7 +124,7 @@ class PreviewHandler(tornado.web.RequestHandler):
             elif file == 504:
                 return send504(self, "bsid", id)
             else:
-                self.set_header("return-filename", json.dumps({"filename": id, "path": file}))
+                self.set_header("return-fileinfo", json.dumps({"filename": id, "path": file, "fileMd5": calculate_md5(file)}))
                 self.set_header('Content-Type', 'audio/mp3')
                 with open(file, 'rb') as f:
                     self.write(f.read())
@@ -147,7 +147,7 @@ class AudioHandler(tornado.web.RequestHandler):
             elif file == 504:
                 return send504(self, idType, id)
             else:
-                self.set_header("return-filename", json.dumps({"filename": id, "path": file}))
+                self.set_header("return-fileinfo", json.dumps({"filename": id, "path": file, "fileMd5": calculate_md5(file)}))
                 self.set_header('Content-Type', 'audio/mp3')
                 with open(file, 'rb') as f:
                     self.write(f.read())
@@ -166,13 +166,13 @@ class VideoHandler(tornado.web.RequestHandler):
             elif readed_read_video == 504:
                 return send504(self, "bid", id)
             elif readed_read_video.endswith(".mp4"):
-                self.set_header("return-filename", json.dumps({"filename": id, "path": readed_read_video}))
+                self.set_header("return-fileinfo", json.dumps({"filename": id, "path": readed_read_video, "fileMd5": calculate_md5(readed_read_video)}))
                 self.set_header('Content-Type', 'video/mp4')
                 with open(readed_read_video, 'rb') as f:
                     self.write(f.read())
             else:
                 self.set_status(404)
-                self.set_header("return-filename", json.dumps({"filename": id, "path": readed_read_video}))
+                self.set_header("return-fileinfo", json.dumps({"filename": id, "path": readed_read_video, "fileMd5": calculate_md5(readed_read_video)}))
                 self.set_header("Content-Type", "application/json")
                 self.write(json.dumps({"code": 404, "message": "Sorry Beatmap has no videos", "funcmsg": readed_read_video}, indent=2, ensure_ascii=False))
         except:
@@ -192,7 +192,7 @@ class OszHandler(tornado.web.RequestHandler):
             elif path == 0:
                 self.write("ERROR")
             else:
-                self.set_header("return-filename", json.dumps({"filename": path["filename"], "path": path["path"]}))
+                self.set_header("return-fileinfo", json.dumps({"filename": path["filename"], "path": path["path"], "fileMd5": calculate_md5(path["path"])}))
                 self.set_header('Content-Type', 'application/x-osu-beatmap-archive')
                 self.set_header('Content-Disposition', f'attachment; filename="{path["filename"]}"')
                 with open(path['path'], 'rb') as f:
@@ -214,7 +214,7 @@ class OszBHandler(tornado.web.RequestHandler):
             elif path == 0:
                 self.write("ERROR")
             else:
-                self.set_header("return-filename", json.dumps({"filename": path["filename"], "path": path["path"]}))
+                self.set_header("return-fileinfo", json.dumps({"filename": path["filename"], "path": path["path"], "fileMd5": calculate_md5(path["path"])}))
                 self.set_header('Content-Type', 'application/x-osu-beatmap-archive')
                 self.set_header('Content-Disposition', f'attachment; filename="{path["filename"]}"')
                 with open(path['path'], 'rb') as f:
@@ -234,7 +234,7 @@ class OsuHandler(tornado.web.RequestHandler):
             elif path == 504:
                 return send504(self, "bid", id)
             else:
-                self.set_header("return-filename", json.dumps({"filename": path["filename"], "path": path["path"]}))
+                self.set_header("return-fileinfo", json.dumps({"filename": path["filename"], "path": path["path"], "fileMd5": calculate_md5(path["path"])}))
                 self.set_header('Content-Type', 'application/x-osu-beatmap')
                 self.set_header('Content-Disposition', f'attachment; filename="{path["filename"]}"')
                 with open(path['path'], 'rb') as f:
@@ -245,7 +245,7 @@ class OsuHandler(tornado.web.RequestHandler):
 class FaviconHandler(tornado.web.RequestHandler):
     def get(self):
         request_msg(self)
-        self.set_header("return-filename", json.dumps({"filename": "favicon.png", "path": "static/img/favicon.png"}))
+        self.set_header("return-fileinfo", json.dumps({"filename": "favicon.png", "path": "static/img/favicon.png", "fileMd5": calculate_md5("static/img/favicon.png")}))
         self.set_header('Content-Type', 'image/png')
         with open("static/img/favicon.png", 'rb') as f:
             self.write(f.read())
@@ -253,14 +253,14 @@ class FaviconHandler(tornado.web.RequestHandler):
 class StaticHandler(tornado.web.RequestHandler):
     def get(self, item):
         request_msg(self)
-        self.set_header("return-filename", json.dumps({"filename": item, "path": f"static/{item}"}))
+        self.set_header("return-fileinfo", json.dumps({"filename": item, "path": f"static/{item}", "fileMd5": calculate_md5(f"static/{item}")}))
         with open(f"static/{item}", 'rb') as f:
                 self.write(f.read())
 
 class robots_txt(tornado.web.RequestHandler):
     def get(self):
         request_msg(self)
-        self.set_header("return-filename", json.dumps({"filename": "robots.txt", "path": "robots.txt"}))
+        self.set_header("return-fileinfo", json.dumps({"filename": "robots.txt", "path": "robots.txt", "fileMd5": calculate_md5("robots.txt")}))
         self.set_header("Content-Type", "text/plain")
         with open("robots.txt", 'rb') as f:
             self.write(f.read())
@@ -268,7 +268,7 @@ class robots_txt(tornado.web.RequestHandler):
 class StatusHandler(tornado.web.RequestHandler):
     def get(self):
         request_msg(self)
-        self.set_header("return-filename", json.dumps({"filename": "", "path": ""}))
+        self.set_header("return-fileinfo", json.dumps({"filename": "", "path": "", "fileMd5": ""}))
         self.set_header("Content-Type", "application/json")
         self.write(json.dumps({"code": 200, "oszCount": read_list()["osz"]["count"]}, indent=2, ensure_ascii=False))
 
@@ -286,7 +286,7 @@ class webMapsHandler(tornado.web.RequestHandler):
             elif path is None:
                 return None
             else:
-                self.set_header("return-filename", json.dumps({"filename": path["filename"], "path": path["path"]}))
+                self.set_header("return-fileinfo", json.dumps({"filename": path["filename"], "path": path["path"], "fileMd5": calculate_md5(path["path"])}))
                 self.set_header('Content-Type', 'application/x-osu-beatmap')
                 self.set_header('Content-Disposition', f'attachment; filename="{path["filename"]}"')
                 with open(path['path'], 'rb') as f:
@@ -298,7 +298,7 @@ class searchHandler(tornado.web.RequestHandler):
     def get(self, q):
         request_msg(self)
         log.debug(self.request.uri)
-        self.set_header("return-filename", json.dumps({"filename": "mirror.html", "path": "templates/mirror.html"}))
+        self.set_header("return-fileinfo", json.dumps({"filename": "mirror.html", "path": "templates/mirror.html", "fileMd5": calculate_md5("templates/mirror.html")}))
         self.render("templates/mirror.html", cheesegullUrlParam=self.request.uri)
 
 def make_app():
