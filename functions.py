@@ -137,7 +137,13 @@ def osu_file_read(setID, rq_type, moving=False):
                 if match:
                     diffname = match.group(1)
                     sql = "SELECT id FROM beatmaps WHERE parent_set_id = %s AND diff_name = %s"
-                    RealBid = db("cheesegull").fetch(sql, (setID, diffname))
+                    # windows 특수문자 이슈
+                    if diffname != temp["Version"] and temp["Version"] != "":
+                        log.error(f"매치 안됨! .osu안의 결과물 사용! | diffname = {diffname} | temp['Version'] = {temp['Version']}")
+                        RealBid = db("cheesegull").fetch(sql, (setID, temp["Version"]))
+                    else:
+                        RealBid = db("cheesegull").fetch(sql, (setID, diffname))
+
                     if RealBid is None:
                         log.warning(f"RealBid가 cheesegull에서 조회되지 않음! 스킵함")
                         RealBid = {"id": temp["BeatmapID"]}
@@ -153,6 +159,11 @@ def osu_file_read(setID, rq_type, moving=False):
                 elif first_bid > temp["BeatmapID"] and temp["BeatmapID"] > 0:
                     first_bid = temp["BeatmapID"]
 
+            elif "Version" in line:
+                spaceFilter = line.replace("Version:", "").replace("\n", "")
+                if spaceFilter.startswith(" "):
+                    spaceFilter = spaceFilter.replace(" ", "", 1)
+                temp["Version"] = spaceFilter
             elif "AudioFilename" in line and (rq_type == "audio" or rq_type == "preview"):
                 spaceFilter = line.replace("AudioFilename:", "").replace("\n", "")
                 if spaceFilter.startswith(" "):
