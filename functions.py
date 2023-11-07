@@ -303,10 +303,10 @@ def check(setID, rq_type):
         log.error(f"{fullSongName} | 존재는 하나 꺠지거나 문제가 있음. 재 다운로드중...")
         fullSongName = 0
 
+    url = [f'https://api.nerinyan.moe/d/{setID}', f"https://chimu.moe/d/{setID}"]
+
     if fullSongName == 0:
         log.warning(f"{setID} 맵셋 osz 존재하지 않음. 다운로드중...")
-        
-        url = [f'https://proxy.nerinyan.moe/d/{setID}', f"https://chimu.moe/d/{setID}"]
         
         limit = 0
         def dl(site, limit):
@@ -353,6 +353,27 @@ def check(setID, rq_type):
                     return statusCode
         return dl(0, limit=0)
     else:
+        exceptOszList = [919187, 871223, 12483, 1197242]
+
+        rankStatus = db("redstar").fetch(f"SELECT ranked FROM beatmaps WHERE beatmapset_id = %s", (setID))["ranked"]
+        if rankStatus <= 0 and setID not in exceptOszList:
+            oszHash = calculate_md5(f"data/dl/{fullSongName}")
+            log.debug(f"oszHash = {oszHash}")
+            for i in url:
+                newOszHash = requests.get(i, headers=requestHeaders, timeout=5)
+                if newOszHash.status_code == 200:
+                    with open(f"data/dl/{setID}t .osz", 'wb') as file:
+                        file.write(newOszHash.content)
+                    newOszHash = calculate_md5(f"data/dl/{fullSongName}")
+                    log.debug(f"newOszHash = {newOszHash}")
+                    if oszHash != newOszHash:
+                        log.warning(f"{setID} 가 최신이 아닙니다!")
+                        return dl(0, limit=0)
+                    else:
+                        break
+                else:
+                    continue
+
         log.info(f"{get_osz_fullName(setID)} 존재함")
         move_files(setID, rq_type)
 
@@ -612,19 +633,7 @@ def read_osz(id):
 def read_osz_b(id):
     bsid = db("cheesegull").fetch("SELECT parent_set_id FROM cheesegull.beatmaps WHERE id = %s", (id))["parent_set_id"]
     log.info(f"{id} bid cheesegull db 조회로 {bsid} bsid 얻음")
-
-    filename = get_osz_fullName(bsid)
-    if filename != f"{bsid} .osz" and os.path.isfile(f"data/dl/{filename}"):
-        return {"path": f"data/dl/{filename}", "filename": filename}
-    else:
-        ck = check(bsid, rq_type="osz")
-        if ck is not None:
-            return ck
-        newFilename = get_osz_fullName(bsid)
-        if os.path.isfile(f"data/dl/{newFilename}"):
-            return {"path": f"data/dl/{newFilename}", "filename": newFilename}
-        else:
-            return 0
+    return read_osz(bsid)
 
 def read_osu(id):
     bsid = db("cheesegull").fetch("SELECT parent_set_id FROM cheesegull.beatmaps WHERE id = %s", (id))["parent_set_id"]
