@@ -17,7 +17,7 @@ def txtLOG_errorAdded(msg):
 
 start = time.time()
 
-start_bid = 1
+start_bid = 16330
 SetID = db("cheesegull").fetch("SELECT id FROM sets WHERE id >= %s ORDER BY id", (start_bid))
 
 log.debug(f"len(SetID) = {len(SetID)}")
@@ -52,7 +52,7 @@ host = "http://localhost:6199"
 
         insertDBStatusCode(i, r.status_code)
 
-        time.sleep(1) """
+        time.sleep(5) """
 
 def thumb():
     for i in SetID:
@@ -72,7 +72,7 @@ def thumb():
         
         insertDBStatusCode(i, r.status_code)
 
-        time.sleep(1)
+        time.sleep(5)
 
 def preview():
     for i in SetID:
@@ -83,7 +83,7 @@ def preview():
 
         insertDBStatusCode(i, r.status_code)
 
-        time.sleep(1)
+        time.sleep(5)
 
 thumb()
 
