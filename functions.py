@@ -353,7 +353,7 @@ def check(setID, rq_type):
                     return statusCode
         return dl(0, limit=0)
     else:
-        exceptOszList = [919187, 871223, 12483, 1197242]
+        """ exceptOszList = [919187, 871223, 12483, 1197242]
 
         rankStatus = db("redstar").fetch(f"SELECT ranked FROM beatmaps WHERE beatmapset_id = %s", (setID))["ranked"]
         if rankStatus <= 0 and setID not in exceptOszList:
@@ -372,7 +372,7 @@ def check(setID, rq_type):
                     else:
                         break
                 else:
-                    continue
+                    continue """
 
         log.info(f"{get_osz_fullName(setID)} 존재함")
         move_files(setID, rq_type)
