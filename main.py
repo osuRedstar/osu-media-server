@@ -245,9 +245,9 @@ class OsuHandler(tornado.web.RequestHandler):
 class FaviconHandler(tornado.web.RequestHandler):
     def get(self):
         request_msg(self)
-        self.set_header("return-fileinfo", json.dumps({"filename": "favicon.png", "path": "static/img/favicon.png", "fileMd5": calculate_md5("static/img/favicon.png")}))
-        self.set_header('Content-Type', 'image/png')
-        with open("static/img/favicon.png", 'rb') as f:
+        self.set_header("return-fileinfo", json.dumps({"filename": "favicon.ico", "path": "static/img/favicon.ico", "fileMd5": calculate_md5("static/img/favicon.ico")}))
+        self.set_header('Content-Type', 'image/x-icon')
+        with open("static/img/favicon.ico", 'rb') as f:
             self.write(f.read())
 
 class StaticHandler(tornado.web.RequestHandler):
@@ -315,6 +315,8 @@ def make_app():
         (r"/osu/([^/]+)", OsuHandler),
         (r"/favicon.ico", FaviconHandler),
         (r"/static/(.*)", StaticHandler),
+        #(r"/favicon.ico", tornado.web.StaticFileHandler, {"path": "static/img/favicon.ico"})
+        #(r'/static/(.*)', tornado.web.StaticFileHandler, {'path': 'static'}),
         (r"/robots.txt", robots_txt),
         (r"/status", StatusHandler),
         (r"/web/maps/(.*)", webMapsHandler),
