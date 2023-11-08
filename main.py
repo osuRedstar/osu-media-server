@@ -47,9 +47,10 @@ def send500(self, inputType, input):
 
 def send503(self, e, inputType, input):
     self.set_status(503)
-    self.set_header("Exception", json.dumps({"type": str(type(e)), "error": str(e)}, ensure_ascii=False))
+    Exception = json.dumps({"type": str(type(e)), "error": str(e)}, ensure_ascii=False)
+    self.set_header("Exception", Exception)
     self.set_header("return-fileinfo", json.dumps({"filename": "503.html", "path": "templates/503.html", "fileMd5": calculate_md5("templates/503.html")}))
-    self.render("templates/503.html", inputType=inputType, input=input)
+    self.render("templates/503.html", inputType=inputType, input=input, Exception=Exception)
 
 def send504(self, inputType, input):
     #cloudflare 504 페이지로 연결됨
