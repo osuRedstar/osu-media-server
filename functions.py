@@ -263,6 +263,7 @@ def move_files(setID, rq_type):
                 if rq_type == "audio":
                     try:
                         shutil.copy(f"data/dl/{setID}/{item['AudioFilename']}", f"data/audio/{setID}/{item['AudioFilename']}")
+                        log.info(f"{setID} 비트맵셋, {item['BeatmapID']} 비트맵 | audio 처리함")
                     except:
                         log.error(f"{setID} 비트맵셋은 audio가 없음 | no audio.mp3로 저장함")
                         shutil.copy(f"static/audio/no audio.mp3", f"data/audio/{setID}/no audio.mp3")
@@ -279,6 +280,7 @@ def move_files(setID, rq_type):
                 try:
                     extension = item["BeatmapBG"][-5:][item["BeatmapBG"][-5:].find("."):]
                     shutil.copy(f"data/dl/{setID}/{item['BeatmapBG']}", f"data/bg/{setID}/{item['BeatmapID']}{extension}")
+                    log.info(f"{item['BeatmapID']} 비트맵 | BG 처리함")
                 except:
                     log.error(f"{item['BeatmapID']} 비트맵은 BG가 없음 | no image.png로 저장함")
                     shutil.copy(f"static/img/no image.png", f"data/bg/{setID}/{item['BeatmapID']}.png")
@@ -286,6 +288,7 @@ def move_files(setID, rq_type):
             if rq_type == "audio":
                 try:
                     shutil.copy(f"data/dl/{setID}/{item['AudioFilename']}", f"data/audio/{setID}/{item['AudioFilename']}")
+                    log.info(f"{item['BeatmapID']} 비트맵 | audio 처리함")
                 except:
                     log.error(f"{item['BeatmapID']} 비트맵은 audio가 없음 | no audio.mp3로 저장함")
                     shutil.copy(f"static/audio/no audio.mp3", f"data/audio/{setID}/no audio.mp3")
@@ -299,6 +302,7 @@ def move_files(setID, rq_type):
             
             if not IS_YOU_HAVE_OSU_PRIVATE_SERVER and rq_type == "osu":
                 shutil.copy(f"data/dl/{setID}/{item['beatmapName']}", f"data/osu/{setID}/{item['BeatmapID']}.osu")
+                log.info(f"{item['BeatmapID']} 비트맵 | osu 처리함")
 
             #lets | read_osu
             if rq_type.startswith("read_osu"):
@@ -306,6 +310,7 @@ def move_files(setID, rq_type):
                 if int(item['BeatmapID']) == bid:
                     log.info(rq_type)
                     shutil.copy(f"data/dl/{setID}/{item['beatmapName']}", f"B:/redstar/lets/.data/beatmaps/{bid}.osu")
+                    log.info(f"{bid}.osu | lets에 넣음")
                     shutil.rmtree(f"data/dl/{setID}")
                     return 0
 
@@ -534,6 +539,13 @@ def read_audio(id):
             check(id, rq_type="audio")
 
         file_list = [file for file in os.listdir(f"data/audio/{id}")]
+
+        if len(file_list) > 1:
+            AF = osu_file_read(id, rq_type="audio")
+            for i in AF[2]:
+                if AF[1] == i["BeatmapID"]:
+                    return f"data/audio/{id}/{i['AudioFilename']}"
+
         try:
             type(file_list[0])
         except:
@@ -555,10 +567,14 @@ def read_audio(id):
                 return ck
 
         file_list = [file for file in os.listdir(f"data/audio/{bsid}")]
+
+        if len(file_list) > 1:
+            AF = osu_file_read(bsid, rq_type="audio")
+            for i in AF[2]:
+                if int(id) == i["BeatmapID"]:
+                    return f"data/audio/{bsid}/{i['AudioFilename']}"
+
         try:
-            #루한루프 잡자
-            #type(file_list[0])
-            #log.debug(type(file_list[0]))
             type(file_list[0])
         except:
             log.error(f"bid = {id} | audio type(file_list[0]) 에러")
@@ -632,6 +648,13 @@ def read_video(id):
         #임시로 try 박아둠, 나중에 반초라던지 비디오 있나 요청하는거로 바꾸기
         try:
             file_list = [file for file in os.listdir(f"data/video/{bsid}") if file.endswith(".mp4")]
+
+            if len(file_list) > 1:
+                AF = osu_file_read(bsid, rq_type="video")
+                for i in AF[2]:
+                    if int(id) == i["BeatmapID"]:
+                        return f"data/video/{bsid}/{i['BeatmapVideo']}"
+        
             try:
                 #log.debug(type(file_list[0]))
                 type(file_list[0])
