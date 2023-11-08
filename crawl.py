@@ -17,7 +17,7 @@ def txtLOG_errorAdded(msg):
 
 start = time.time()
 
-start_bid = 16330
+start_bid = 26044
 SetID = db("cheesegull").fetch("SELECT id FROM sets WHERE id >= %s ORDER BY id", (start_bid))
 
 log.debug(f"len(SetID) = {len(SetID)}")
@@ -26,20 +26,21 @@ Header = {
     "User-Agent": "mediaserver self crawl"
 }
 
-def insertDBStatusCode(bsid, status_code):
+def insertDBStatusCode(bsid, r):
     sql = '''
         SELECT CONCAT(s.artist, ' - ', s.title, ' (', s.creator, ')') AS filename
         FROM sets AS s
         WHERE s.id = %s
     '''
     filename = db("cheesegull").fetch(sql, (bsid))["filename"]
-    result = db("cheesegull").fetch("SELECT * FROM download_status WHERE bsid = %s", (bsid))
+    e = r.headers.get('Exception', None)
     nowTime = time.time()
+    result = db("cheesegull").fetch("SELECT * FROM download_status WHERE bsid = %s", (bsid))
     if result is None:
-        db("cheesegull").execute("INSERT INTO download_status (id, bsid, filename, http_statusCode, update_time) VALUE (%s, %s, %s, %s, %s)", ("NULL", bsid, filename, status_code, nowTime))
+        db("cheesegull").execute("INSERT INTO download_status (id, bsid, filename, http_statusCode, Exception, update_time) VALUE (%s, %s, %s, %s, %s, %s)", ("NULL", bsid, filename, r.status_code, e, nowTime))
     else:
         log.warning(f"cheesegull.download_status 테이블이 이미 {bsid} 비트맵셋에 대한 정보가 있음")
-        db("cheesegull").execute("UPDATE download_status SET http_statusCode = %s, update_time = %s WHERE bsid = %s", (status_code, nowTime, bsid))
+        db("cheesegull").execute("UPDATE download_status SET http_statusCode = %s, Exception = %s, update_time = %s WHERE bsid = %s", (r.status_code, e, nowTime, bsid))
 
 host = "http://localhost:6199"
 
@@ -50,7 +51,7 @@ host = "http://localhost:6199"
         if r.status_code != 200:
             txtLOG_errorAdded(f"bsid = +{i} | status_code = {r.status_code}")
 
-        insertDBStatusCode(i, r.status_code)
+        insertDBStatusCode(i, r)
 
         time.sleep(5) """
 
@@ -70,7 +71,7 @@ def thumb():
         else:
             log.warning(f"{i} | 코드 {r.status_code}으로 thumb 1번만 요청함")
         
-        insertDBStatusCode(i, r.status_code)
+        insertDBStatusCode(i, r)
 
         time.sleep(5)
 
@@ -81,7 +82,7 @@ def preview():
         if r.status_code != 200:
             txtLOG_errorAdded(f"bsid = {i}.mp3 | status_code = {r.status_code}")
 
-        insertDBStatusCode(i, r.status_code)
+        insertDBStatusCode(i, r)
 
         time.sleep(5)
 
