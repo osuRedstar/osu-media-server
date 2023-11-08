@@ -5,6 +5,7 @@ import tornado.web
 import lets_common_log.logUtils as log
 from functions import *
 import json
+import traceback
 
 conf = config.config("config.ini")
 
@@ -92,7 +93,8 @@ class BgHandler(tornado.web.RequestHandler):
                 with open(file, 'rb') as f:
                     self.write(f.read())
         except Exception as e:
-            log.error(e)
+            log.warning(e)
+            log.error(traceback.format_exc())
             return send503(self, e, idType, id)
 
 class ThumbHandler(tornado.web.RequestHandler):
@@ -112,7 +114,8 @@ class ThumbHandler(tornado.web.RequestHandler):
                 with open(file, 'rb') as f:
                     self.write(f.read())
         except Exception as e:
-            log.error(e)
+            log.warning(e)
+            log.error(traceback.format_exc())
             return send503(self, e, "bsid", id)
 
 class PreviewHandler(tornado.web.RequestHandler):
@@ -132,7 +135,8 @@ class PreviewHandler(tornado.web.RequestHandler):
                 with open(file, 'rb') as f:
                     self.write(f.read())
         except Exception as e:
-            log.error(e)
+            log.warning(e)
+            log.error(traceback.format_exc())
             return send503(self, e, "bsid", id)
 
 class AudioHandler(tornado.web.RequestHandler):
@@ -156,7 +160,8 @@ class AudioHandler(tornado.web.RequestHandler):
                 with open(file, 'rb') as f:
                     self.write(f.read())
         except Exception as e:
-            log.error(e)
+            log.warning(e)
+            log.error(traceback.format_exc())
             return send503(self, e, idType, id)
 
 class VideoHandler(tornado.web.RequestHandler):
@@ -181,7 +186,8 @@ class VideoHandler(tornado.web.RequestHandler):
                 self.set_header("Content-Type", "application/json")
                 self.write(json.dumps({"code": 404, "message": "Sorry Beatmap has no videos", "funcmsg": readed_read_video}, indent=2, ensure_ascii=False))
         except Exception as e:
-            log.error(e)
+            log.warning(e)
+            log.error(traceback.format_exc())
             return send503(self, e, "bid", id)
 
 class OszHandler(tornado.web.RequestHandler):
@@ -204,7 +210,8 @@ class OszHandler(tornado.web.RequestHandler):
                 with open(path['path'], 'rb') as f:
                     self.write(f.read())
         except Exception as e:
-            log.error(e)
+            log.warning(e)
+            log.error(traceback.format_exc())
             return send503(self, e, "bsid", id)
 
 class OszBHandler(tornado.web.RequestHandler):
@@ -227,7 +234,8 @@ class OszBHandler(tornado.web.RequestHandler):
                 with open(path['path'], 'rb') as f:
                     self.write(f.read())
         except Exception as e:
-            log.error(e)
+            log.warning(e)
+            log.error(traceback.format_exc())
             return send503(self, e, "bid", id)
 
 class OsuHandler(tornado.web.RequestHandler):
@@ -248,7 +256,8 @@ class OsuHandler(tornado.web.RequestHandler):
                 with open(path['path'], 'rb') as f:
                     self.write(f.read())
         except Exception as e:
-            log.error(e)
+            log.warning(e)
+            log.error(traceback.format_exc())
             return send503(self, e, "bid", id)
 
 class FaviconHandler(tornado.web.RequestHandler):
@@ -301,7 +310,8 @@ class webMapsHandler(tornado.web.RequestHandler):
                 with open(path['path'], 'rb') as f:
                     self.write(f.read())
         except Exception as e:
-            log.error(e)
+            log.warning(e)
+            log.error(traceback.format_exc())
             return send503(self, e, "filename", filename)
 
 class searchHandler(tornado.web.RequestHandler):
