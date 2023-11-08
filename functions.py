@@ -103,31 +103,7 @@ def osu_file_read(setID, rq_type, moving=False):
                 if int(osu_file_format_version) < 10:
                     underV10 = True
                     log.error(f"{setID} 비트맵셋의 어떤 비트맵은 시이이이이발 osu file format 이 10이하 ({osu_file_format_version}) 이네요? 시발련들아?")
-
-                    # 정규식 패턴
-                    pattern = r'\[([^\]]+)\]\.osu$'
-                    match = re.search(pattern, beatmapName)
-                    if match:
-                        diffname = match.group(1)
-                        sql = "SELECT id FROM beatmaps WHERE parent_set_id = %s AND diff_name = %s"
-                        # windows 특수문자 이슈
-                        if diffname != temp["Version"] and temp["Version"] != "":
-                            log.error(f"diffname 매치 안됨! .osu안의 결과물 사용! | diffname = {diffname} | temp['Version'] = {temp['Version']}")
-                            result = db("cheesegull").fetch(sql, (setID, temp["Version"]))
-                        else:
-                            result = db("cheesegull").fetch(sql, (setID, diffname))
-
-                        if result is None:
-                            return None
-                        temp["BeatmapID"] = result["id"]
-
-                    log.info(f"{setID} 틀딱곡 cheesegull db에서 조회완료")
-                    log.warning(f"{setID}/{temp['BeatmapID']} 틀딱곡 BeatmapID 세팅 완료")
-                    #first_bid 선별
-                    if first_bid == 0:
-                        first_bid = temp["BeatmapID"]
-                    elif first_bid > temp["BeatmapID"] and temp["BeatmapID"] > 0:
-                        first_bid = temp["BeatmapID"]
+                    #틀딱곡 BeatmapID 를 Version 쪽에 넘김
 
             if "BeatmapID" in line and not underV10:
                 spaceFilter = line.replace("BeatmapID:", "").replace("\n", "")
@@ -168,6 +144,33 @@ def osu_file_read(setID, rq_type, moving=False):
                 if spaceFilter.startswith(" "):
                     spaceFilter = spaceFilter.replace(" ", "", 1)
                 temp["Version"] = spaceFilter
+
+                #틀딱곡 BeatmapID 넘겨옴
+                if underV10:
+                    # 정규식 패턴
+                    pattern = r'\[([^\]]+)\]\.osu$'
+                    match = re.search(pattern, beatmapName)
+                    if match:
+                        diffname = match.group(1)
+                        sql = "SELECT id FROM beatmaps WHERE parent_set_id = %s AND diff_name = %s"
+                        # windows 특수문자 이슈
+                        if diffname != temp["Version"] and temp["Version"] != "":
+                            log.error(f"diffname 매치 안됨! .osu안의 결과물 사용! | diffname = {diffname} | temp['Version'] = {temp['Version']}")
+                            result = db("cheesegull").fetch(sql, (setID, temp["Version"]))
+                        else:
+                            result = db("cheesegull").fetch(sql, (setID, diffname))
+
+                        if result is None:
+                            return None
+                        temp["BeatmapID"] = result["id"]
+
+                    log.info(f"{setID} 틀딱곡 cheesegull db에서 조회완료")
+                    log.warning(f"{setID}/{temp['BeatmapID']} 틀딱곡 BeatmapID 세팅 완료")
+                    #first_bid 선별
+                    if first_bid == 0:
+                        first_bid = temp["BeatmapID"]
+                    elif first_bid > temp["BeatmapID"] and temp["BeatmapID"] > 0:
+                        first_bid = temp["BeatmapID"]
             elif "AudioFilename" in line and (rq_type == "audio" or rq_type == "preview"):
                 spaceFilter = line.replace("AudioFilename:", "").replace("\n", "")
                 if spaceFilter.startswith(" "):
@@ -356,6 +359,7 @@ def check(setID, rq_type):
                 newFilename = header_filename[header_filename.find('filename='):].replace("filename=", "").replace('"', "")
                 if site == 1 and  "%20" in newFilename:
                     newFilename = newFilename.replace("%20", " ")
+                newFilename = re.sub(r'[<>:"/\\|?*]', '_', newFilename)
 
                 log.info(f'{file_name} --> {newFilename} 다운로드 완료')
 
