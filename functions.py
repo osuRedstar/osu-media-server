@@ -104,15 +104,19 @@ def osu_file_read(setID, rq_type, moving=False):
                     underV10 = True
                     log.error(f"{setID} 비트맵셋의 어떤 비트맵은 시이이이이발 osu file format 이 10이하 ({osu_file_format_version}) 이네요? 시발련들아?")
 
-                    #temp["BeatmapID"] = filename_to_GetCheesegullDB(beatmapName)["id"]
-
                     # 정규식 패턴
                     pattern = r'\[([^\]]+)\]\.osu$'
                     match = re.search(pattern, beatmapName)
                     if match:
                         diffname = match.group(1)
                         sql = "SELECT id FROM beatmaps WHERE parent_set_id = %s AND diff_name = %s"
-                        result = db("cheesegull").fetch(sql, (setID, diffname))
+                        # windows 특수문자 이슈
+                        if diffname != temp["Version"] and temp["Version"] != "":
+                            log.error(f"diffname 매치 안됨! .osu안의 결과물 사용! | diffname = {diffname} | temp['Version'] = {temp['Version']}")
+                            result = db("cheesegull").fetch(sql, (setID, temp["Version"]))
+                        else:
+                            result = db("cheesegull").fetch(sql, (setID, diffname))
+
                         if result is None:
                             return None
                         temp["BeatmapID"] = result["id"]
@@ -139,7 +143,7 @@ def osu_file_read(setID, rq_type, moving=False):
                     sql = "SELECT id FROM beatmaps WHERE parent_set_id = %s AND diff_name = %s"
                     # windows 특수문자 이슈
                     if diffname != temp["Version"] and temp["Version"] != "":
-                        log.error(f"매치 안됨! .osu안의 결과물 사용! | diffname = {diffname} | temp['Version'] = {temp['Version']}")
+                        log.error(f"diffname 매치 안됨! .osu안의 결과물 사용! | diffname = {diffname} | temp['Version'] = {temp['Version']}")
                         RealBid = db("cheesegull").fetch(sql, (setID, temp["Version"]))
                     else:
                         RealBid = db("cheesegull").fetch(sql, (setID, diffname))
