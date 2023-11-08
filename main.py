@@ -44,8 +44,9 @@ def send500(self, inputType, input):
     self.set_header("return-fileinfo", json.dumps({"filename": "500.html", "path": "templates/500.html", "fileMd5": calculate_md5("templates/500.html")}))
     self.render("templates/500.html", inputType=inputType, input=input)
 
-def send503(self, inputType, input):
+def send503(self, e, inputType, input):
     self.set_status(503)
+    self.set_header("Exception", json.dumps({"type": str(type(e)), "error": str(e)}, ensure_ascii=False))
     self.set_header("return-fileinfo", json.dumps({"filename": "503.html", "path": "templates/503.html", "fileMd5": calculate_md5("templates/503.html")}))
     self.render("templates/503.html", inputType=inputType, input=input)
 
@@ -90,8 +91,9 @@ class BgHandler(tornado.web.RequestHandler):
                 self.set_header('Content-Type', 'image/jpeg')
                 with open(file, 'rb') as f:
                     self.write(f.read())
-        except:
-            return send503(self, idType, id)
+        except Exception as e:
+            log.error(e)
+            return send503(self, e, idType, id)
 
 class ThumbHandler(tornado.web.RequestHandler):
     def get(self, id):
@@ -109,8 +111,9 @@ class ThumbHandler(tornado.web.RequestHandler):
                 self.set_header('Content-Type', 'image/jpeg')
                 with open(file, 'rb') as f:
                     self.write(f.read())
-        except:
-            return send503(self, "bsid", id)
+        except Exception as e:
+            log.error(e)
+            return send503(self, e, "bsid", id)
 
 class PreviewHandler(tornado.web.RequestHandler):
     def get(self, id):
@@ -128,8 +131,9 @@ class PreviewHandler(tornado.web.RequestHandler):
                 self.set_header('Content-Type', 'audio/mp3')
                 with open(file, 'rb') as f:
                     self.write(f.read())
-        except:
-            return send503(self, "bsid", id)
+        except Exception as e:
+            log.error(e)
+            return send503(self, e, "bsid", id)
 
 class AudioHandler(tornado.web.RequestHandler):
     def get(self, id):
@@ -151,8 +155,9 @@ class AudioHandler(tornado.web.RequestHandler):
                 self.set_header('Content-Type', 'audio/mp3')
                 with open(file, 'rb') as f:
                     self.write(f.read())
-        except:
-            return send503(self, idType, id)
+        except Exception as e:
+            log.error(e)
+            return send503(self, e, idType, id)
 
 class VideoHandler(tornado.web.RequestHandler):
     def get(self, id):
@@ -175,8 +180,9 @@ class VideoHandler(tornado.web.RequestHandler):
                 self.set_header("return-fileinfo", json.dumps({"filename": id, "path": readed_read_video, "fileMd5": calculate_md5(readed_read_video)}))
                 self.set_header("Content-Type", "application/json")
                 self.write(json.dumps({"code": 404, "message": "Sorry Beatmap has no videos", "funcmsg": readed_read_video}, indent=2, ensure_ascii=False))
-        except:
-            return send503(self, "bid", id)
+        except Exception as e:
+            log.error(e)
+            return send503(self, e, "bid", id)
 
 class OszHandler(tornado.web.RequestHandler):
     def get(self, id):
@@ -197,8 +203,9 @@ class OszHandler(tornado.web.RequestHandler):
                 self.set_header('Content-Disposition', f'attachment; filename="{path["filename"]}"')
                 with open(path['path'], 'rb') as f:
                     self.write(f.read())
-        except:
-            return send503(self, "bsid", id)
+        except Exception as e:
+            log.error(e)
+            return send503(self, e, "bsid", id)
 
 class OszBHandler(tornado.web.RequestHandler):
     def get(self, id):
@@ -219,8 +226,9 @@ class OszBHandler(tornado.web.RequestHandler):
                 self.set_header('Content-Disposition', f'attachment; filename="{path["filename"]}"')
                 with open(path['path'], 'rb') as f:
                     self.write(f.read())
-        except:
-            return send503(self, "bid", id)
+        except Exception as e:
+            log.error(e)
+            return send503(self, e, "bid", id)
 
 class OsuHandler(tornado.web.RequestHandler):
     def get(self, id):
@@ -239,8 +247,9 @@ class OsuHandler(tornado.web.RequestHandler):
                 self.set_header('Content-Disposition', f'attachment; filename="{path["filename"]}"')
                 with open(path['path'], 'rb') as f:
                     self.write(f.read())
-        except:
-            return send503(self, "bid", id)
+        except Exception as e:
+            log.error(e)
+            return send503(self, e, "bid", id)
 
 class FaviconHandler(tornado.web.RequestHandler):
     def get(self):
@@ -291,8 +300,9 @@ class webMapsHandler(tornado.web.RequestHandler):
                 self.set_header('Content-Disposition', f'attachment; filename="{path["filename"]}"')
                 with open(path['path'], 'rb') as f:
                     self.write(f.read())
-        except:
-            return send503(self, "filename", filename)
+        except Exception as e:
+            log.error(e)
+            return send503(self, e, "filename", filename)
 
 class searchHandler(tornado.web.RequestHandler):
     def get(self, q):
