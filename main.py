@@ -6,6 +6,7 @@ import lets_common_log.logUtils as log
 from functions import *
 import json
 import traceback
+import requests
 
 conf = config.config("config.ini")
 
@@ -21,12 +22,16 @@ def request_msg(self):
         try:
             real_ip = self.request.headers["X-Real-Ip"]
             request_uri = self.request.headers["X-Forwarded-Proto"] + "://" + self.request.host + self.request.uri
-            country_code = "XX"
+            country_code = requests.get(f"https://ip.zxq.co/{real_ip}?pretty=1").json()["country"]
+            if country_code == "":
+                country_code = "XX"
         except:
             log.warning("http로 접속시도함 | cloudflare를 거치지 않아서 country_code 조회가 안댐, real_ip는 http요청이라서 바로 뜸")
             real_ip = self.request.remote_ip
             request_uri = self.request.protocol + "://" + self.request.host + self.request.uri
-            country_code = "XX"
+            country_code = requests.get(f"https://ip.zxq.co/{real_ip}?pretty=1").json()["country"]
+            if country_code == "":
+                country_code = "XX"
     client_ip = self.request.remote_ip
     try:
         User_Agent = self.request.headers["User-Agent"]
@@ -47,7 +52,7 @@ def send500(self, inputType, input):
 
 def send503(self, e, inputType, input):
     self.set_status(503)
-    Exception = json.dumps({"type": str(type(e)), "error": str(e)}, ensure_ascii=False)
+    Exception = json.dumps({"type": str(type(e)), "error": str(e)}, ensure_ascii=False).encode('utf-8')
     self.set_header("Exception", Exception)
     self.set_header("return-fileinfo", json.dumps({"filename": "503.html", "path": "templates/503.html", "fileMd5": calculate_md5("templates/503.html")}))
     self.render("templates/503.html", inputType=inputType, input=input, Exception=Exception)
@@ -88,6 +93,8 @@ class BgHandler(tornado.web.RequestHandler):
                 return send500(self, idType, id)
             elif file == 504:
                 return send504(self, idType, id)
+            elif type(file) == FileNotFoundError:
+                raise file
             else: 
                 self.set_header("return-fileinfo", json.dumps({"filename": id, "path": file, "fileMd5": calculate_md5(file)}))
                 self.set_header('Content-Type', 'image/jpeg')
@@ -95,7 +102,7 @@ class BgHandler(tornado.web.RequestHandler):
                     self.write(f.read())
         except Exception as e:
             log.warning(e)
-            log.error(traceback.format_exc())
+            log.error(f"\n{traceback.format_exc()}")
             return send503(self, e, idType, id)
 
 class ThumbHandler(tornado.web.RequestHandler):
@@ -109,6 +116,8 @@ class ThumbHandler(tornado.web.RequestHandler):
                 return send500(self, "bsid", id)
             elif file == 504:
                 return send504(self, "bsid", id)
+            elif type(file) == FileNotFoundError:
+                raise file
             else:
                 self.set_header("return-fileinfo", json.dumps({"filename": id, "path": file, "fileMd5": calculate_md5(file)}))
                 self.set_header('Content-Type', 'image/jpeg')
@@ -116,7 +125,7 @@ class ThumbHandler(tornado.web.RequestHandler):
                     self.write(f.read())
         except Exception as e:
             log.warning(e)
-            log.error(traceback.format_exc())
+            log.error(f"\n{traceback.format_exc()}")
             return send503(self, e, "bsid", id)
 
 class PreviewHandler(tornado.web.RequestHandler):
@@ -130,6 +139,8 @@ class PreviewHandler(tornado.web.RequestHandler):
                 return send500(self, "bsid", id)
             elif file == 504:
                 return send504(self, "bsid", id)
+            elif type(file) == FileNotFoundError:
+                raise file
             else:
                 self.set_header("return-fileinfo", json.dumps({"filename": id, "path": file, "fileMd5": calculate_md5(file)}))
                 self.set_header('Content-Type', 'audio/mp3')
@@ -137,7 +148,7 @@ class PreviewHandler(tornado.web.RequestHandler):
                     self.write(f.read())
         except Exception as e:
             log.warning(e)
-            log.error(traceback.format_exc())
+            log.error(f"\n{traceback.format_exc()}")
             return send503(self, e, "bsid", id)
 
 class AudioHandler(tornado.web.RequestHandler):
@@ -155,6 +166,8 @@ class AudioHandler(tornado.web.RequestHandler):
                 return send500(self, idType, id)
             elif file == 504:
                 return send504(self, idType, id)
+            elif type(file) == FileNotFoundError:
+                raise file
             else:
                 self.set_header("return-fileinfo", json.dumps({"filename": id, "path": file, "fileMd5": calculate_md5(file)}))
                 self.set_header('Content-Type', 'audio/mp3')
@@ -162,7 +175,7 @@ class AudioHandler(tornado.web.RequestHandler):
                     self.write(f.read())
         except Exception as e:
             log.warning(e)
-            log.error(traceback.format_exc())
+            log.error(f"\n{traceback.format_exc()}")
             return send503(self, e, idType, id)
 
 class VideoHandler(tornado.web.RequestHandler):
@@ -176,6 +189,8 @@ class VideoHandler(tornado.web.RequestHandler):
                 return send500(self, "bid", id)
             elif readed_read_video == 504:
                 return send504(self, "bid", id)
+            elif type(readed_read_video) == FileNotFoundError:
+                raise readed_read_video
             elif readed_read_video.endswith(".mp4"):
                 self.set_header("return-fileinfo", json.dumps({"filename": id, "path": readed_read_video, "fileMd5": calculate_md5(readed_read_video)}))
                 self.set_header('Content-Type', 'video/mp4')
@@ -188,7 +203,7 @@ class VideoHandler(tornado.web.RequestHandler):
                 self.write(json.dumps({"code": 404, "message": "Sorry Beatmap has no videos", "funcmsg": readed_read_video}, indent=2, ensure_ascii=False))
         except Exception as e:
             log.warning(e)
-            log.error(traceback.format_exc())
+            log.error(f"\n{traceback.format_exc()}")
             return send503(self, e, "bid", id)
 
 class OszHandler(tornado.web.RequestHandler):
@@ -202,6 +217,8 @@ class OszHandler(tornado.web.RequestHandler):
                 return send500(self, "bsid", id)
             elif path == 504:
                 return send504(self, "bsid", id)
+            elif type(path) == FileNotFoundError:
+                raise path
             elif path == 0:
                 self.write("ERROR")
             else:
@@ -212,7 +229,7 @@ class OszHandler(tornado.web.RequestHandler):
                     self.write(f.read())
         except Exception as e:
             log.warning(e)
-            log.error(traceback.format_exc())
+            log.error(f"\n{traceback.format_exc()}")
             return send503(self, e, "bsid", id)
 
 class OszBHandler(tornado.web.RequestHandler):
@@ -226,6 +243,8 @@ class OszBHandler(tornado.web.RequestHandler):
                 return send500(self, "bid", id)
             elif path == 504:
                 return send504(self, "bid", id)
+            elif type(path) == FileNotFoundError:
+                raise path
             elif path == 0:
                 self.write("ERROR")
             else:
@@ -236,7 +255,7 @@ class OszBHandler(tornado.web.RequestHandler):
                     self.write(f.read())
         except Exception as e:
             log.warning(e)
-            log.error(traceback.format_exc())
+            log.error(f"\n{traceback.format_exc()}")
             return send503(self, e, "bid", id)
 
 class OsuHandler(tornado.web.RequestHandler):
@@ -250,6 +269,8 @@ class OsuHandler(tornado.web.RequestHandler):
                 return send500(self, "bid", id)
             elif path == 504:
                 return send504(self, "bid", id)
+            elif type(path) == FileNotFoundError:
+                raise path
             else:
                 self.set_header("return-fileinfo", json.dumps({"filename": path["filename"], "path": path["path"], "fileMd5": calculate_md5(path["path"])}))
                 self.set_header('Content-Type', 'application/x-osu-beatmap')
@@ -258,7 +279,7 @@ class OsuHandler(tornado.web.RequestHandler):
                     self.write(f.read())
         except Exception as e:
             log.warning(e)
-            log.error(traceback.format_exc())
+            log.error(f"\n{traceback.format_exc()}")
             return send503(self, e, "bid", id)
 
 class FaviconHandler(tornado.web.RequestHandler):
@@ -302,6 +323,8 @@ class webMapsHandler(tornado.web.RequestHandler):
                 return send500(self, "filename", id)
             elif path == 504:
                 return send504(self, "filename", id)
+            elif type(path) == FileNotFoundError:
+                raise path
             elif path is None:
                 return None
             else:
@@ -312,7 +335,7 @@ class webMapsHandler(tornado.web.RequestHandler):
                     self.write(f.read())
         except Exception as e:
             log.warning(e)
-            log.error(traceback.format_exc())
+            log.error(f"\n{traceback.format_exc()}")
             return send503(self, e, "filename", filename)
 
 class searchHandler(tornado.web.RequestHandler):

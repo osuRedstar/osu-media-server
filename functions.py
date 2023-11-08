@@ -210,9 +210,11 @@ def osu_file_read(setID, rq_type, moving=False):
     return result
 
 def move_files(setID, rq_type):
+        isOsuFile = False
         result = osu_file_read(setID, rq_type, moving=True)
         #필요한 파일만 각 폴더로 이동
         for item in result[2]:
+            isOsuFile = True
             #아래 코드 에러 방지용 (폴더가 없으면 에러남)
             if not os.path.isdir(f"data/bg/{setID}") and rq_type == "bg":
                 os.mkdir(f"data/bg/{setID}")
@@ -314,6 +316,9 @@ def move_files(setID, rq_type):
                     shutil.rmtree(f"data/dl/{setID}")
                     return 0
 
+        if not isOsuFile:
+            raise FileNotFoundError(f".osu 파일이 존재하지 않는것으로 보임! | [WinError 3] 지정된 경로를 찾을 수 없습니다: 'data/{rq_type}/{setID}'")
+
         #osu_file_read() 함수에 인자값으로 True를 넣어서 dl/{setID} 가 삭제 되지 않으므로 여기서 폴더 삭제함
         shutil.rmtree(f"data/dl/{setID}")
 
@@ -409,7 +414,10 @@ def check(setID, rq_type):
                     continue """
 
         log.info(f"{get_osz_fullName(setID)} 존재함")
-        move_files(setID, rq_type)
+        try:
+            move_files(setID, rq_type)
+        except Exception as e:
+            return e
 
 #######################################################################################################################################
 
