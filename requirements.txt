@@ -5,3 +5,4 @@ Pillow
 pymysql
 tqdm
 mutagen
+geoip2
