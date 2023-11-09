@@ -6,7 +6,7 @@ import lets_common_log.logUtils as log
 from functions import *
 import json
 import traceback
-import requests
+import geoip2.database
 
 conf = config.config("config.ini")
 
@@ -18,26 +18,33 @@ def request_msg(self):
         request_uri = self.request.headers["X-Forwarded-Proto"] + "://" + self.request.host + self.request.uri
         country_code = self.request.headers["Cf-Ipcountry"]
     except:
-        log.warning("cloudflare를 거치지 않아서 country_code 조회가 안댐, real_ip는 nginx header에서 가져옴")
+        log.warning("cloudflare를 거치지 않음, real_ip는 nginx header에서 가져옴")
         try:
             real_ip = self.request.headers["X-Real-Ip"]
             request_uri = self.request.headers["X-Forwarded-Proto"] + "://" + self.request.host + self.request.uri
-            country_code = requests.get(f"https://ip.zxq.co/{real_ip}?pretty=1").json()["country"]
-            if country_code == "":
-                country_code = "XX"
         except:
-            log.warning("http로 접속시도함 | cloudflare를 거치지 않아서 country_code 조회가 안댐, real_ip는 http요청이라서 바로 뜸")
+            log.warning("http로 접속시도함 | cloudflare를 거치지 않음, real_ip는 http요청이라서 바로 뜸")
             real_ip = self.request.remote_ip
             request_uri = self.request.protocol + "://" + self.request.host + self.request.uri
-            country_code = requests.get(f"https://ip.zxq.co/{real_ip}?pretty=1").json()["country"]
-            if country_code == "":
-                country_code = "XX"
+
+        #2자리 국가코드
+        reader = geoip2.database.Reader("GeoLite2-Country.mmdb")
+        try:
+            country_code = reader.country("211.252.20.105").country.iso_code
+        except geoip2.errors.AddressNotFoundError:
+            country_code = "XX"
+            log.error(f"주어진 IP 주소 : {real_ip} 를 찾을 수 없습니다.")
+        except Exception as e:
+            country_code = "XX"
+            log.error("국가코드 오류 발생:", e)
+        reader.close()
+
     client_ip = self.request.remote_ip
     try:
         User_Agent = self.request.headers["User-Agent"]
     except:
-        log.error("User-Agent 값이 존재하지 않음!")
         User_Agent = ""
+        log.error("User-Agent 값이 존재하지 않음!")
     log.info(f"Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_uri} | From: {User_Agent}")
 
 def send404(self, inputType, input):
