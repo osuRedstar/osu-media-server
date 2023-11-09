@@ -30,7 +30,7 @@ def request_msg(self):
         #2자리 국가코드
         reader = geoip2.database.Reader("GeoLite2-Country.mmdb")
         try:
-            country_code = reader.country("211.252.20.105").country.iso_code
+            country_code = reader.country(real_ip).country.iso_code
         except geoip2.errors.AddressNotFoundError:
             country_code = "XX"
             log.error(f"주어진 IP 주소 : {real_ip} 를 찾을 수 없습니다.")
