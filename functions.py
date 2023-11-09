@@ -105,7 +105,7 @@ def osu_file_read(setID, rq_type, moving=False):
                     log.error(f"{setID} 비트맵셋의 어떤 비트맵은 시이이이이발 osu file format 이 10이하 ({osu_file_format_version}) 이네요? 시발련들아?")
                     #틀딱곡 BeatmapID 를 Version 쪽에 넘김
 
-            if "BeatmapID" in line and not underV10:
+            if "BeatmapID:" in line and not underV10:
                 spaceFilter = line.replace("BeatmapID:", "").replace("\n", "")
                 if spaceFilter.startswith(" "):
                     spaceFilter = spaceFilter.replace(" ", "", 1)
@@ -139,7 +139,7 @@ def osu_file_read(setID, rq_type, moving=False):
                 elif first_bid > temp["BeatmapID"] and temp["BeatmapID"] > 0:
                     first_bid = temp["BeatmapID"]
 
-            elif "Version" in line:
+            elif "Version:" in line:
                 spaceFilter = line.replace("Version:", "").replace("\n", "")
                 if spaceFilter.startswith(" "):
                     spaceFilter = spaceFilter.replace(" ", "", 1)
@@ -171,12 +171,12 @@ def osu_file_read(setID, rq_type, moving=False):
                         first_bid = temp["BeatmapID"]
                     elif first_bid > temp["BeatmapID"] and temp["BeatmapID"] > 0:
                         first_bid = temp["BeatmapID"]
-            elif "AudioFilename" in line and (rq_type == "audio" or rq_type == "preview"):
+            elif "AudioFilename:" in line and (rq_type == "audio" or rq_type == "preview"):
                 spaceFilter = line.replace("AudioFilename:", "").replace("\n", "")
                 if spaceFilter.startswith(" "):
                     spaceFilter = spaceFilter.replace(" ", "", 1)
                 temp["AudioFilename"] = spaceFilter
-            elif "PreviewTime" in line and (rq_type == "audio" or rq_type == "preview"):
+            elif "PreviewTime:" in line and (rq_type == "audio" or rq_type == "preview"):
                 spaceFilter = line.replace("PreviewTime:", "").replace("\n", "")
                 if spaceFilter.startswith(" "):
                     spaceFilter = spaceFilter.replace(" ", "", 1)
