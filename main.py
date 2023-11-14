@@ -63,6 +63,11 @@ def request_msg(self):
         log.info(f"Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_uri} | From: {User_Agent}")
         return 200
 
+def send401(self, errMsg):
+    self.set_status(401)
+    self.set_header("Content-Type", "application/json")
+    self.write(json.dumps({"code": 401, "error": errMsg}, indent=2, ensure_ascii=False))
+
 def send403(self, rm):
     self.set_status(403)
     self.set_header("Content-Type", "application/json")
@@ -399,6 +404,7 @@ class webMapsHandler(tornado.web.RequestHandler):
             elif type(path) == FileNotFoundError:
                 raise path
             elif path is None:
+                self.set_status(204)
                 return None
             else:
                 self.set_header("return-fileinfo", json.dumps({"filename": path["filename"], "path": path["path"], "fileMd5": calculate_md5(path["path"])}))
@@ -421,6 +427,30 @@ class searchHandler(tornado.web.RequestHandler):
         self.set_header("return-fileinfo", json.dumps({"filename": "mirror.html", "path": "templates/mirror.html", "fileMd5": calculate_md5("templates/mirror.html")}))
         self.render("templates/mirror.html", cheesegullUrlParam=self.request.uri)
 
+class removeHandler(tornado.web.RequestHandler):
+    def get(self, bsid):
+        rm = request_msg(self)
+        if rm != 200:
+            return send403(self, rm)
+
+        key = self.get_argument("key", None)
+        try:
+            key2 = int(self.request.headers["BeatmapID"])
+        except:
+            key2 = None
+
+        if key is None:
+            send401(self, "Not Found key")
+        elif key != "Debian":
+            send401(self, f"{key} is Wrong key")
+        elif key2 is None:
+            send401(self, "Not Found key2")
+        elif key2 != int(bsid):
+            send401(self, f"{key2} is Wrong key2")
+        else:
+            self.set_header("Content-Type", "application/json")
+            self.write(json.dumps(removeAllFiles(bsid), indent=2, ensure_ascii=False))
+
 def make_app():
     return tornado.web.Application([
         (r"/", MainHandler),
@@ -441,6 +471,7 @@ def make_app():
         (r"/status", StatusHandler),
         (r"/web/maps/(.*)", webMapsHandler),
         (r"/search(.*)", searchHandler),
+        (r"/remove/([^/]+)", removeHandler),
     ])
 
 if __name__ == "__main__":
