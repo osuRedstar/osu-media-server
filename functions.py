@@ -431,6 +431,9 @@ def read_list():
     bg_file_list = [file for file in os.listdir(f"data/bg/")]
     result["bg"] = {"list": bg_file_list, "count": len(bg_file_list)}
 
+    thumb_file_list = [file for file in os.listdir(f"data/thumb/")]
+    result["thumb"] = {"list": thumb_file_list, "count": len(thumb_file_list)}
+
     audio_file_list = [file for file in os.listdir(f"data/audio/")]
     result["audio"] = {"list": audio_file_list, "count": len(audio_file_list)}
 
@@ -445,9 +448,6 @@ def read_list():
         result["osu"] = {"list": osu_file_list, "count": len(osu_file_list)}
     except:
         result["osu"] = {"list": "NO FOLDER", "count": 0}
-
-    thumb_file_list = [file for file in os.listdir(f"data/thumb/")]
-    result["thumb"] = {"list": thumb_file_list, "count": len(thumb_file_list)}
 
     return result
 
@@ -781,3 +781,88 @@ def read_osu_filename(filename):
         return None
     bid = result["id"]
     return read_osu(bid)
+
+def removeAllFiles(bsid):
+    osz = get_osz_fullName(bsid)
+
+    isdelosz = 0
+    isdelbg = 0
+    isdelthumb = 0
+    isdelaudio = 0
+    isdelpreview = 0
+    isdelvideo = 0
+    isdelosu = 0
+    print("")
+
+    #osz
+    if osz == 0:
+        log.error(f"{bsid} osz는 존재하지 않음")
+    else:
+        try:
+            os.remove(f"data/dl/{osz}")
+            log.info(f'파일 {osz} 가 삭제되었습니다.')
+            isdelosz = 1
+        except OSError as e:
+            log.error(f'파일 삭제 실패: {e}')
+    try:
+        shutil.rmtree(f"data/dl/{bsid}")
+        log.info(f'폴더 data/dl/{bsid} 가 삭제되었습니다.')
+    except:
+        pass
+
+    #bg
+    try:
+        shutil.rmtree(f"data/bg/{bsid}")
+        log.info(f'폴더 data/bg/{bsid} 가 삭제되었습니다.')
+        isdelbg = 1
+    except:
+        pass
+
+    #thumb
+    try:
+        shutil.rmtree(f"data/thumb/{bsid}")
+        log.info(f'폴더 data/thumb/{bsid} 가 삭제되었습니다.')
+        isdelthumb = 1
+    except:
+        pass
+
+    #audio
+    try:
+        shutil.rmtree(f"data/audio/{bsid}")
+        log.info(f'폴더 data/audio/{bsid} 가 삭제되었습니다.')
+        isdelaudio = 1
+    except:
+        pass
+
+    #preview
+    try:
+        shutil.rmtree(f"data/preview/{bsid}")
+        log.info(f'폴더 data/preview/{bsid} 가 삭제되었습니다.')
+        isdelpreview = 1
+    except:
+        pass
+
+    #video
+    try:
+        shutil.rmtree(f"data/video/{bsid}")
+        log.info(f'폴더 data/video/{bsid} 가 삭제되었습니다.')
+        isdelvideo = 1
+    except:
+        pass
+
+    #osu
+    """ try:
+        shutil.rmtree(f"data/osu/{bsid}")
+        log.info(f'폴더 data/osu/{bsid} 가 삭제되었습니다.')
+        isdelosu = 1
+    except:
+        pass """
+    isdelosu = 0
+
+    return {"message": {0: "Doesn't exist", 1: "Delete success"} , "osz": isdelosz, "bg": isdelbg, "thumb": isdelthumb, "audio": isdelaudio, "preview": isdelpreview, "video": isdelvideo, "osu": isdelosu}
+
+
+
+
+
+
