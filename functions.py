@@ -114,6 +114,7 @@ def osu_file_read(setID, rq_type, moving=False):
                 # 정규식 패턴
                 pattern = r'\[([^\]]+)\]\.osu$'
                 match = re.search(pattern, beatmapName)
+                RealBid = {"id": temp["BeatmapID"]}
                 if match:
                     diffname = match.group(1)
                     sql = "SELECT id FROM beatmaps WHERE parent_set_id = %s AND diff_name = %s"
@@ -124,8 +125,8 @@ def osu_file_read(setID, rq_type, moving=False):
                     else:
                         RealBid = db("cheesegull").fetch(sql, (setID, diffname))
 
-                    if RealBid is None:
-                        log.warning(f"RealBid가 cheesegull에서 조회되지 않음! 스킵함")
+                    if RealBid is None or type(RealBid) is list:
+                        log.warning(f"Realbid = {RealBid} | RealBid가 cheesegull에서 조회되지 않음! 스킵함")
                         RealBid = {"id": temp["BeatmapID"]}
 
                 #중?복 bid, bid <= 0 감지
