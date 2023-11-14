@@ -66,7 +66,7 @@ def request_msg(self):
 def send403(self, rm):
     self.set_status(403)
     self.set_header("Content-Type", "application/json")
-    self.write(json.dumps({"code": 403, "error": f"{rm} is Not allowed"}, indent=2, ensure_ascii=False))
+    self.write(json.dumps({"code": 403, "error": f"{rm} is Not allowed!!", "message": "contect --> support@redstar.moe"}, indent=2, ensure_ascii=False))
 
 def send404(self, inputType, input):
     self.set_status(404)
