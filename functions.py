@@ -473,7 +473,15 @@ def read_bg(id):
             return read_bg(f"+{id}")
         return f"data/bg/{id}/{file_list[0]}"
     else:
-        bsid = db("cheesegull").fetch("SELECT parent_set_id FROM cheesegull.beatmaps WHERE id = %s", (id))["parent_set_id"]
+        try:
+            bsid = db("cheesegull").fetch("SELECT parent_set_id FROM cheesegull.beatmaps WHERE id = %s", (id))["parent_set_id"]
+        except:
+            try:
+                bsid = int(requests.get(f"https://redstar.moe/api/v1/get_beatmaps?b={id}").json()[0]["beatmapset_id"])
+                log.info("RedstarOSU API에서 bsid 찾음")
+            except:
+                raise KeyError("Not Found bsid!")
+
         log.info(f"{id} bid cheesegull db 조회로 {bsid} bsid 얻음")
 
         #bg폴더 파일 체크
@@ -566,7 +574,15 @@ def read_audio(id):
         return f"data/audio/{id}/{file_list[0]}"
     
     else:
-        bsid = db("cheesegull").fetch("SELECT parent_set_id FROM cheesegull.beatmaps WHERE id = %s", (id))["parent_set_id"]
+        try:
+            bsid = db("cheesegull").fetch("SELECT parent_set_id FROM cheesegull.beatmaps WHERE id = %s", (id))["parent_set_id"]
+        except:
+            try:
+                bsid = int(requests.get(f"https://redstar.moe/api/v1/get_beatmaps?b={id}").json()[0]["beatmapset_id"])
+                log.info("RedstarOSU API에서 bsid 찾음")
+            except:
+                raise KeyError("Not Found bsid!")
+
         log.info(f"{id} bid cheesegull db 조회로 {bsid} bsid 얻음")
 
         #audio폴더 파일 체크
@@ -627,7 +643,15 @@ def read_preview(id):
     return f"data/preview/{setID}/{id}"
 
 def read_video(id):
-        bsid = db("cheesegull").fetch("SELECT parent_set_id FROM cheesegull.beatmaps WHERE id = %s", (id))["parent_set_id"]
+        try:
+            bsid = db("cheesegull").fetch("SELECT parent_set_id FROM cheesegull.beatmaps WHERE id = %s", (id))["parent_set_id"]
+        except:
+            try:
+                bsid = int(requests.get(f"https://redstar.moe/api/v1/get_beatmaps?b={id}").json()[0]["beatmapset_id"])
+                log.info("RedstarOSU API에서 bsid 찾음")
+            except:
+                raise KeyError("Not Found bsid!")
+
         try:
             #hasVideo = db("cheesegull").fetch("SELECT has_video FROM cheesegull.sets WHERE id = %s", (bsid))["has_video"]
             #반초로 조회함
@@ -692,12 +716,27 @@ def read_osz(id):
             return 0
 
 def read_osz_b(id):
-    bsid = db("cheesegull").fetch("SELECT parent_set_id FROM cheesegull.beatmaps WHERE id = %s", (id))["parent_set_id"]
+    try:
+        bsid = db("cheesegull").fetch("SELECT parent_set_id FROM cheesegull.beatmaps WHERE id = %s", (id))["parent_set_id"]
+    except:
+        try:
+            bsid = int(requests.get(f"https://redstar.moe/api/v1/get_beatmaps?b={id}").json()[0]["beatmapset_id"])
+            log.info("RedstarOSU API에서 bsid 찾음")
+        except:
+            raise KeyError("Not Found bsid!")
+
     log.info(f"{id} bid cheesegull db 조회로 {bsid} bsid 얻음")
     return read_osz(bsid)
 
 def read_osu(id):
-    bsid = db("cheesegull").fetch("SELECT parent_set_id FROM cheesegull.beatmaps WHERE id = %s", (id))["parent_set_id"]
+    try:
+        bsid = db("cheesegull").fetch("SELECT parent_set_id FROM cheesegull.beatmaps WHERE id = %s", (id))["parent_set_id"]
+    except:
+        try:
+            bsid = int(requests.get(f"https://redstar.moe/api/v1/get_beatmaps?b={id}").json()[0]["beatmapset_id"])
+            log.info("RedstarOSU API에서 bsid 찾음")
+        except:
+            raise KeyError("Not Found bsid!")
 
     log.info(f"{id} bid cheesegull db 조회로 {bsid} bsid 얻음")
 
