@@ -10,7 +10,7 @@ import geoip2.database
 
 conf = config.config("config.ini")
 
-def request_msg(self):
+def request_msg(self, botpass=False):
     # Logging the request IP address
     print("")
     try:
@@ -46,15 +46,21 @@ def request_msg(self):
         User_Agent = ""
         log.error("User-Agent 값이 존재하지 않음!")
 
+    def logmsg(msg):
+        if botpass:
+            log.warning(msg)
+        else:
+            log.error(msg)
+
     #필?터?링
     if "bot" in User_Agent.lower() and not "discord" in User_Agent.lower():
-        log.error(f"bot 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_uri} | From: {User_Agent}")
+        logmsg(f"bot 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_uri} | From: {User_Agent}")
         return "bot"
     elif "python-requests" in User_Agent.lower():
-        log.error(f"python-requests 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_uri} | From: {User_Agent}")
+        logmsg(f"python-requests 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_uri} | From: {User_Agent}")
         return "python-requests"
     elif "python-urllib" in User_Agent.lower():
-        log.error(f"Python-urllib 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_uri} | From: {User_Agent}")
+        logmsg(f"Python-urllib 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_uri} | From: {User_Agent}")
         return "Python-urllib"
     elif User_Agent == "osu!":
         log.info(f"osu! 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_uri} | From: {User_Agent}")
@@ -100,16 +106,16 @@ def send504(self, inputType, input):
 
 class MainHandler(tornado.web.RequestHandler):
     def get(self):
-        rm = request_msg(self)
+        rm = request_msg(self, botpass=True)
         if rm != 200:
-            return send403(self, rm)
+            pass
 
         self.set_header("return-fileinfo", json.dumps({"filename": "index.html", "path": "templates/index.html", "fileMd5": calculate_md5("templates/index.html")}))
         self.render("templates/index.html")
 
 class ListHandler(tornado.web.RequestHandler):
     def get(self):
-        rm = request_msg(self)
+        rm = request_msg(self, botpass=False)
         if rm != 200:
             return send403(self, rm)
 
@@ -119,7 +125,7 @@ class ListHandler(tornado.web.RequestHandler):
 
 class BgHandler(tornado.web.RequestHandler):
     def get(self, id):
-        rm = request_msg(self)
+        rm = request_msg(self, botpass=False)
         if rm != 200:
             return send403(self, rm)
 
@@ -149,7 +155,7 @@ class BgHandler(tornado.web.RequestHandler):
 
 class ThumbHandler(tornado.web.RequestHandler):
     def get(self, id):
-        rm = request_msg(self)
+        rm = request_msg(self, botpass=False)
         if rm != 200:
             return send403(self, rm)
 
@@ -175,7 +181,7 @@ class ThumbHandler(tornado.web.RequestHandler):
 
 class PreviewHandler(tornado.web.RequestHandler):
     def get(self, id):
-        rm = request_msg(self)
+        rm = request_msg(self, botpass=False)
         if rm != 200:
             return send403(self, rm)
 
@@ -201,7 +207,7 @@ class PreviewHandler(tornado.web.RequestHandler):
 
 class AudioHandler(tornado.web.RequestHandler):
     def get(self, id):
-        rm = request_msg(self)
+        rm = request_msg(self, botpass=False)
         if rm != 200:
             return send403(self, rm)
 
@@ -231,7 +237,7 @@ class AudioHandler(tornado.web.RequestHandler):
 
 class VideoHandler(tornado.web.RequestHandler):
     def get(self, id):
-        rm = request_msg(self)
+        rm = request_msg(self, botpass=False)
         if rm != 200:
             return send403(self, rm)
 
@@ -262,9 +268,15 @@ class VideoHandler(tornado.web.RequestHandler):
 
 class OszHandler(tornado.web.RequestHandler):
     def get(self, id):
-        rm = request_msg(self)
+        rm = request_msg(self, botpass=False)
         if rm != 200:
             return send403(self, rm)
+
+        u = self.get_argument("u", None)
+        h = self.get_argument("h", None)
+        vv = self.get_argument("vv", None)
+        log.info(f"username : {u} | pwhash? : {h} | vv : {vv}")
+        self.set_header("user-info", json.dumps({"u": u, "h": h, "vv": vv}))
 
         try:
             path = read_osz(id)
@@ -291,7 +303,7 @@ class OszHandler(tornado.web.RequestHandler):
 
 class OszBHandler(tornado.web.RequestHandler):
     def get(self, id):
-        rm = request_msg(self)
+        rm = request_msg(self, botpass=False)
         if rm != 200:
             return send403(self, rm)
 
@@ -320,7 +332,7 @@ class OszBHandler(tornado.web.RequestHandler):
 
 class OsuHandler(tornado.web.RequestHandler):
     def get(self, id):
-        rm = request_msg(self)
+        rm = request_msg(self, botpass=False)
         if rm != 200:
             return send403(self, rm)
 
@@ -347,9 +359,9 @@ class OsuHandler(tornado.web.RequestHandler):
 
 class FaviconHandler(tornado.web.RequestHandler):
     def get(self):
-        rm = request_msg(self)
+        rm = request_msg(self, botpass=True)
         if rm != 200:
-            return send403(self, rm)
+            pass
 
         self.set_header("return-fileinfo", json.dumps({"filename": "favicon.ico", "path": "static/img/favicon.ico", "fileMd5": calculate_md5("static/img/favicon.ico")}))
         self.set_header('Content-Type', 'image/x-icon')
@@ -358,9 +370,9 @@ class FaviconHandler(tornado.web.RequestHandler):
 
 class StaticHandler(tornado.web.RequestHandler):
     def get(self, item):
-        rm = request_msg(self)
+        rm = request_msg(self, botpass=True)
         if rm != 200:
-            return send403(self, rm)
+            pass
 
         self.set_header("return-fileinfo", json.dumps({"filename": item, "path": f"static/{item}", "fileMd5": calculate_md5(f"static/{item}")}))
         with open(f"static/{item}", 'rb') as f:
@@ -368,9 +380,9 @@ class StaticHandler(tornado.web.RequestHandler):
 
 class robots_txt(tornado.web.RequestHandler):
     def get(self):
-        rm = request_msg(self)
+        rm = request_msg(self, botpass=True)
         if rm != 200:
-            return send403(self, rm)
+            pass
 
         self.set_header("return-fileinfo", json.dumps({"filename": "robots.txt", "path": "robots.txt", "fileMd5": calculate_md5("robots.txt")}))
         self.set_header("Content-Type", "text/plain")
@@ -379,9 +391,9 @@ class robots_txt(tornado.web.RequestHandler):
 
 class StatusHandler(tornado.web.RequestHandler):
     def get(self):
-        rm = request_msg(self)
+        rm = request_msg(self, botpass=True)
         if rm != 200:
-            return send403(self, rm)
+            pass
 
         self.set_header("return-fileinfo", json.dumps({"filename": "", "path": "", "fileMd5": ""}))
         self.set_header("Content-Type", "application/json")
@@ -389,7 +401,7 @@ class StatusHandler(tornado.web.RequestHandler):
 
 class webMapsHandler(tornado.web.RequestHandler):
     def get(self, filename):
-        rm = request_msg(self)
+        rm = request_msg(self, botpass=False)
         if rm != 200:
             return send403(self, rm)
 
@@ -419,7 +431,7 @@ class webMapsHandler(tornado.web.RequestHandler):
 
 class searchHandler(tornado.web.RequestHandler):
     def get(self, q):
-        rm = request_msg(self)
+        rm = request_msg(self, botpass=False)
         if rm != 200:
             return send403(self, rm)
 
@@ -429,7 +441,7 @@ class searchHandler(tornado.web.RequestHandler):
 
 class removeHandler(tornado.web.RequestHandler):
     def get(self, bsid):
-        rm = request_msg(self)
+        rm = request_msg(self, botpass=False)
         if rm != 200:
             return send403(self, rm)
 
