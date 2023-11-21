@@ -636,7 +636,7 @@ def read_preview(id):
                 else:
                     PreviewTime = prti / 1000
         
-        ffmpeg_msg = f"ffmpeg -i data\preview\{setID}\source_{id} -ss {PreviewTime} -t 30 -acodec libmp3lame data\preview\{setID}\{id}"
+        ffmpeg_msg = f"ffmpeg -i data\preview\{setID}\source_{id} -ss {PreviewTime} -t 30.821 -acodec copy data\preview\{setID}\{id}"
         log.chat(f"ffmpeg_msg = {ffmpeg_msg}")
         os.system(ffmpeg_msg)
         os.remove(f"data/preview/{setID}/source_{id}")
