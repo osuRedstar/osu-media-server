@@ -18,12 +18,12 @@ def request_msg(self, botpass=False):
         request_uri = self.request.headers["X-Forwarded-Proto"] + "://" + self.request.host + self.request.uri
         country_code = self.request.headers["Cf-Ipcountry"]
     except Exception as e:
-        log.warning(f"cloudflare를 거치지 않음, real_ip는 nginx header에서 가져옴 | {e}")
+        log.warning(f"cloudflare를 거치지 않음, real_ip는 nginx header에서 가져옴 | e = {e}")
         try:
             real_ip = self.request.headers["X-Real-Ip"]
             request_uri = self.request.headers["X-Forwarded-Proto"] + "://" + self.request.host + self.request.uri
         except Exception as e:
-            log.warning(f"http로 접속시도함 | cloudflare를 거치지 않음, real_ip는 http요청이라서 바로 뜸 | {e}")
+            log.warning(f"http로 접속시도함 | cloudflare를 거치지 않음, real_ip는 http요청이라서 바로 뜸 | e = {e}")
             real_ip = self.request.remote_ip
             request_uri = self.request.protocol + "://" + self.request.host + self.request.uri
 
