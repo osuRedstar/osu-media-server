@@ -276,7 +276,7 @@ def move_files(setID, rq_type):
                         shutil.copy(f"data/dl/{setID}/{item['AudioFilename']}", f"data/preview/{setID}/source_{setID}.mp3")
                         log.info(f"{setID} 비트맵셋, {item['BeatmapID']} 비트맵 | preview source_{setID} 처리함")
                     except:
-                        shutil.copy(f"static/audio/no audio.mp3", f"data/preview/{setID}/{setID}.mp3")
+                        shutil.copy(f"static/audio/no audio.mp3", f"data/preview/{setID}/no audio_{setID}.mp3")
                         log.error(f"{setID} 비트맵셋은 preview가 없음 | no audio.mp3로 저장하고, preview도 처리함")
 
             if rq_type == "bg":
@@ -615,6 +615,11 @@ def read_preview(id):
     setID = id.replace(".mp3", "")
         
     if not os.path.isfile(f"data/preview/{setID}/{id}"):
+        if os.path.isfile(f"data/preview/{setID}/no audio_{id}"):
+            #위에서 오디오 없어서 이미 처리댐 (no audio.mp3)
+            log.warning(f"no audio_{id}")
+            return f"data/preview/{setID}/no audio_{id}"
+
         ck = check(setID, rq_type="preview")
         if ck is not None:
             return ck
@@ -622,9 +627,6 @@ def read_preview(id):
         #음원 하이라이트 가져오기, 밀리초라서 / 1000 함
         PreviewTime = -1
         j = osu_file_read(setID, rq_type="preview")
-        #위에서 오디오 없어서 이미 처리댐 (no audio.mp3)
-        if os.path.isfile(f"data/preview/{setID}/{id}"):
-            return f"data/preview/{setID}/{id}"
         
         for i in j[2]:
             if j[1] == i["BeatmapID"]:
