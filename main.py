@@ -12,8 +12,10 @@ conf = config.config("config.ini")
 
 allowedconnentedbot = conf.config["server"]["allowedconnentedbot"]
 if allowedconnentedbot == "True" or allowedconnentedbot == "1":
+    allowedconnentedbot = True
     log.chat("봇 접근 허용")
 else:
+    allowedconnentedbot = False
     log.warning("봇 접근 거부")
 
 def request_msg(self, botpass=False):
@@ -60,21 +62,25 @@ def request_msg(self, botpass=False):
             log.error(msg)
 
     #필?터?링
-    if "bot" in User_Agent.lower() and not "discord" in User_Agent.lower():
-        logmsg(f"bot 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_uri} | From: {User_Agent}")
-        return "bot"
-    elif "python-requests" in User_Agent.lower():
-        logmsg(f"python-requests 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_uri} | From: {User_Agent}")
-        return "python-requests"
-    elif "python-urllib" in User_Agent.lower():
-        logmsg(f"Python-urllib 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_uri} | From: {User_Agent}")
-        return "Python-urllib"
-    elif User_Agent == "osu!":
-        log.info(f"osu! 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_uri} | From: {User_Agent}")
-        return 200
-    else:
+    if allowedconnentedbot:
         log.info(f"Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_uri} | From: {User_Agent}")
         return 200
+    else:
+        if "bot" in User_Agent.lower() and not "discord" in User_Agent.lower():
+            logmsg(f"bot 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_uri} | From: {User_Agent}")
+            return "bot"
+        elif "python-requests" in User_Agent.lower():
+            logmsg(f"python-requests 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_uri} | From: {User_Agent}")
+            return "python-requests"
+        elif "python-urllib" in User_Agent.lower():
+            logmsg(f"Python-urllib 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_uri} | From: {User_Agent}")
+            return "Python-urllib"
+        elif User_Agent == "osu!":
+            log.info(f"osu! 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_uri} | From: {User_Agent}")
+            return 200
+        else:
+            log.info(f"Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_uri} | From: {User_Agent}")
+            return 200
 
 def send401(self, errMsg):
     self.set_status(401)
