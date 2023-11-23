@@ -1,5 +1,6 @@
 import os
 import configparser
+from lets_common_log import logUtils as log
 
 class config:
 	"""
@@ -44,6 +45,7 @@ class config:
 			# Try to get all the required keys
 			self.config.get("server","port")
 			self.config.get("server","flaskdebug")
+			self.config.get("server","AllowedConnentedBot")
 
 			self.config.get("osu","APIKEY")
 			self.config.get("osu","IS_YOU_HAVE_OSU_PRIVATE_SERVER_WITH_lets.py")
@@ -70,6 +72,7 @@ class config:
 		self.config.add_section("server")
 		self.config.set("server", "port", "6200")
 		self.config.set("server", "flaskdebug", "0")
+		self.config.set("server", "AllowedConnentedBot", "True")
 
 		self.config.add_section("osu")
 		self.config.set("osu", "APIKEY", "Your_OSU_APIKEY")
@@ -79,10 +82,24 @@ class config:
 		self.config.set("db", "host", "localhost")
 		self.config.set("db", "port", "3306")
 		self.config.set("db", "username", "root")
-		self.config.set("db", "password", "")
+		self.config.set("db", "password", "Your_DB_PASSWORD")
 		self.config.set("db", "database", "redstar")
 		self.config.set("db", "database-cheesegull", "cheesegull")
 
 		# Write ini to file and close
 		self.config.write(f)
 		f.close()
+
+conf = config("config.ini")
+
+if conf.default:
+    # We have generated a default config.ini, quit server
+    log.warning("[!] config.ini not found. A default one has been generated.")
+    log.warning("[!] Please edit your config.ini and run the server again.")
+    exit()
+
+# If we haven't generated a default config.ini, check if it's valid
+if not conf.checkConfig():
+    log.error("[!] Invalid config.ini. Please configure it properly")
+    log.error("[!] Delete your config.ini to generate a default one")
+    exit()
