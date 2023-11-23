@@ -10,8 +10,15 @@ import geoip2.database
 
 conf = config.config("config.ini")
 
+allowedconnentedbot = conf.config["server"]["allowedconnentedbot"]
+if allowedconnentedbot == "True" or allowedconnentedbot == "1":
+    log.chat("봇 접근 허용")
+else:
+    log.warning("봇 접근 거부")
+
 def request_msg(self, botpass=False):
     # Logging the request IP address
+    #log.debug(f"Tor Test \n{self.request}")
     print("")
     try:
         real_ip = self.request.headers["Cf-Connecting-Ip"]
