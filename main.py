@@ -7,6 +7,7 @@ from functions import *
 import json
 import traceback
 import geoip2.database
+import time
 
 conf = config.config("config.ini")
 
@@ -115,6 +116,9 @@ def send504(self, inputType, input):
     self.set_header("return-fileinfo", json.dumps({"filename": "504.html", "path": "templates/504.html", "fileMd5": calculate_md5("templates/504.html")}))
     self.render("templates/504.html", inputType=inputType, input=input)
 
+def resPingMs(self):
+    log.chat(f"{(time.time() - self.request._start_time) * 1000} ms")
+
 ####################################################################################################
 
 class MainHandler(tornado.web.RequestHandler):
@@ -125,6 +129,7 @@ class MainHandler(tornado.web.RequestHandler):
 
         self.set_header("return-fileinfo", json.dumps({"filename": "index.html", "path": "templates/index.html", "fileMd5": calculate_md5("templates/index.html")}))
         self.render("templates/index.html")
+        resPingMs(self)
 
 class ListHandler(tornado.web.RequestHandler):
     def get(self):
@@ -135,6 +140,7 @@ class ListHandler(tornado.web.RequestHandler):
         self.set_header("return-fileinfo", json.dumps({"filename": "", "path": "", "fileMd5": ""}))
         self.set_header("Content-Type", "application/json")
         self.write(json.dumps(read_list(), indent=2, ensure_ascii=False))
+        resPingMs(self)
 
 class BgHandler(tornado.web.RequestHandler):
     def get(self, id):
@@ -165,6 +171,8 @@ class BgHandler(tornado.web.RequestHandler):
             log.warning(e)
             log.error(f"\n{traceback.format_exc()}")
             return send503(self, e, idType, id)
+        finally:
+            resPingMs(self)
 
 class ThumbHandler(tornado.web.RequestHandler):
     def get(self, id):
@@ -191,6 +199,8 @@ class ThumbHandler(tornado.web.RequestHandler):
             log.warning(e)
             log.error(f"\n{traceback.format_exc()}")
             return send503(self, e, "bsid", id)
+        finally:
+            resPingMs(self)
 
 class PreviewHandler(tornado.web.RequestHandler):
     def get(self, id):
@@ -217,6 +227,8 @@ class PreviewHandler(tornado.web.RequestHandler):
             log.warning(e)
             log.error(f"\n{traceback.format_exc()}")
             return send503(self, e, "bsid", id)
+        finally:
+            resPingMs(self)
 
 class AudioHandler(tornado.web.RequestHandler):
     def get(self, id):
@@ -247,6 +259,8 @@ class AudioHandler(tornado.web.RequestHandler):
             log.warning(e)
             log.error(f"\n{traceback.format_exc()}")
             return send503(self, e, idType, id)
+        finally:
+            resPingMs(self)
 
 class VideoHandler(tornado.web.RequestHandler):
     def get(self, id):
@@ -278,6 +292,8 @@ class VideoHandler(tornado.web.RequestHandler):
             log.warning(e)
             log.error(f"\n{traceback.format_exc()}")
             return send503(self, e, "bid", id)
+        finally:
+            resPingMs(self)
 
 class OszHandler(tornado.web.RequestHandler):
     def get(self, id):
@@ -313,6 +329,8 @@ class OszHandler(tornado.web.RequestHandler):
             log.warning(e)
             log.error(f"\n{traceback.format_exc()}")
             return send503(self, e, "bsid", id)
+        finally:
+            resPingMs(self)
 
 class OszBHandler(tornado.web.RequestHandler):
     def get(self, id):
@@ -342,6 +360,8 @@ class OszBHandler(tornado.web.RequestHandler):
             log.warning(e)
             log.error(f"\n{traceback.format_exc()}")
             return send503(self, e, "bid", id)
+        finally:
+            resPingMs(self)
 
 class OsuHandler(tornado.web.RequestHandler):
     def get(self, id):
@@ -369,6 +389,8 @@ class OsuHandler(tornado.web.RequestHandler):
             log.warning(e)
             log.error(f"\n{traceback.format_exc()}")
             return send503(self, e, "bid", id)
+        finally:
+            resPingMs(self)
 
 class FaviconHandler(tornado.web.RequestHandler):
     def get(self):
@@ -380,6 +402,7 @@ class FaviconHandler(tornado.web.RequestHandler):
         self.set_header('Content-Type', 'image/x-icon')
         with open("static/img/favicon.ico", 'rb') as f:
             self.write(f.read())
+        resPingMs(self)
 
 class StaticHandler(tornado.web.RequestHandler):
     def get(self, item):
@@ -390,6 +413,7 @@ class StaticHandler(tornado.web.RequestHandler):
         self.set_header("return-fileinfo", json.dumps({"filename": item, "path": f"static/{item}", "fileMd5": calculate_md5(f"static/{item}")}))
         with open(f"static/{item}", 'rb') as f:
                 self.write(f.read())
+        resPingMs(self)
 
 class robots_txt(tornado.web.RequestHandler):
     def get(self):
@@ -401,6 +425,7 @@ class robots_txt(tornado.web.RequestHandler):
         self.set_header("Content-Type", "text/plain")
         with open("robots.txt", 'rb') as f:
             self.write(f.read())
+        resPingMs(self)
 
 class StatusHandler(tornado.web.RequestHandler):
     def get(self):
@@ -411,6 +436,7 @@ class StatusHandler(tornado.web.RequestHandler):
         self.set_header("return-fileinfo", json.dumps({"filename": "", "path": "", "fileMd5": ""}))
         self.set_header("Content-Type", "application/json")
         self.write(json.dumps({"code": 200, "oszCount": read_list()["osz"]["count"]}, indent=2, ensure_ascii=False))
+        resPingMs(self)
 
 class webMapsHandler(tornado.web.RequestHandler):
     def get(self, filename):
@@ -441,6 +467,8 @@ class webMapsHandler(tornado.web.RequestHandler):
             log.warning(e)
             log.error(f"\n{traceback.format_exc()}")
             return send503(self, e, "filename", filename)
+        finally:
+            resPingMs(self)
 
 class searchHandler(tornado.web.RequestHandler):
     def get(self, q):
@@ -451,6 +479,7 @@ class searchHandler(tornado.web.RequestHandler):
         log.debug(self.request.uri)
         self.set_header("return-fileinfo", json.dumps({"filename": "mirror.html", "path": "templates/mirror.html", "fileMd5": calculate_md5("templates/mirror.html")}))
         self.render("templates/mirror.html", cheesegullUrlParam=self.request.uri)
+        resPingMs(self)
 
 class removeHandler(tornado.web.RequestHandler):
     def get(self, bsid):
@@ -475,6 +504,7 @@ class removeHandler(tornado.web.RequestHandler):
         else:
             self.set_header("Content-Type", "application/json")
             self.write(json.dumps(removeAllFiles(bsid), indent=2, ensure_ascii=False))
+        resPingMs(self)
 
 def make_app():
     return tornado.web.Application([
