@@ -819,6 +819,7 @@ def filename_to_GetCheesegullDB(filename):
 def read_osu_filename(filename):
     result = filename_to_GetCheesegullDB(filename)
     if result is None:
+        #Bancho에 이름으로 bid 찾는 방법 찾아내기
         return None
     bid = result["id"]
     return read_osu(bid)
