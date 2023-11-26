@@ -18,10 +18,6 @@ function bg(arg) {
         get_id = "";
         location.reload(true);
     }
-    /* else if (isNaN(get_id) === true) {
-        alert("숫자를 입력하세요! \nEnter Number!")
-        location.reload(true);
-    } */
     else {
         bg_tag.href = `${document.location.href}bg/${get_id}`
     }
@@ -69,12 +65,14 @@ function audio(arg) {
         get_id = "";
         location.reload(true);
     }
-    /* else if (isNaN(get_id) === true) {
-        alert("숫자를 입력하세요! \nEnter Number!")
-        location.reload(true);
-    } */
     else {
-        audio_tag.href = `${document.location.href}audio/${get_id}`
+        const mods = prompt("mods (DT, NC, HF)\nno mods = Skip This")
+        if (mods === null | mods === "" | mods === "no") {
+            audio_tag.href = `${document.location.href}audio/${get_id}`
+        }
+        else {
+            audio_tag.href = `${document.location.href}audio/${get_id}${mods}`
+        }
     }
 }
 
