@@ -8,6 +8,7 @@ const b_tag = document.getElementById("b");
 const d_tag = document.getElementById("d");
 const osu_tag = document.getElementById("osu");
 const web_maps_tag = document.getElementById("/web/maps/")
+//const remove_tag = document.getElementById("remove")
 
 function bg(arg) {
     //arg.preventDefault();
@@ -175,6 +176,32 @@ function web_maps(arg) {
     }
 }
 
+/* function remove(arg) {
+    //arg.preventDefault();
+    const get_id = prompt("BeatmapSetID")
+    if (get_id === null | get_id === "") {
+        alert("정확하게 입력하세요! \nPlease enter it correctly!");
+        get_id = "";
+        location.reload(true);
+    }
+    else if (isNaN(get_id) === true) {
+        alert("숫자를 입력하세요! \nEnter Number!")
+        location.reload(true);
+    }
+    else {
+        const key1 = prompt("key1")
+        if (key1 === null | key1 === "") {
+            alert("정확하게 입력하세요! \nPlease enter it correctly!");
+            key1 = "";
+            location.reload(true);
+        }
+        else {
+            remove_tag.href = `${document.location.href}remove/${get_id}?key=${key1}`
+        }
+    }
+    
+} */
+
 bg_tag.addEventListener("click", bg);
 thumb_l_tag.addEventListener("click", thumb_l);
 thumb_tag.addEventListener("click", thumb);
@@ -185,3 +212,4 @@ b_tag.addEventListener("click", b);
 d_tag.addEventListener("click", d);
 osu_tag.addEventListener("click", osu);
 web_maps_tag.addEventListener("click", web_maps)
+//remove_tag.addEventListener("click", remove)
