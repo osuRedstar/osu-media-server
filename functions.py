@@ -464,9 +464,9 @@ def read_bg(id):
 
         file_list = [file for file in os.listdir(f"data/bg/{id}") if file.startswith("+")]
         try:
-            type(file_list[0])
+            print(file_list[0])
         except:
-            log.error(f"bsid = {id} | BG type(file_list[0]) 에러")
+            log.error(f"bsid = {id} | BG print(file_list[0]) 에러")
             ck = check(id, rq_type="bg")
             if ck is not None:
                 return ck
@@ -492,9 +492,9 @@ def read_bg(id):
 
         file_list = [file for file in os.listdir(f"data/bg/{bsid}") if file.startswith(str(id))]
         try:
-            type(file_list[0])
+            print(file_list[0])
         except:
-            log.error(f"bid = {id} | BG type(file_list[0]) 에러")
+            log.error(f"bid = {id} | BG print(file_list[0]) 에러")
             ck = check(bsid, rq_type="bg")
             if ck is not None:
                 return ck
@@ -520,9 +520,9 @@ def read_thumb(id):
 
         file_list = [file for file in os.listdir(f"data/thumb/{bsid}") if file.startswith("+")]
         try:
-            type(file_list[0])
+            print(file_list[0])
         except:
-            log.error(f"bsid = {bsid} | thumb type(file_list[0]) 에러")
+            log.error(f"bsid = {bsid} | thumb print(file_list[0]) 에러")
             ck = check(bsid, rq_type="thumb")
             if ck is not None:
                 return ck
@@ -550,6 +550,20 @@ def read_thumb(id):
 def read_audio(id):
     if "+" in id:
         id = str(id).replace("+", "")
+        if id.upper()[-2:] == "DT":
+            log.chat("DT 감지")
+            mods = "DT"
+            id = id[:-2]
+        elif id.upper()[-2:] == "NC":
+            log.chat("NC 감지")
+            mods = "NC"
+            id = id[:-2]
+        elif id.upper()[-2:] == "HF":
+            log.chat("HF 감지")
+            mods = "HF"
+            id = id[:-2]
+        else:
+            mods = None
 
         #audio폴더 파일 체크
         if not os.path.isdir(f"data/audio/{id}"):
@@ -561,19 +575,63 @@ def read_audio(id):
             AF = osu_file_read(id, rq_type="audio")
             for i in AF[2]:
                 if AF[1] == i["BeatmapID"]:
-                    return f"data/audio/{id}/{i['AudioFilename']}"
+                    file_list = [i['AudioFilename']]
 
         try:
-            type(file_list[0])
+            print(file_list[0])
         except:
-            log.error(f"bsid = {id} | audio type(file_list[0]) 에러")
+            log.error(f"bsid = {id} | audio print(file_list[0]) 에러")
             ck = check(id, rq_type="audio")
             if ck is not None:
                 return ck
             return read_audio(f"+{id}")
-        return f"data/audio/{id}/{file_list[0]}"
+
+        if mods == "DT":
+            DTFilename = f"data/audio/{id}/{file_list[0][:-4]}-DT.mp3"
+            if os.path.isfile(DTFilename):
+                return DTFilename
+            else:
+                ffmpeg_msg = f'ffmpeg -i data\\audio\{id}\{file_list[0]} -af atempo=1.5 -y data\\audio\{id}\{file_list[0][:-4]}-DT.mp3'
+                log.chat(f"DT ffmpeg_msg = {ffmpeg_msg}")
+                os.system(ffmpeg_msg)
+                return DTFilename
+        elif mods == "NC":
+            NCFilename = f"data/audio/{id}/{file_list[0][:-4]}-NC.mp3"
+            if os.path.isfile(NCFilename):
+                return NCFilename
+            else:
+                ffmpeg_msg = f'ffmpeg -i data\\audio\{id}\{file_list[0]} -af asetrate={MP3(f"data/audio/{id}/{file_list[0]}").info.sample_rate}*1.5 -y data\\audio\{id}\{file_list[0][:-4]}-NC.mp3'
+                log.chat(f"NC ffmpeg_msg = {ffmpeg_msg}")
+                os.system(ffmpeg_msg)
+                return NCFilename
+        elif mods == "HF":
+            HFFilename = f"data/audio/{id}/{file_list[0][:-4]}-HF.mp3"
+            if os.path.isfile(HFFilename):
+                return HFFilename
+            else:
+                ffmpeg_msg = f'ffmpeg -i data\\audio\{id}\{file_list[0]} -af atempo=0.75 -y data\\audio\{id}\{file_list[0][:-4]}-HF.mp3'
+                log.chat(f"HF ffmpeg_msg = {ffmpeg_msg}")
+                os.system(ffmpeg_msg)
+                return HFFilename
+        else:
+            return f"data/audio/{id}/{file_list[0]}"
     
     else:
+        if id.upper()[-2:] == "DT":
+            log.chat("DT 감지")
+            mods = "DT"
+            id = id[:-2]
+        elif id.upper()[-2:] == "NC":
+            log.chat("NC 감지")
+            mods = "NC"
+            id = id[:-2]
+        elif id.upper()[-2:] == "HF":
+            log.chat("HF 감지")
+            mods = "HF"
+            id = id[:-2]
+        else:
+            mods = None
+
         try:
             bsid = db("cheesegull").fetch("SELECT parent_set_id FROM cheesegull.beatmaps WHERE id = %s", (id))["parent_set_id"]
         except:
@@ -597,17 +655,46 @@ def read_audio(id):
             AF = osu_file_read(bsid, rq_type="audio")
             for i in AF[2]:
                 if int(id) == i["BeatmapID"]:
-                    return f"data/audio/{bsid}/{i['AudioFilename']}"
+                    file_list = [i['AudioFilename']]
 
         try:
-            type(file_list[0])
+            print(file_list[0])
         except:
-            log.error(f"bid = {id} | audio type(file_list[0]) 에러")
+            log.error(f"bid = {id} | audio print(file_list[0]) 에러")
             ck = check(bsid, rq_type="audio")
             if ck is not None:
                 return ck
             return read_audio(id)
-        return f"data/audio/{bsid}/{file_list[0]}"
+        
+        if mods == "DT":
+            DTFilename = f"data/audio/{bsid}/{file_list[0][:-4]}-DT.mp3"
+            if os.path.isfile(DTFilename):
+                return DTFilename
+            else:
+                ffmpeg_msg = f'ffmpeg -i data\\audio\{bsid}\{file_list[0]} -af atempo=1.5 -y data\\audio\{bsid}\{file_list[0][:-4]}-DT.mp3'
+                log.chat(f"DT ffmpeg_msg = {ffmpeg_msg}")
+                os.system(ffmpeg_msg)
+                return DTFilename
+        elif mods == "NC":
+            NCFilename = f"data/audio/{bsid}/{file_list[0][:-4]}-NC.mp3"
+            if os.path.isfile(NCFilename):
+                return NCFilename
+            else:
+                ffmpeg_msg = f'ffmpeg -i data\\audio\{bsid}\{file_list[0]} -af asetrate={MP3(f"data/audio/{bsid}/{file_list[0]}").info.sample_rate}*1.5 -y data\\audio\{bsid}\{file_list[0][:-4]}-NC.mp3'
+                log.chat(f"NC ffmpeg_msg = {ffmpeg_msg}")
+                os.system(ffmpeg_msg)
+                return NCFilename
+        elif mods == "HF":
+            HFFilename = f"data/audio/{bsid}/{file_list[0][:-4]}-HF.mp3"
+            if os.path.isfile(HFFilename):
+                return HFFilename
+            else:
+                ffmpeg_msg = f'ffmpeg -i data\\audio\{bsid}\{file_list[0]} -af atempo=0.75 -y data\\audio\{bsid}\{file_list[0][:-4]}-HF.mp3'
+                log.chat(f"HF ffmpeg_msg = {ffmpeg_msg}")
+                os.system(ffmpeg_msg)
+                return HFFilename
+        else:
+            return f"data/audio/{bsid}/{file_list[0]}"
 
 def read_preview(id):
     #source_{bsid}.mp3 먼저 확인시키기 ㄴㄴ audio에서 가져오기
@@ -638,7 +725,7 @@ def read_preview(id):
                 else:
                     PreviewTime = prti / 1000
         
-        ffmpeg_msg = f"ffmpeg -i data\preview\{setID}\source_{id} -ss {PreviewTime} -t 30.821 -acodec copy data\preview\{setID}\{id}"
+        ffmpeg_msg = f"ffmpeg -i data\preview\{setID}\source_{id} -ss {PreviewTime} -t 30.821 -acodec copy -y data\preview\{setID}\{id}"
         log.chat(f"ffmpeg_msg = {ffmpeg_msg}")
         os.system(ffmpeg_msg)
         os.remove(f"data/preview/{setID}/source_{id}")
@@ -688,13 +775,13 @@ def read_video(id):
                 AF = osu_file_read(bsid, rq_type="video")
                 for i in AF[2]:
                     if int(id) == i["BeatmapID"]:
-                        return f"data/video/{bsid}/{i['BeatmapVideo']}"
+                        file_list = [i['AudioFilename']]
         
             try:
-                #log.debug(type(file_list[0]))
-                type(file_list[0])
+                #log.debug(print(file_list[0]))
+                print(file_list[0])
             except:
-                log.error(f"bid = {id} | video type(file_list[0]) 에러")
+                log.error(f"bid = {id} | video print(file_list[0]) 에러")
                 ck = check(bsid, rq_type="video")
                 if ck is not None:
                     return ck
