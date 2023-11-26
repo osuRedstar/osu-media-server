@@ -591,7 +591,7 @@ def read_audio(id):
             if os.path.isfile(DTFilename):
                 return DTFilename
             else:
-                ffmpeg_msg = f'ffmpeg -i data\\audio\{id}\{file_list[0]} -af atempo=1.5 -y data\\audio\{id}\{file_list[0][:-4]}-DT.mp3'
+                ffmpeg_msg = f'ffmpeg -i "data\\audio\{id}\{file_list[0]}" -af atempo=1.5 -y "data\\audio\{id}\{file_list[0][:-4]}-DT.mp3"'
                 log.chat(f"DT ffmpeg_msg = {ffmpeg_msg}")
                 os.system(ffmpeg_msg)
                 return DTFilename
@@ -600,7 +600,7 @@ def read_audio(id):
             if os.path.isfile(NCFilename):
                 return NCFilename
             else:
-                ffmpeg_msg = f'ffmpeg -i data\\audio\{id}\{file_list[0]} -af asetrate={MP3(f"data/audio/{id}/{file_list[0]}").info.sample_rate}*1.5 -y data\\audio\{id}\{file_list[0][:-4]}-NC.mp3'
+                ffmpeg_msg = f'ffmpeg -i "data\\audio\{id}\{file_list[0]}" -af asetrate={MP3(f"data/audio/{id}/{file_list[0]}").info.sample_rate}*1.5 -y "data\\audio\{id}\{file_list[0][:-4]}-NC.mp3"'
                 log.chat(f"NC ffmpeg_msg = {ffmpeg_msg}")
                 os.system(ffmpeg_msg)
                 return NCFilename
@@ -609,7 +609,7 @@ def read_audio(id):
             if os.path.isfile(HFFilename):
                 return HFFilename
             else:
-                ffmpeg_msg = f'ffmpeg -i data\\audio\{id}\{file_list[0]} -af atempo=0.75 -y data\\audio\{id}\{file_list[0][:-4]}-HF.mp3'
+                ffmpeg_msg = f'ffmpeg -i "data\\audio\{id}\{file_list[0]}" -af atempo=0.75 -y "data\\audio\{id}\{file_list[0][:-4]}-HF.mp3"'
                 log.chat(f"HF ffmpeg_msg = {ffmpeg_msg}")
                 os.system(ffmpeg_msg)
                 return HFFilename
