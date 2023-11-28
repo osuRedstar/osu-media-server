@@ -46,6 +46,7 @@ class config:
 			self.config.get("server","port")
 			self.config.get("server","flaskdebug")
 			self.config.get("server","AllowedConnentedBot")
+			self.config.get("server","dataFolder")
 
 			self.config.get("osu","APIKEY")
 			self.config.get("osu","IS_YOU_HAVE_OSU_PRIVATE_SERVER_WITH_lets.py")
@@ -73,6 +74,7 @@ class config:
 		self.config.set("server", "port", "6200")
 		self.config.set("server", "flaskdebug", "0")
 		self.config.set("server", "AllowedConnentedBot", "True")
+		self.config.set("server", "dataFolder", "data")
 
 		self.config.add_section("osu")
 		self.config.set("osu", "APIKEY", "Your_OSU_APIKEY")
