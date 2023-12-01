@@ -324,7 +324,7 @@ def move_files(setID, rq_type):
         #osu_file_read() 함수에 인자값으로 True를 넣어서 dl/{setID} 가 삭제 되지 않으므로 여기서 폴더 삭제함
         shutil.rmtree(f"{dataFolder}/dl/{setID}")
 
-def check(setID, rq_type):
+def check(setID, rq_type, checkRenewFile=False):
     #.osz는 무조건 새로 받되, Bancho, Redstar**전용** 맵에서 ranked, loved 등등 은 새로 안받아도 댐. (Redstar에서의 랭크상태 여부는 고민중)
     #근데 생각해보니 파일 있으면 걍 이걸 안오는데?
     folder_check()
@@ -337,89 +337,115 @@ def check(setID, rq_type):
 
     url = [f'https://api.nerinyan.moe/d/{setID}', f"https://chimu.moe/d/{setID}"]
 
+    limit = 0
+    def dl(site, limit):
+        #우선 setID .osz로 다운받고 나중에 파일 이름 변경
+        file_name = f'{setID} .osz' #919187 765 MILLION ALLSTARS - UNION!!.osz, 2052147 (Love Live! series) - Colorful Dreams! Colorful Smiles! _  TV2
+        save_path = f'{dataFolder}/dl/'  # 원하는 저장 경로로 변경
+        
+        # 파일 다운로드 요청
+        try:
+            res = requests.get(url[site], headers=requestHeaders, timeout=5, stream=True)
+            statusCode = res.status_code
+        except requests.exceptions.ReadTimeout as e:
+            log.warning(f"{url[site]} Timeout! | e = {e}")
+            statusCode = 504
+        except:
+            log.error(f"파일다운 기본 예외처리 | url = {url[site]}")
+
+        if statusCode == 200:
+            # 파일 크기를 얻습니다.
+            file_size = int(res.headers.get('content-length', 0))
+
+            # tqdm을 사용하여 진행률 표시
+            with open(save_path + file_name, 'wb') as file:
+                with tqdm(total=file_size, unit='B', unit_scale=True, unit_divisor=1024, ncols=120) as pbar:
+                    for data in res.iter_content(1024):
+                        file.write(data)
+                        pbar.update(len(data))
+
+            header_filename = res.headers['content-disposition']
+            newFilename = header_filename[header_filename.find('filename='):].replace("filename=", "").replace('"', "")
+            if site == 1 and  "%20" in newFilename:
+                newFilename = newFilename.replace("%20", " ")
+            newFilename = re.sub(r'[<>:"/\\|?*]', '_', newFilename)
+
+            log.info(f'{file_name} --> {newFilename} 다운로드 완료')
+
+            # WAV 파일 재생을 별도의 스레드에서 수행
+            def play_finished_dl():
+                winsound.PlaySound("static/audio/match-confirm (mp3cut.net).wav", winsound.SND_FILENAME)
+            play_thread = threading.Thread(target=play_finished_dl)
+            play_thread.start()
+
+            try:
+                os.rename(f"{dataFolder}/dl/{setID} .osz", f"{dataFolder}/dl/{newFilename}")
+            except FileExistsError:
+                os.replace(f"{dataFolder}/dl/{newFilename}", f"{dataFolder}/dl/{newFilename}-.old")
+                os.replace(f"{dataFolder}/dl/{setID} .osz", f"{dataFolder}/dl/{newFilename}")
+        else:
+            log.error(f'{statusCode}. 파일을 다운로드할 수 없습니다. chimu로 재시도!')
+            limit += 1
+            if limit < 3:
+                return dl(1, limit)
+            else:
+                log.warning(f"다운로드 요청 자체 limit 걸음! {limit}번 요청함")
+                return statusCode
+
     if fullSongName == 0:
         log.warning(f"{setID} 맵셋 osz 존재하지 않음. 다운로드중...")
-        
-        limit = 0
-        def dl(site, limit):
-            #우선 setID .osz로 다운받고 나중에 파일 이름 변경
-            file_name = f'{setID} .osz' #919187 765 MILLION ALLSTARS - UNION!!.osz, 2052147 (Love Live! series) - Colorful Dreams! Colorful Smiles! _  TV2
-            save_path = f'{dataFolder}/dl/'  # 원하는 저장 경로로 변경
-            
-            # 파일 다운로드 요청
-            try:
-                res = requests.get(url[site], headers=requestHeaders, timeout=5, stream=True)
-                statusCode = res.status_code
-            except requests.exceptions.ReadTimeout as e:
-                log.warning(f"{url[site]} Timeout! | e = {e}")
-                statusCode = 504
-            except:
-                log.error(f"파일다운 기본 예외처리 | url = {url[site]}")
-
-            if statusCode == 200:
-                # 파일 크기를 얻습니다.
-                file_size = int(res.headers.get('content-length', 0))
-
-                # tqdm을 사용하여 진행률 표시
-                with open(save_path + file_name, 'wb') as file:
-                    with tqdm(total=file_size, unit='B', unit_scale=True, unit_divisor=1024, ncols=120) as pbar:
-                        for data in res.iter_content(1024):
-                            file.write(data)
-                            pbar.update(len(data))
-
-                header_filename = res.headers['content-disposition']
-                newFilename = header_filename[header_filename.find('filename='):].replace("filename=", "").replace('"', "")
-                if site == 1 and  "%20" in newFilename:
-                    newFilename = newFilename.replace("%20", " ")
-                newFilename = re.sub(r'[<>:"/\\|?*]', '_', newFilename)
-
-                log.info(f'{file_name} --> {newFilename} 다운로드 완료')
-
-                # WAV 파일 재생을 별도의 스레드에서 수행
-                def play_finished_dl():
-                    winsound.PlaySound("static/audio/match-confirm (mp3cut.net).wav", winsound.SND_FILENAME)
-                play_thread = threading.Thread(target=play_finished_dl)
-                play_thread.start()
-
-                os.rename(f"{dataFolder}/dl/{setID} .osz", f"{dataFolder}/dl/{newFilename}")
-                move_files(setID, rq_type)
-            else:
-                log.error(f'{statusCode}. 파일을 다운로드할 수 없습니다. chimu로 재시도!')
-                limit += 1
-                if limit < 3:
-                    return dl(1, limit)
-                else:
-                    log.warning(f"다운로드 요청 자체 limit 걸음! {limit}번 요청함")
-                    return statusCode
         return dl(0, limit=0)
     else:
-        """ exceptOszList = [919187, 871223, 12483, 1197242]
+        log.info(f"{get_osz_fullName(setID)} 존재함")
 
+        exceptOszList = [919187, 871623, 12483, 1197242]
         #이거 redstar DB에 없는 경우 있으니 cheesegull DB에서도 추가로 참고하기
-        rankStatus = db("redstar").fetch(f"SELECT ranked FROM beatmaps WHERE beatmapset_id = %s", (setID))["ranked"]
+        try:
+            rankStatus = db("redstar").fetch(f"SELECT ranked FROM beatmaps WHERE beatmapset_id = %s", (setID))["ranked"]
+            log.info(f"파일 최신화 redstar DB 랭크상태 조회 완료 : {rankStatus}")
+        except:
+            rankStatus = db("cheesegull").fetch(f"SELECT ranked_status FROM sets WHERE id = %s", (setID))["ranked_status"]
+            log.info(f"파일 최신화 cheesegull DB 랭크상태 조회 완료 : {rankStatus}")
         if rankStatus <= 0 and setID not in exceptOszList:
             oszHash = calculate_md5(f"{dataFolder}/dl/{fullSongName}")
             log.debug(f"oszHash = {oszHash}")
             for i in url:
-                newOszHash = requests.get(i, headers=requestHeaders, timeout=5)
+                newOszHash = requests.get(i, headers=requestHeaders, timeout=5, stream=True)
                 if newOszHash.status_code == 200:
-                    with open(f"{dataFolder}/dl/{setID}t .osz", 'wb') as file:
-                        file.write(newOszHash.content)
-                    newOszHash = calculate_md5(f"{dataFolder}/dl/{fullSongName}")
-                    log.debug(f"newOszHash = {newOszHash}")
+                    # tqdm을 사용하여 진행률 표시
+                    with open(f"{dataFolder}/dl/t{setID} .osz", 'wb') as file:
+                        with tqdm(total=int(newOszHash.headers.get('content-length', 0)), unit='B', unit_scale=True, unit_divisor=1024, ncols=60) as pbar:
+                            for data in newOszHash.iter_content(1024):
+                                file.write(data)
+                                pbar.update(len(data))
+                    newOszHash = calculate_md5(f"{dataFolder}/dl/t{setID} .osz")
+                    log.debug(f"oszHash = {oszHash} | newOszHash = {newOszHash}")
                     if oszHash != newOszHash:
                         log.warning(f"{setID} 가 최신이 아닙니다!")
-                        return dl(0, limit=0)
+                        log.info(f"{removeAllFiles(setID)}\n")
+                        os.replace(f"{dataFolder}/dl/t{setID} .osz", f"{dataFolder}/dl/{fullSongName}")
                     else:
-                        break
+                        os.remove(f"{dataFolder}/dl/t{setID} .osz")
+                    break
                 else:
-                    continue """
+                    continue
 
-        log.info(f"{get_osz_fullName(setID)} 존재함")
-        try:
-            move_files(setID, rq_type)
-        except Exception as e:
-            return e
+        if checkRenewFile:
+            return None
+        else:
+            try:
+                move_files(setID, rq_type)
+            except Exception as e:
+                return e
+            
+def crf(id, rq_type):
+    #파일 최신화
+    if rq_type == "osz":
+        ck = check(id, rq_type, checkRenewFile=True)
+        if ck is not None:
+            return ck
+    else:
+        pass
 
 #######################################################################################################################################
 
@@ -456,6 +482,9 @@ def read_bg(id):
     if "+" in id:
         id = str(id).replace("+", "")
 
+        #파일 최신화
+        crf(id, rq_type="bg")
+
         #bg폴더 파일 체크
         if not os.path.isdir(f"{dataFolder}/bg/{id}"):
             #파일 다운로드시에 500 뜨면 500 코드로 반환 예정, 만약 우리서버 문제면 main.py 에서 503 코드로 반환
@@ -485,6 +514,9 @@ def read_bg(id):
 
         log.info(f"{id} bid cheesegull db 조회로 {bsid} bsid 얻음")
 
+        #파일 최신화
+        crf(bsid, rq_type="bg")
+
         #bg폴더 파일 체크
         if not os.path.isdir(f"{dataFolder}/bg/{bsid}"):
             ck = check(bsid, rq_type="bg")
@@ -509,6 +541,9 @@ def read_thumb(id):
     else:
         bsid = id.replace(".jpg", "")
         img_size = (80, 60)
+
+    #파일 최신화
+    crf(bsid, rq_type="thumb")
 
     if os.path.isfile(f"{dataFolder}/thumb/{bsid}/{id}"):
         return f"{dataFolder}/thumb/{bsid}/{id}"
@@ -565,6 +600,9 @@ def read_audio(id):
             id = id[:-2]
         else:
             mods = None
+
+        #파일 최신화
+        crf(id, rq_type="audio")
 
         #audio폴더 파일 체크
         if not os.path.isdir(f"{dataFolder}/audio/{id}"):
@@ -633,6 +671,9 @@ def read_audio(id):
         else:
             mods = None
 
+        #파일 최신화
+        crf(id, rq_type="audio")
+
         try:
             bsid = db("cheesegull").fetch("SELECT parent_set_id FROM cheesegull.beatmaps WHERE id = %s", (id))["parent_set_id"]
         except:
@@ -699,9 +740,11 @@ def read_audio(id):
 
 def read_preview(id):
     #source_{bsid}.mp3 먼저 확인시키기 ㄴㄴ audio에서 가져오기
-
     setID = id.replace(".mp3", "")
-        
+
+    #파일 최신화
+    crf(setID, rq_type="preview")
+
     if not os.path.isfile(f"{dataFolder}/preview/{setID}/{id}"):
         if os.path.isfile(f"{dataFolder}/preview/{setID}/no audio_{id}"):
             #위에서 오디오 없어서 이미 처리댐 (no audio.mp3)
@@ -733,65 +776,71 @@ def read_preview(id):
     return f"{dataFolder}/preview/{setID}/{id}"
 
 def read_video(id):
+    try:
+        bsid = db("cheesegull").fetch("SELECT parent_set_id FROM cheesegull.beatmaps WHERE id = %s", (id))["parent_set_id"]
+    except:
         try:
-            bsid = db("cheesegull").fetch("SELECT parent_set_id FROM cheesegull.beatmaps WHERE id = %s", (id))["parent_set_id"]
+            bsid = int(requests.get(f"https://redstar.moe/api/v1/get_beatmaps?b={id}").json()[0]["beatmapset_id"])
+            log.info("RedstarOSU API에서 bsid 찾음")
         except:
-            try:
-                bsid = int(requests.get(f"https://redstar.moe/api/v1/get_beatmaps?b={id}").json()[0]["beatmapset_id"])
-                log.info("RedstarOSU API에서 bsid 찾음")
-            except:
-                raise KeyError("Not Found bsid!")
+            raise KeyError("Not Found bsid!")
 
+    #파일 최신화
+    crf(bsid, rq_type="video")
+
+    try:
+        #hasVideo = db("cheesegull").fetch("SELECT has_video FROM cheesegull.sets WHERE id = %s", (bsid))["has_video"]
+        #반초로 조회함
+        hasVideo = requests.get(f"https://osu.ppy.sh/api/get_beatmaps?k={OSU_APIKEY}&b={id}", headers=requestHeaders)
+        hasVideo = hasVideo.json()[0]["video"]
+    except:
         try:
-            #hasVideo = db("cheesegull").fetch("SELECT has_video FROM cheesegull.sets WHERE id = %s", (bsid))["has_video"]
-            #반초로 조회함
-            hasVideo = requests.get(f"https://osu.ppy.sh/api/get_beatmaps?k={OSU_APIKEY}&b={id}", headers=requestHeaders)
-            hasVideo = hasVideo.json()[0]["video"]
+            log.warning(f"{id} 해당 비트맵은 반초 API에서 조회가 되지 않습니다! | .osu 파일에 비디오 있나 체크")
+            log.info(f"{id} bid cheesegull db 조회로 {bsid} bsid 얻음")
+            ismp4 = osu_file_read(bsid, rq_type="video")
+            #사실 의미 없음
+            hasVideo = ismp4[2][0]["BeatmapVideo"]
         except:
-            try:
-                log.warning(f"{id} 해당 비트맵은 반초 API에서 조회가 되지 않습니다! | .osu 파일에 비디오 있나 체크")
-                log.info(f"{id} bid cheesegull db 조회로 {bsid} bsid 얻음")
-                ismp4 = osu_file_read(bsid, rq_type="video")
-                #사실 의미 없음
-                hasVideo = ismp4[2][0]["BeatmapVideo"]
-            except:
-                log.error(f"{id} 해당 비트맵은 .osu 파일에서도 mp4가 발견되지 않음")
-                return f"{id} Beatmap doesn't exist on Bancho API!"
-            
-        #type = str --> type = int
-        if hasVideo == 0:
-            return f"{id} Beatmap has no video!"
+            log.error(f"{id} 해당 비트맵은 .osu 파일에서도 mp4가 발견되지 않음")
+            return f"{id} Beatmap doesn't exist on Bancho API!"
         
-        #video폴더 파일 체크
-        if not os.path.isdir(f"{dataFolder}/video/{bsid}"):
+    #type = str --> type = int
+    if hasVideo == 0:
+        return f"{id} Beatmap has no video!"
+    
+    #video폴더 파일 체크
+    if not os.path.isdir(f"{dataFolder}/video/{bsid}"):
+        ck = check(bsid, rq_type="video")
+        if ck is not None:
+            return ck
+
+    #임시로 try 박아둠, 나중에 반초라던지 비디오 있나 요청하는거로 바꾸기
+    try:
+        file_list = [file for file in os.listdir(f"{dataFolder}/video/{bsid}") if file.endswith(".mp4")]
+
+        if len(file_list) > 1:
+            AF = osu_file_read(bsid, rq_type="video")
+            for i in AF[2]:
+                if int(id) == i["BeatmapID"]:
+                    file_list = [i['AudioFilename']]
+    
+        try:
+            #log.debug(print(file_list[0]))
+            print(file_list[0])
+        except:
+            log.error(f"bid = {id} | video print(file_list[0]) 에러")
             ck = check(bsid, rq_type="video")
             if ck is not None:
                 return ck
-
-        #임시로 try 박아둠, 나중에 반초라던지 비디오 있나 요청하는거로 바꾸기
-        try:
-            file_list = [file for file in os.listdir(f"{dataFolder}/video/{bsid}") if file.endswith(".mp4")]
-
-            if len(file_list) > 1:
-                AF = osu_file_read(bsid, rq_type="video")
-                for i in AF[2]:
-                    if int(id) == i["BeatmapID"]:
-                        file_list = [i['AudioFilename']]
-        
-            try:
-                #log.debug(print(file_list[0]))
-                print(file_list[0])
-            except:
-                log.error(f"bid = {id} | video print(file_list[0]) 에러")
-                ck = check(bsid, rq_type="video")
-                if ck is not None:
-                    return ck
-                return read_video(id)
-            return f"{dataFolder}/video/{bsid}/{file_list[0]}"
-        except:
-            return "ERROR NODATA"
+            return read_video(id)
+        return f"{dataFolder}/video/{bsid}/{file_list[0]}"
+    except:
+        return "ERROR NODATA"
 
 def read_osz(id):
+    #파일 최신화
+    crf(id, rq_type="osz")
+
     filename = get_osz_fullName(id)
     if filename != f"{id} .osz" and os.path.isfile(f"{dataFolder}/dl/{filename}"):
         return {"path": f"{dataFolder}/dl/{filename}", "filename": filename}
@@ -829,6 +878,9 @@ def read_osu(id):
             raise KeyError("Not Found bsid!")
 
     log.info(f"{id} bid cheesegull db 조회로 {bsid} bsid 얻음")
+
+    #파일 최신화
+    crf(bsid, rq_type=f"read_osu_{id}")
 
     #B:\redstar\lets\.data\beatmaps 우선시함
     if os.path.isfile(f"B:/redstar/lets/.data/beatmaps/{id}.osu"):
