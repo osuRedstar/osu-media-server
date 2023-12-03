@@ -489,7 +489,7 @@ class removeHandler(tornado.web.RequestHandler):
 
         key = self.get_argument("key", None)
         try:
-            key2 = int(self.request.headers["BeatmapID"])
+            key2 = int(self.request.headers["BeatmapSetID"])
         except:
             key2 = None
 
