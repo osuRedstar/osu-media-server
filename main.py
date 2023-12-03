@@ -132,14 +132,15 @@ class MainHandler(tornado.web.RequestHandler):
         resPingMs(self)
 
 class ListHandler(tornado.web.RequestHandler):
-    def get(self):
+    def get(self, bsid=""):
+        log.chat(f"bsid = {bsid}")
         rm = request_msg(self, botpass=False)
         if rm != 200:
             return send403(self, rm)
 
         self.set_header("return-fileinfo", json.dumps({"filename": "", "path": "", "fileMd5": ""}))
         self.set_header("Content-Type", "application/json")
-        self.write(json.dumps(read_list(), indent=2, ensure_ascii=False))
+        self.write(json.dumps(read_list(bsid), indent=2, ensure_ascii=False))
         resPingMs(self)
 
 class BgHandler(tornado.web.RequestHandler):
@@ -510,6 +511,7 @@ def make_app():
     return tornado.web.Application([
         (r"/", MainHandler),
         (r"/list", ListHandler),
+        (r"/list/([^/]+)", ListHandler),
         (r"/bg/([^/]+)", BgHandler),
         (r"/thumb/([^/]+)", ThumbHandler),
         (r"/preview/([^/]+)", PreviewHandler),
