@@ -274,7 +274,7 @@ def move_files(setID, rq_type):
                 
                 if rq_type == "preview":
                     try:
-                        shutil.copy(f"{dataFolder}/dl/{setID}/{item['AudioFilename']}", f"{dataFolder}/preview/{setID}/source_{setID}.mp3")
+                        shutil.copy(f"{dataFolder}/dl/{setID}/{item['AudioFilename']}", f"{dataFolder}/preview/{setID}/{item['AudioFilename']}")
                         log.info(f"{setID} 비트맵셋, {item['BeatmapID']} 비트맵 | preview source_{setID} 처리함")
                     except:
                         shutil.copy(f"static/audio/no audio.mp3", f"{dataFolder}/preview/{setID}/no audio_{setID}.mp3")
@@ -764,11 +764,13 @@ def read_preview(id):
 
         #음원 하이라이트 가져오기, 밀리초라서 / 1000 함
         PreviewTime = -1
+        AudioFilename = ""
         j = osu_file_read(setID, rq_type="preview")
         
         for i in j[2]:
             if j[1] == i["BeatmapID"]:
                 prti = int(i["PreviewTime"])
+                AudioFilename = i["AudioFilename"]
                 if prti == -1:
                     audio = MP3(f"{dataFolder}/preview/{setID}/source_{id}")
                     PreviewTime = audio.info.length / 2.5
@@ -776,10 +778,14 @@ def read_preview(id):
                 else:
                     PreviewTime = prti / 1000
         
-        ffmpeg_msg = f"ffmpeg -i {dataFolder}\preview\{setID}\source_{id} -ss {PreviewTime} -t 30.821 -acodec copy -y {dataFolder}\preview\{setID}\{id}"
+        if AudioFilename.endswith(".mp3"):
+            ffmpeg_msg = f"ffmpeg -i {dataFolder}\preview\{setID}\{AudioFilename} -ss {PreviewTime} -t 30.821 -acodec copy -y {dataFolder}\preview\{setID}\{id}"
+        else:
+            ffmpeg_msg = f"ffmpeg -i {dataFolder}\preview\{setID}\{AudioFilename} -ss {PreviewTime} -t 30.821 -acodec libmp3lame -q:a 0 -y {dataFolder}\preview\{setID}\{id}"
+            log.warning(f"ffmpeg_msg = {ffmpeg_msg}")
         log.chat(f"ffmpeg_msg = {ffmpeg_msg}")
         os.system(ffmpeg_msg)
-        os.remove(f"{dataFolder}/preview/{setID}/source_{id}")
+        os.remove(f"{dataFolder}/preview/{setID}/{AudioFilename}")
     return f"{dataFolder}/preview/{setID}/{id}"
 
 def read_video(id):
