@@ -449,29 +449,36 @@ def crf(id, rq_type):
 
 #######################################################################################################################################
 
-def read_list():
+def read_list(bsid=""):
     result = {}
 
-    osz_file_list = [file for file in os.listdir(f"{dataFolder}/dl/")]
-    result["osz"] = {"list": osz_file_list, "count": len(osz_file_list)}
+    if bsid == "":
+        osz_file_list = [file for file in os.listdir(f"{dataFolder}/dl/")]
+        result["osz"] = {"list": osz_file_list, "count": len(osz_file_list)}
+    else:
+        osz_file_list = [get_osz_fullName(bsid)]
+        result["osz"] = {"list": osz_file_list, "count": len(osz_file_list)}
 
-    bg_file_list = [file for file in os.listdir(f"{dataFolder}/bg/")]
+    bg_file_list = [file for file in os.listdir(f"{dataFolder}/bg/{bsid}")]
     result["bg"] = {"list": bg_file_list, "count": len(bg_file_list)}
 
-    thumb_file_list = [file for file in os.listdir(f"{dataFolder}/thumb/")]
+    thumb_file_list = [file for file in os.listdir(f"{dataFolder}/thumb/{bsid}")]
     result["thumb"] = {"list": thumb_file_list, "count": len(thumb_file_list)}
 
-    audio_file_list = [file for file in os.listdir(f"{dataFolder}/audio/")]
+    audio_file_list = [file for file in os.listdir(f"{dataFolder}/audio/{bsid}")]
     result["audio"] = {"list": audio_file_list, "count": len(audio_file_list)}
 
-    preview_file_list = [file for file in os.listdir(f"{dataFolder}/preview/")]
+    preview_file_list = [file for file in os.listdir(f"{dataFolder}/preview/{bsid}")]
     result["preview"] = {"list": preview_file_list, "count": len(preview_file_list)}
 
-    video_file_list = [file for file in os.listdir(f"{dataFolder}/video/")]
-    result["video"] = {"list": video_file_list, "count": len(video_file_list)}
+    try:
+        video_file_list = [file for file in os.listdir(f"{dataFolder}/video/{bsid}")]
+        result["video"] = {"list": video_file_list, "count": len(video_file_list)}
+    except:
+        result["video"] = {"list": "NO FOLDER", "count": 0}
 
     try:
-        osu_file_list = [file for file in os.listdir(f"{dataFolder}/osu/")]
+        osu_file_list = [file for file in os.listdir(f"{dataFolder}/osu/{bsid}")]
         result["osu"] = {"list": osu_file_list, "count": len(osu_file_list)}
     except:
         result["osu"] = {"list": "NO FOLDER", "count": 0}
