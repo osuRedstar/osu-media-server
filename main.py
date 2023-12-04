@@ -56,6 +56,12 @@ def request_msg(self, botpass=False):
         User_Agent = ""
         log.error("User-Agent 값이 존재하지 않음!")
 
+    try:
+        Referer = self.request.headers["Referer"]
+    except:
+        Referer = ""
+        log.error("Referer 값이 존재하지 않음!")
+
     def logmsg(msg):
         if botpass:
             log.warning(msg)
@@ -64,23 +70,23 @@ def request_msg(self, botpass=False):
 
     #필?터?링
     if allowedconnentedbot:
-        log.info(f"Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_uri} | From: {User_Agent}")
+        log.info(f"Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_uri} | From: {User_Agent} | Referer: {Referer}")
         return 200
     else:
         if "bot" in User_Agent.lower() and not "discord" in User_Agent.lower():
-            logmsg(f"bot 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_uri} | From: {User_Agent}")
+            logmsg(f"bot 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_uri} | From: {User_Agent} | Referer: {Referer}")
             return "bot"
         elif "python-requests" in User_Agent.lower():
-            logmsg(f"python-requests 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_uri} | From: {User_Agent}")
+            logmsg(f"python-requests 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_uri} | From: {User_Agent} | Referer: {Referer}")
             return "python-requests"
         elif "python-urllib" in User_Agent.lower():
-            logmsg(f"Python-urllib 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_uri} | From: {User_Agent}")
+            logmsg(f"Python-urllib 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_uri} | From: {User_Agent} | Referer: {Referer}")
             return "Python-urllib"
         elif User_Agent == "osu!":
-            log.info(f"osu! 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_uri} | From: {User_Agent}")
+            log.info(f"osu! 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_uri} | From: {User_Agent} | Referer: {Referer}")
             return 200
         else:
-            log.info(f"Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_uri} | From: {User_Agent}")
+            log.info(f"Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_uri} | From: {User_Agent} | Referer: {Referer}")
             return 200
 
 def send401(self, errMsg):
