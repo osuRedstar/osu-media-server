@@ -58,9 +58,9 @@ def request_msg(self, botpass=False):
 
     try:
         Referer = self.request.headers["Referer"]
+        log.info("Referer 값이 존재함!")
     except:
         Referer = ""
-        log.error("Referer 값이 존재하지 않음!")
 
     def logmsg(msg):
         if botpass:
