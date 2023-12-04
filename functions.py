@@ -5,15 +5,14 @@ import os
 import shutil
 import requests
 from tqdm import tqdm
-from urllib.request import urlretrieve
 import config
 from PIL import Image
-import pymysql
 import hashlib
 import re
 from mutagen.mp3 import MP3
 import winsound
 import threading
+import time
 
 #beatmap_md5
 def calculate_md5(filename):
@@ -42,6 +41,9 @@ def folder_check():
     if not os.path.isdir(f"{dataFolder}/dl"):
         os.mkdir(f"{dataFolder}/dl")
         log.info(f"{dataFolder}/dl 폴더 생성")
+    if not os.path.isdir(f"{dataFolder}/dl-old"):
+        os.mkdir(f"{dataFolder}/dl-old")
+        log.info(f"{dataFolder}/dl-old 폴더 생성")
     if not os.path.isdir(f"{dataFolder}/audio"):
         os.mkdir(f"{dataFolder}/audio")
         log.info(f"{dataFolder}/audio 폴더 생성")
@@ -264,14 +266,6 @@ def move_files(setID, rq_type):
                         log.error(f"{setID} 비트맵셋은 thumb가 없음 | no image.png로 저장함")
                         shutil.copy(f"static/img/no image.png", f"{dataFolder}/thumb/{setID}/+{setID}.png")
 
-                if rq_type == "audio":
-                    try:
-                        shutil.copy(f"{dataFolder}/dl/{setID}/{item['AudioFilename']}", f"{dataFolder}/audio/{setID}/{item['AudioFilename']}")
-                        log.info(f"{setID} 비트맵셋, {item['BeatmapID']} 비트맵 | audio 처리함")
-                    except:
-                        log.error(f"{setID} 비트맵셋은 audio가 없음 | no audio.mp3로 저장함")
-                        shutil.copy(f"static/audio/no audio.mp3", f"{dataFolder}/audio/{setID}/no audio.mp3")
-                
                 if rq_type == "preview":
                     try:
                         shutil.copy(f"{dataFolder}/dl/{setID}/{item['AudioFilename']}", f"{dataFolder}/preview/{setID}/{item['AudioFilename']}")
@@ -399,36 +393,44 @@ def check(setID, rq_type, checkRenewFile=False):
         log.info(f"{get_osz_fullName(setID)} 존재함")
 
         exceptOszList = [919187, 871623, 12483, 1197242]
+        exceptOszList.append(929972) #네리냥에서 깨진 맵임 버그리봇방에 올려둠
         #이거 redstar DB에 없는 경우 있으니 cheesegull DB에서도 추가로 참고하기
-        try:
-            rankStatus = db("redstar").fetch(f"SELECT ranked FROM beatmaps WHERE beatmapset_id = %s", (setID))["ranked"]
-            log.info(f"파일 최신화 redstar DB 랭크상태 조회 완료 : {rankStatus}")
-        except:
-            rankStatus = db("cheesegull").fetch(f"SELECT ranked_status FROM sets WHERE id = %s", (setID))["ranked_status"]
-            log.info(f"파일 최신화 cheesegull DB 랭크상태 조회 완료 : {rankStatus}")
-        if rankStatus <= 0 and setID not in exceptOszList:
-            oszHash = calculate_md5(f"{dataFolder}/dl/{fullSongName}")
-            log.debug(f"oszHash = {oszHash}")
-            for i in url:
-                newOszHash = requests.get(i, headers=requestHeaders, timeout=5, stream=True)
-                if newOszHash.status_code == 200:
-                    # tqdm을 사용하여 진행률 표시
-                    with open(f"{dataFolder}/dl/t{setID} .osz", 'wb') as file:
-                        with tqdm(total=int(newOszHash.headers.get('content-length', 0)), unit='B', unit_scale=True, unit_divisor=1024, ncols=60) as pbar:
-                            for data in newOszHash.iter_content(1024):
-                                file.write(data)
-                                pbar.update(len(data))
-                    newOszHash = calculate_md5(f"{dataFolder}/dl/t{setID} .osz")
-                    log.debug(f"oszHash = {oszHash} | newOszHash = {newOszHash}")
-                    if oszHash != newOszHash:
-                        log.warning(f"{setID} 가 최신이 아닙니다!")
-                        log.info(f"{removeAllFiles(setID)}\n")
-                        os.replace(f"{dataFolder}/dl/t{setID} .osz", f"{dataFolder}/dl/{fullSongName}")
+        if checkRenewFile:
+            try:
+                rankStatus = db("redstar").fetch(f"SELECT ranked FROM beatmaps WHERE beatmapset_id = %s", (setID))["ranked"]
+                log.info(f"파일 최신화 redstar DB 랭크상태 조회 완료 : {rankStatus}")
+                if rankStatus == 4:
+                    rankStatus = 0
+            except:
+                rankStatus = db("cheesegull").fetch(f"SELECT ranked_status FROM sets WHERE id = %s", (setID))["ranked_status"]
+                log.info(f"파일 최신화 cheesegull DB 랭크상태 조회 완료 : {rankStatus}")
+            if rankStatus <= 0 and int(setID) not in exceptOszList:
+                oszHash = calculate_md5(f"{dataFolder}/dl/{fullSongName}")
+                log.debug(f"oszHash = {oszHash}")
+                for i in url:
+                    newOszHash = requests.get(i, headers=requestHeaders, timeout=5, stream=True)
+                    if newOszHash.status_code == 200:
+                        # tqdm을 사용하여 진행률 표시
+                        with open(f"{dataFolder}/dl/t{setID} .osz", 'wb') as file:
+                            with tqdm(total=int(newOszHash.headers.get('content-length', 0)), unit='B', unit_scale=True, unit_divisor=1024, ncols=60) as pbar:
+                                for data in newOszHash.iter_content(1024):
+                                    file.write(data)
+                                    pbar.update(len(data))
+                        newOszHash = calculate_md5(f"{dataFolder}/dl/t{setID} .osz")
+                        log.debug(f"oszHash = {oszHash} | newOszHash = {newOszHash}")
+                        if oszHash != newOszHash:
+                            log.warning(f"{setID} 가 최신이 아닙니다!")
+                            try:
+                                shutil.copy2(f"{dataFolder}/dl/{fullSongName}", f"{dataFolder}/dl-old/{fullSongName[:-4]}-{time.time()}.osz")
+                            except IOError as e:
+                                log.error(f"파일 복사 중 오류 발생: {e}")
+                            log.info(f"{removeAllFiles(setID)}\n")
+                            os.replace(f"{dataFolder}/dl/t{setID} .osz", f"{dataFolder}/dl/{fullSongName}")
+                        else:
+                            os.remove(f"{dataFolder}/dl/t{setID} .osz")
+                        break
                     else:
-                        os.remove(f"{dataFolder}/dl/t{setID} .osz")
-                    break
-                else:
-                    continue
+                        continue
 
     if checkRenewFile:
         return None
@@ -591,6 +593,46 @@ def read_thumb(id):
 
 #osu_file_read() 역할 분할하기 (각각 따로 두기)
 def read_audio(id):
+    #ffmpeg -i "audio.ogg" -acodec libmp3lame -q:a 0 -y "audio.mp3"
+    def audioSpeed(mods, setID, file_list):
+        notmp3 = ""
+        if not file_list[0].endswith(".mp3") and mods is not None:
+            notmp3 = ".mp3"
+            if not os.path.isfile(f"{dataFolder}/audio/{setID}/{file_list[0]}.mp3"):
+                ffmpeg_msg = f'ffmpeg -i "{dataFolder}\\audio\{setID}\{file_list[0]}" -acodec libmp3lame -q:a 0 -y "{dataFolder}\\audio\{setID}\{file_list[0]}.mp3"'
+                log.warning(f"ffmpeg_msg = {ffmpeg_msg}")
+                os.system(ffmpeg_msg)
+
+        if mods == "DT":
+            DTFilename = f"{dataFolder}/audio/{setID}/{file_list[0][:-4]}-DT.mp3"
+            if os.path.isfile(DTFilename):
+                return DTFilename
+            else:
+                ffmpeg_msg = f'ffmpeg -i "{dataFolder}\\audio\{setID}\{file_list[0]}{notmp3}" -af atempo=1.5 -acodec libmp3lame -q:a 0 -y "{dataFolder}\\audio\{setID}\{file_list[0][:-4]}-DT.mp3"'
+                log.chat(f"DT ffmpeg_msg = {ffmpeg_msg}")
+                os.system(ffmpeg_msg)
+                return DTFilename
+        elif mods == "NC":
+            NCFilename = f"{dataFolder}/audio/{setID}/{file_list[0][:-4]}-NC.mp3"
+            if os.path.isfile(NCFilename):
+                return NCFilename
+            else:
+                ffmpeg_msg = f'ffmpeg -i "{dataFolder}\\audio\{id}\{file_list[0]}{notmp3}" -af asetrate={MP3(f"{dataFolder}/audio/{setID}/{file_list[0]}{notmp3}").info.sample_rate}*1.5 -acodec libmp3lame -q:a 0 -y "{dataFolder}\\audio\{setID}\{file_list[0][:-4]}-NC.mp3"'
+                log.chat(f"NC ffmpeg_msg = {ffmpeg_msg}")
+                os.system(ffmpeg_msg)
+                return NCFilename
+        elif mods == "HF":
+            HFFilename = f"{dataFolder}/audio/{setID}/{file_list[0][:-4]}-HF.mp3"
+            if os.path.isfile(HFFilename):
+                return HFFilename
+            else:
+                ffmpeg_msg = f'ffmpeg -i "{dataFolder}\\audio\{setID}\{file_list[0]}{notmp3}" -af atempo=0.75 -acodec libmp3lame -q:a 0 -y "{dataFolder}\\audio\{setID}\{file_list[0][:-4]}-HF.mp3"'
+                log.chat(f"HF ffmpeg_msg = {ffmpeg_msg}")
+                os.system(ffmpeg_msg)
+                return HFFilename
+        else:
+            return f"{dataFolder}/audio/{setID}/{file_list[0]}"
+
     if "+" in id:
         id = str(id).replace("+", "")
         if id.upper()[-2:] == "DT":
@@ -632,36 +674,7 @@ def read_audio(id):
                 return ck
             return read_audio(f"+{id}")
 
-        if mods == "DT":
-            DTFilename = f"{dataFolder}/audio/{id}/{file_list[0][:-4]}-DT.mp3"
-            if os.path.isfile(DTFilename):
-                return DTFilename
-            else:
-                ffmpeg_msg = f'ffmpeg -i "{dataFolder}\\audio\{id}\{file_list[0]}" -af atempo=1.5 -y "{dataFolder}\\audio\{id}\{file_list[0][:-4]}-DT.mp3"'
-                log.chat(f"DT ffmpeg_msg = {ffmpeg_msg}")
-                os.system(ffmpeg_msg)
-                return DTFilename
-        elif mods == "NC":
-            NCFilename = f"{dataFolder}/audio/{id}/{file_list[0][:-4]}-NC.mp3"
-            if os.path.isfile(NCFilename):
-                return NCFilename
-            else:
-                ffmpeg_msg = f'ffmpeg -i "{dataFolder}\\audio\{id}\{file_list[0]}" -af asetrate={MP3(f"{dataFolder}/audio/{id}/{file_list[0]}").info.sample_rate}*1.5 -y "{dataFolder}\\audio\{id}\{file_list[0][:-4]}-NC.mp3"'
-                log.chat(f"NC ffmpeg_msg = {ffmpeg_msg}")
-                os.system(ffmpeg_msg)
-                return NCFilename
-        elif mods == "HF":
-            HFFilename = f"{dataFolder}/audio/{id}/{file_list[0][:-4]}-HF.mp3"
-            if os.path.isfile(HFFilename):
-                return HFFilename
-            else:
-                ffmpeg_msg = f'ffmpeg -i "{dataFolder}\\audio\{id}\{file_list[0]}" -af atempo=0.75 -y "{dataFolder}\\audio\{id}\{file_list[0][:-4]}-HF.mp3"'
-                log.chat(f"HF ffmpeg_msg = {ffmpeg_msg}")
-                os.system(ffmpeg_msg)
-                return HFFilename
-        else:
-            return f"{dataFolder}/audio/{id}/{file_list[0]}"
-    
+        return audioSpeed(mods, id, file_list)
     else:
         if id.upper()[-2:] == "DT":
             log.chat("DT 감지")
@@ -714,36 +727,8 @@ def read_audio(id):
             if ck is not None:
                 return ck
             return read_audio(id)
-        
-        if mods == "DT":
-            DTFilename = f"{dataFolder}/audio/{bsid}/{file_list[0][:-4]}-DT.mp3"
-            if os.path.isfile(DTFilename):
-                return DTFilename
-            else:
-                ffmpeg_msg = f'ffmpeg -i {dataFolder}\\audio\{bsid}\{file_list[0]} -af atempo=1.5 -y {dataFolder}\\audio\{bsid}\{file_list[0][:-4]}-DT.mp3'
-                log.chat(f"DT ffmpeg_msg = {ffmpeg_msg}")
-                os.system(ffmpeg_msg)
-                return DTFilename
-        elif mods == "NC":
-            NCFilename = f"{dataFolder}/audio/{bsid}/{file_list[0][:-4]}-NC.mp3"
-            if os.path.isfile(NCFilename):
-                return NCFilename
-            else:
-                ffmpeg_msg = f'ffmpeg -i {dataFolder}\\audio\{bsid}\{file_list[0]} -af asetrate={MP3(f"{dataFolder}/audio/{bsid}/{file_list[0]}").info.sample_rate}*1.5 -y {dataFolder}\\audio\{bsid}\{file_list[0][:-4]}-NC.mp3'
-                log.chat(f"NC ffmpeg_msg = {ffmpeg_msg}")
-                os.system(ffmpeg_msg)
-                return NCFilename
-        elif mods == "HF":
-            HFFilename = f"{dataFolder}/audio/{bsid}/{file_list[0][:-4]}-HF.mp3"
-            if os.path.isfile(HFFilename):
-                return HFFilename
-            else:
-                ffmpeg_msg = f'ffmpeg -i {dataFolder}\\audio\{bsid}\{file_list[0]} -af atempo=0.75 -y {dataFolder}\\audio\{bsid}\{file_list[0][:-4]}-HF.mp3'
-                log.chat(f"HF ffmpeg_msg = {ffmpeg_msg}")
-                os.system(ffmpeg_msg)
-                return HFFilename
-        else:
-            return f"{dataFolder}/audio/{bsid}/{file_list[0]}"
+
+        return audioSpeed(mods, bsid, file_list)
 
 def read_preview(id):
     #source_{bsid}.mp3 먼저 확인시키기 ㄴㄴ audio에서 가져오기
@@ -772,16 +757,16 @@ def read_preview(id):
                 prti = int(i["PreviewTime"])
                 AudioFilename = i["AudioFilename"]
                 if prti == -1:
-                    audio = MP3(f"{dataFolder}/preview/{setID}/source_{id}")
+                    audio = MP3(f"{dataFolder}/preview/{setID}/{AudioFilename}")
                     PreviewTime = audio.info.length / 2.5
                     log.warning(f"{setID}.mp3 (source_{id}) 의 PreviewTime 값이 {prti} 이므로 TotalLength / 2.5 == {PreviewTime} 로 세팅함")
                 else:
                     PreviewTime = prti / 1000
         
         if AudioFilename.endswith(".mp3"):
-            ffmpeg_msg = f"ffmpeg -i {dataFolder}\preview\{setID}\{AudioFilename} -ss {PreviewTime} -t 30.821 -acodec copy -y {dataFolder}\preview\{setID}\{id}"
+            ffmpeg_msg = f'ffmpeg -i "{dataFolder}\preview\{setID}\{AudioFilename}" -ss {PreviewTime} -t 30.821 -acodec copy -y "{dataFolder}\preview\{setID}\{id}"'
         else:
-            ffmpeg_msg = f"ffmpeg -i {dataFolder}\preview\{setID}\{AudioFilename} -ss {PreviewTime} -t 30.821 -acodec libmp3lame -q:a 0 -y {dataFolder}\preview\{setID}\{id}"
+            ffmpeg_msg = f'ffmpeg -i "{dataFolder}\preview\{setID}\{AudioFilename}" -ss {PreviewTime} -t 30.821 -acodec libmp3lame -q:a 0 -y "{dataFolder}\preview\{setID}\{id}"'
             log.warning(f"ffmpeg_msg = {ffmpeg_msg}")
         log.chat(f"ffmpeg_msg = {ffmpeg_msg}")
         os.system(ffmpeg_msg)
