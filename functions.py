@@ -9,7 +9,7 @@ import config
 from PIL import Image
 import hashlib
 import re
-from mutagen.mp3 import MP3
+from pydub import AudioSegment
 import winsound
 import threading
 import time
@@ -595,20 +595,12 @@ def read_thumb(id):
 def read_audio(id):
     #ffmpeg -i "audio.ogg" -acodec libmp3lame -q:a 0 -y "audio.mp3"
     def audioSpeed(mods, setID, file_list):
-        notmp3 = ""
-        if not file_list[0].endswith(".mp3") and mods is not None:
-            notmp3 = ".mp3"
-            if not os.path.isfile(f"{dataFolder}/audio/{setID}/{file_list[0]}.mp3"):
-                ffmpeg_msg = f'ffmpeg -i "{dataFolder}\\audio\{setID}\{file_list[0]}" -acodec libmp3lame -q:a 0 -y "{dataFolder}\\audio\{setID}\{file_list[0]}.mp3"'
-                log.warning(f"ffmpeg_msg = {ffmpeg_msg}")
-                os.system(ffmpeg_msg)
-
         if mods == "DT":
             DTFilename = f"{dataFolder}/audio/{setID}/{file_list[0][:-4]}-DT.mp3"
             if os.path.isfile(DTFilename):
                 return DTFilename
             else:
-                ffmpeg_msg = f'ffmpeg -i "{dataFolder}\\audio\{setID}\{file_list[0]}{notmp3}" -af atempo=1.5 -acodec libmp3lame -q:a 0 -y "{dataFolder}\\audio\{setID}\{file_list[0][:-4]}-DT.mp3"'
+                ffmpeg_msg = f'ffmpeg -i "{dataFolder}\\audio\{setID}\{file_list[0]}" -af atempo=1.5 -acodec libmp3lame -q:a 0 -y "{dataFolder}\\audio\{setID}\{file_list[0][:-4]}-DT.mp3"'
                 log.chat(f"DT ffmpeg_msg = {ffmpeg_msg}")
                 os.system(ffmpeg_msg)
                 return DTFilename
@@ -617,7 +609,7 @@ def read_audio(id):
             if os.path.isfile(NCFilename):
                 return NCFilename
             else:
-                ffmpeg_msg = f'ffmpeg -i "{dataFolder}\\audio\{id}\{file_list[0]}{notmp3}" -af asetrate={MP3(f"{dataFolder}/audio/{setID}/{file_list[0]}{notmp3}").info.sample_rate}*1.5 -acodec libmp3lame -q:a 0 -y "{dataFolder}\\audio\{setID}\{file_list[0][:-4]}-NC.mp3"'
+                ffmpeg_msg = f'ffmpeg -i "{dataFolder}\\audio\{id}\{file_list[0]}" -af asetrate={AudioSegment.from_file(f"{dataFolder}/audio/{setID}/{file_list[0]}").frame_rate}*1.5 -acodec libmp3lame -q:a 0 -y "{dataFolder}\\audio\{setID}\{file_list[0][:-4]}-NC.mp3"'
                 log.chat(f"NC ffmpeg_msg = {ffmpeg_msg}")
                 os.system(ffmpeg_msg)
                 return NCFilename
@@ -626,7 +618,7 @@ def read_audio(id):
             if os.path.isfile(HFFilename):
                 return HFFilename
             else:
-                ffmpeg_msg = f'ffmpeg -i "{dataFolder}\\audio\{setID}\{file_list[0]}{notmp3}" -af atempo=0.75 -acodec libmp3lame -q:a 0 -y "{dataFolder}\\audio\{setID}\{file_list[0][:-4]}-HF.mp3"'
+                ffmpeg_msg = f'ffmpeg -i "{dataFolder}\\audio\{setID}\{file_list[0]}" -af atempo=0.75 -acodec libmp3lame -q:a 0 -y "{dataFolder}\\audio\{setID}\{file_list[0][:-4]}-HF.mp3"'
                 log.chat(f"HF ffmpeg_msg = {ffmpeg_msg}")
                 os.system(ffmpeg_msg)
                 return HFFilename
@@ -757,8 +749,8 @@ def read_preview(id):
                 prti = int(i["PreviewTime"])
                 AudioFilename = i["AudioFilename"]
                 if prti == -1:
-                    audio = MP3(f"{dataFolder}/preview/{setID}/{AudioFilename}")
-                    PreviewTime = audio.info.length / 2.5
+                    audio = AudioSegment.from_file(f"{dataFolder}/preview/{setID}/{AudioFilename}")
+                    PreviewTime = len(audio) / 1000 / 2.5
                     log.warning(f"{setID}.mp3 (source_{id}) 의 PreviewTime 값이 {prti} 이므로 TotalLength / 2.5 == {PreviewTime} 로 세팅함")
                 else:
                     PreviewTime = prti / 1000
