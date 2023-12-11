@@ -395,7 +395,7 @@ def check(setID, rq_type, checkRenewFile=False):
         exceptOszList = [919187, 871623, 12483, 1197242]
         exceptOszList.append(929972) #네리냥에서 깨진 맵임 버그리봇방에 올려둠
         #이거 redstar DB에 없는 경우 있으니 cheesegull DB에서도 추가로 참고하기
-        if checkRenewFile:
+        if checkRenewFile and int(setID) not in exceptOszList:
             try:
                 rankStatus = db("redstar").fetch(f"SELECT ranked FROM beatmaps WHERE beatmapset_id = %s", (setID))["ranked"]
                 log.info(f"파일 최신화 redstar DB 랭크상태 조회 완료 : {rankStatus}")
@@ -404,7 +404,7 @@ def check(setID, rq_type, checkRenewFile=False):
             except:
                 rankStatus = db("cheesegull").fetch(f"SELECT ranked_status FROM sets WHERE id = %s", (setID))["ranked_status"]
                 log.info(f"파일 최신화 cheesegull DB 랭크상태 조회 완료 : {rankStatus}")
-            if rankStatus <= 0 and int(setID) not in exceptOszList:
+            if rankStatus <= 0:
                 oszHash = calculate_md5(f"{dataFolder}/dl/{fullSongName}")
                 log.debug(f"oszHash = {oszHash}")
                 for i in url:
