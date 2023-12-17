@@ -609,7 +609,7 @@ def read_audio(id):
             if os.path.isfile(NCFilename):
                 return NCFilename
             else:
-                ffmpeg_msg = f'ffmpeg -i "{dataFolder}\\audio\{id}\{file_list[0]}" -af asetrate={AudioSegment.from_file(f"{dataFolder}/audio/{setID}/{file_list[0]}").frame_rate}*1.5 -acodec libmp3lame -q:a 0 -y "{dataFolder}\\audio\{setID}\{file_list[0][:-4]}-NC.mp3"'
+                ffmpeg_msg = f'ffmpeg -i "{dataFolder}\\audio\{setID}\{file_list[0]}" -af asetrate={AudioSegment.from_file(f"{dataFolder}/audio/{setID}/{file_list[0]}").frame_rate}*1.5 -acodec libmp3lame -q:a 0 -y "{dataFolder}\\audio\{setID}\{file_list[0][:-4]}-NC.mp3"'
                 log.chat(f"NC ffmpeg_msg = {ffmpeg_msg}")
                 os.system(ffmpeg_msg)
                 return NCFilename
