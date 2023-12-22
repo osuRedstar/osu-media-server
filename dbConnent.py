@@ -14,7 +14,7 @@ class db:
         self.DB_PASSWORD = self.conf.config["db"]["password"]
         self.DB_DATABASE = self.conf.config["db"]["database"]
         self.DB_DATABASE_CHEESEGULL = self.conf.config["db"]["database-cheesegull"]
-        self.OSU_APIKEY = self.conf.config["osu"]["apikey"]
+        self.OSU_APIKEY = self.conf.config["osu"]["osuApikey"]
 
         if DBType.lower() == "redstar":
             self.DB_DATABASE_NOW = self.DB_DATABASE
