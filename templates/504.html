@@ -11,10 +11,13 @@
         <br>
         <h1 id="inputid">Loading...</h1>
         <br>
-        <h1>만약 지금 당신이 이 페이지를 보고 있으면, 높은 확률로 cloudflare 연결을 거치지 않은 것 입니다.</h1>
-        <h1>If you are currently viewing this page, there is a high probability that you are not connected to cloudflare.</h1>
+        <h1 style="text-decoration: line-through;">만약 지금 당신이 이 페이지를 보고 있으면, 높은 확률로 cloudflare의 프록시 연결을 거치지 않은 것 입니다.</h1>
+        <h1 style="text-decoration: line-through;">If you are currently viewing this page, there is a high probability that you are not connected to cloudflare's proxy.</h1>
         <br>
-        <h1>cloudflare →→ <a target="_blank" id="CF-url" href="/">Loading...</a></h1>
+        <h1 style="text-decoration: line-through;">cloudflare →→ <a target="_blank" id="CF-url" href="/">Loading...</a></h1>
+        <br>
+        <h1>이 사이트에서는 더 이상 cloudflare의 프록시 기능을 사용하지 않습니다.</h1>
+        <h1>This site no longer uses cloudflare's proxy feature.</h1>
     </div>
 
     <script>
@@ -23,8 +26,8 @@
         const inputid = document.getElementById("inputid")
         const CF_url = document.getElementById("CF-url")
 
-        CF_url.innerText = `https://b.redstar.moe${location.pathname}`
-        CF_url.href = `https://b.redstar.moe${location.pathname}`
+        CF_url.innerText = `https://b2.redstar.moe${location.pathname}`
+        CF_url.href = `https://b2.redstar.moe${location.pathname}`
 
         if (inputType != "filename") {
             if (inputVal.startsWith("+")) {
