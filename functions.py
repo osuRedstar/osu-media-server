@@ -388,6 +388,7 @@ def check(setID, rq_type, checkRenewFile=False):
             except FileExistsError:
                 os.replace(f"{dataFolder}/dl/{newFilename}", f"{dataFolder}/dl/{newFilename}-old")
                 os.replace(f"{dataFolder}/dl/{setID} .osz", f"{dataFolder}/dl/{newFilename}")
+            return statusCode
         else:
             log.error(f'{statusCode}. 파일을 다운로드할 수 없습니다. chimu로 재시도!')
             limit += 1
@@ -399,7 +400,7 @@ def check(setID, rq_type, checkRenewFile=False):
 
     if fullSongName == 0:
         log.warning(f"{setID} 맵셋 osz 존재하지 않음. 다운로드중...")
-        dl(0, limit=0)
+        dlsc = dl(0, limit=0)
     else:
         log.info(f"{get_osz_fullName(setID)} 존재함")
 
@@ -445,6 +446,8 @@ def check(setID, rq_type, checkRenewFile=False):
 
     if checkRenewFile:
         return None
+    elif dlsc != 200:
+        return dlsc
     else:
         try:
             move_files(setID, rq_type)
