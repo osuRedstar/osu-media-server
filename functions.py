@@ -37,10 +37,10 @@ osuServerDomain = conf.config["server"]["osuServerDomain"]
 requestHeaders = {"User-Agent": f"RedstarOSU's MediaServer (python request) | https://b.{osuServerDomain}"}
 
 #API 키 테스트
-log.info("apikeyStatus check...")
+log.info("Bancho apikeyStatus check...")
 apikeyStatus = requests.get(f"https://osu.ppy.sh/api/get_beatmaps?k={OSU_APIKEY}&b=-1", headers=requestHeaders)
 if apikeyStatus.status_code != 200:
-    log.warning("[!] Bancho APIkey does not work.")
+    log.warning("[!] Bancho apikey does not work.")
     log.warning("[!] Please edit your config.ini and run the server again.")
     exit()
 log.info("Done!")
