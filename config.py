@@ -41,25 +41,33 @@ class config:
 		return -- True if valid, False if not
 		"""
 
+		noneCheck = []
+
 		try:
 			# Try to get all the required keys
-			self.config.get("server","port")
-			self.config.get("server","flaskdebug")
-			self.config.get("server","AllowedConnentedBot")
-			self.config.get("server","dataFolder")
+			noneCheck.append(self.config.get("server","port"))
+			noneCheck.append(self.config.get("server","flaskdebug"))
+			noneCheck.append(self.config.get("server","AllowedConnentedBot"))
+			noneCheck.append(self.config.get("server","dataFolder"))
+			noneCheck.append(self.config.get("server","osuServerDomain"))
+			noneCheck.append(self.config.get("server","ContectEmail"))
 
-			self.config.get("osu","APIKEY")
-			self.config.get("osu","IS_YOU_HAVE_OSU_PRIVATE_SERVER_WITH_lets.py")
+			noneCheck.append(self.config.get("osu","osuApikey"))
+			noneCheck.append(self.config.get("osu","IS_YOU_HAVE_OSU_PRIVATE_SERVER_WITH_lets.py"))
 
-			self.config.get("db","host")
-			self.config.get("db","port")
-			self.config.get("db","username")
-			self.config.get("db","password")
-			self.config.get("db","database")
-			self.config.get("db","database-cheesegull")
+			noneCheck.append(self.config.get("db","host"))
+			noneCheck.append(self.config.get("db","port"))
+			noneCheck.append(self.config.get("db","username"))
+			noneCheck.append(self.config.get("db","password"))
+			noneCheck.append(self.config.get("db","database"))
+			noneCheck.append(self.config.get("db","database-cheesegull"))
 			return True
 		except:
 			return False
+		finally:
+			if None in noneCheck or "" in noneCheck:
+				return None
+				
 
 
 	# Generate a default config.ini
@@ -75,16 +83,18 @@ class config:
 		self.config.set("server", "flaskdebug", "0")
 		self.config.set("server", "AllowedConnentedBot", "True")
 		self.config.set("server", "dataFolder", "data")
+		self.config.set("server", "osuServerDomain", "redstar.moe")
+		self.config.set("server", "ContectEmail", "support@redstar.moe")
 
 		self.config.add_section("osu")
-		self.config.set("osu", "APIKEY", "Your_OSU_APIKEY")
+		self.config.set("osu", "osuApikey", "")
 		self.config.set("osu", "IS_YOU_HAVE_OSU_PRIVATE_SERVER_WITH_lets.py", "True")
 
 		self.config.add_section("db")
 		self.config.set("db", "host", "localhost")
 		self.config.set("db", "port", "3306")
 		self.config.set("db", "username", "root")
-		self.config.set("db", "password", "Your_DB_PASSWORD")
+		self.config.set("db", "password", "")
 		self.config.set("db", "database", "redstar")
 		self.config.set("db", "database-cheesegull", "cheesegull")
 
@@ -95,13 +105,17 @@ class config:
 conf = config("config.ini")
 
 if conf.default:
-    # We have generated a default config.ini, quit server
-    log.warning("[!] config.ini not found. A default one has been generated.")
-    log.warning("[!] Please edit your config.ini and run the server again.")
-    exit()
+	# We have generated a default config.ini, quit server
+	log.warning("[!] config.ini not found. A default one has been generated.")
+	log.warning("[!] Please edit your config.ini and run the server again.")
+	exit()
 
 # If we haven't generated a default config.ini, check if it's valid
-if not conf.checkConfig():
-    log.error("[!] Invalid config.ini. Please configure it properly")
-    log.error("[!] Delete your config.ini to generate a default one")
-    exit()
+if conf.checkConfig() is None:
+	log.warning("[!] There are omissions in some setting values.")
+	log.warning("[!] Please edit your config.ini and run the server again.")
+	exit()
+elif not conf.checkConfig():
+	log.error("[!] Invalid config.ini. Please configure it properly")
+	log.error("[!] Delete your config.ini to generate a default one")
+	exit()
