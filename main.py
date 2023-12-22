@@ -11,6 +11,7 @@ import time
 
 conf = config.config("config.ini")
 
+ContectEmail = conf.config["server"]["ContectEmail"]
 allowedconnentedbot = conf.config["server"]["allowedconnentedbot"]
 if allowedconnentedbot == "True" or allowedconnentedbot == "1":
     allowedconnentedbot = True
@@ -21,7 +22,6 @@ else:
 
 def request_msg(self, botpass=False):
     # Logging the request IP address
-    #log.debug(f"Tor Test \n{self.request}")
     print("")
     try:
         real_ip = self.request.headers["Cf-Connecting-Ip"]
@@ -73,7 +73,7 @@ def request_msg(self, botpass=False):
         log.info(f"Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_uri} | From: {User_Agent} | Referer: {Referer}")
         return 200
     else:
-        if "bot" in User_Agent.lower() and not "discord" in User_Agent.lower():
+        if any(i in User_Agent.lower() for i in ["bot", "bytedance.com"]) and not "discord" in User_Agent.lower():
             logmsg(f"bot 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_uri} | From: {User_Agent} | Referer: {Referer}")
             return "bot"
         elif "python-requests" in User_Agent.lower():
@@ -82,6 +82,9 @@ def request_msg(self, botpass=False):
         elif "python-urllib" in User_Agent.lower():
             logmsg(f"Python-urllib 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_uri} | From: {User_Agent} | Referer: {Referer}")
             return "Python-urllib"
+        elif "postmanruntime" in User_Agent.lower():
+            log.debug(f"PostmanRuntime 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_uri} | From: {User_Agent} | Referer: {Referer}")
+            return 200
         elif User_Agent == "osu!":
             log.info(f"osu! 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_uri} | From: {User_Agent} | Referer: {Referer}")
             return 200
@@ -97,7 +100,7 @@ def send401(self, errMsg):
 def send403(self, rm):
     self.set_status(403)
     self.set_header("Content-Type", "application/json")
-    self.write(json.dumps({"code": 403, "error": f"{rm} is Not allowed!!", "message": "contect --> support@redstar.moe"}, indent=2, ensure_ascii=False))
+    self.write(json.dumps({"code": 403, "error": f"{rm} is Not allowed!!", "message": f"contect --> {ContectEmail}"}, indent=2, ensure_ascii=False))
 
 def send404(self, inputType, input):
     self.set_status(404)
