@@ -402,6 +402,7 @@ def check(setID, rq_type, checkRenewFile=False):
         log.warning(f"{setID} 맵셋 osz 존재하지 않음. 다운로드중...")
         dlsc = dl(0, limit=0)
     else:
+        dlsc = 200
         log.info(f"{get_osz_fullName(setID)} 존재함")
 
         exceptOszList = [919187, 871623, 12483, 1197242]
