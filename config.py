@@ -54,6 +54,7 @@ class config:
 
 			noneCheck.append(self.config.get("osu","osuApikey"))
 			noneCheck.append(self.config.get("osu","IS_YOU_HAVE_OSU_PRIVATE_SERVER_WITH_lets.py"))
+			noneCheck.append(self.config.get("osu","lets.py_beatmaps_Folder_Path"))
 
 			noneCheck.append(self.config.get("db","host"))
 			noneCheck.append(self.config.get("db","port"))
@@ -89,6 +90,7 @@ class config:
 		self.config.add_section("osu")
 		self.config.set("osu", "osuApikey", "")
 		self.config.set("osu", "IS_YOU_HAVE_OSU_PRIVATE_SERVER_WITH_lets.py", "True")
+		self.config.set("osu", "lets.py_beatmaps_Folder_Path", "B:/redstar/lets/.data/beatmaps")
 
 		self.config.add_section("db")
 		self.config.set("db", "host", "localhost")
