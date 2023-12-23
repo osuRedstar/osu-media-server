@@ -31,6 +31,7 @@ conf = config.config("config.ini")
 OSU_APIKEY = conf.config["osu"]["osuApikey"]
 #lets.py 형태의 사설서버를 소유중이면 lets\.data\beatmaps 에서만 .osu 파일을 가져옴
 IS_YOU_HAVE_OSU_PRIVATE_SERVER = bool(conf.config["osu"]["IS_YOU_HAVE_OSU_PRIVATE_SERVER_WITH_lets.py"])
+lets_beatmaps_Folder = conf.config["osu"]["lets.py_beatmaps_Folder_Path"]
 dataFolder = conf.config["server"]["dataFolder"]
 osuServerDomain = conf.config["server"]["osuServerDomain"]
 
@@ -318,7 +319,7 @@ def move_files(setID, rq_type):
                 bid = int(rq_type.replace("read_osu_", ""))
                 if int(item['BeatmapID']) == bid:
                     log.info(rq_type)
-                    shutil.copy(f"{dataFolder}/dl/{setID}/{item['beatmapName']}", f"B:/redstar/lets/.data/beatmaps/{bid}.osu")
+                    shutil.copy(f"{dataFolder}/dl/{setID}/{item['beatmapName']}", f"{lets_beatmaps_Folder}/{bid}.osu")
                     log.info(f"{bid}.osu | lets에 넣음")
                     shutil.rmtree(f"{dataFolder}/dl/{setID}")
                     return 0
@@ -888,8 +889,8 @@ def read_osu(id):
     crf(bsid, rq_type=f"read_osu_{id}")
 
     #B:\redstar\lets\.data\beatmaps 우선시함
-    if os.path.isfile(f"B:/redstar/lets/.data/beatmaps/{id}.osu"):
-        log.info(f"{id}.osu 파일을 B:/redstar/lets/.data/beatmaps/{id}.osu에서 먼저 찾아서 반환함")
+    if os.path.isfile(f"{lets_beatmaps_Folder}/{id}.osu"):
+        log.info(f"{id}.osu 파일을 {lets_beatmaps_Folder}/{id}.osu에서 먼저 찾아서 반환함")
         
         sql = '''
             SELECT CONCAT(s.artist, ' - ', s.title, ' (', s.creator, ') [', b.diff_name, ']' '.osu') AS filename
@@ -902,7 +903,7 @@ def read_osu(id):
         if filename is None:
             log.error(f"filename is None | sql = {sql}")
             return None
-        return {"path": f"B:/redstar/lets/.data/beatmaps/{id}.osu", "filename": filename["filename"]}
+        return {"path": f"{lets_beatmaps_Folder}/{id}.osu", "filename": filename["filename"]}
     else:
         ck = check(bsid, rq_type=f"read_osu_{id}")
         if ck is not None:
