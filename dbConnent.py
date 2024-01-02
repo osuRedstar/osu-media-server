@@ -30,7 +30,7 @@ class db:
             log.error(f"{self.DB_DATABASE_NOW} DB 연결 실패!")
             exit()
 
-    def fetch(self, sql, param):
+    def fetch(self, sql, param=None):
         cursor = self.pydb.cursor()
         if param is None or param == "":
             cursor.execute(sql)
@@ -58,7 +58,7 @@ class db:
                 d.append(data)
             return d
         
-    def execute(self, sql, param):
+    def execute(self, sql, param=None):
         cursor = self.pydb.cursor()
         if param is None or param == "":
             cursor.execute(sql)
