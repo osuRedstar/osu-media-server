@@ -100,6 +100,18 @@ def osu_file_read(setID, rq_type, moving=False):
         temp = {}
         bg_ignore = False
         beatmap_md5 = calculate_md5(f"{dataFolder}/dl/{setID}/{beatmapName}")
+
+        BeatmapID = db("redstar").fetch(f"SELECT beatmap_id FROM beatmaps WHERE beatmap_md5 = %s", [beatmap_md5])
+        if BeatmapID is not None:
+            BeatmapID = BeatmapID["beatmap_id"]
+            if first_bid == 0:
+                first_bid = db("redstar").fetch(f"SELECT beatmap_id FROM beatmaps WHERE beatmapset_id = (SELECT beatmapset_id FROM beatmaps WHERE beatmap_md5 = %s) AND beatmap_id > 0 ORDER BY beatmap_id LIMIT 1;", [beatmap_md5])["beatmap_id"]
+                if first_bid is None:
+                    first_bid = 0
+        else:
+            BeatmapID = None
+        log.debug(f"beatmap_md5 = {beatmap_md5} | BeatmapID = {BeatmapID} | first_bid = {first_bid}")
+
         f = open(f"{dataFolder}/dl/{setID}/{beatmapName}", 'r', encoding="utf-8")
         while True:
             line = f.readline()
@@ -119,8 +131,11 @@ def osu_file_read(setID, rq_type, moving=False):
                     underV10 = True
                     log.error(f"{setID} 비트맵셋의 어떤 비트맵은 시이이이이발 osu file format 이 10이하 ({osu_file_format_version}) 이네요? 시발련들아?")
                     #틀딱곡 BeatmapID 를 Version 쪽에 넘김
+            
+            if BeatmapID is not None:
+                temp["BeatmapID"] = BeatmapID
 
-            if "BeatmapID:" in line and not underV10:
+            if BeatmapID is None and "BeatmapID:" in line and not underV10:
                 spaceFilter = line.replace("BeatmapID:", "").replace("\n", "")
                 if spaceFilter.startswith(" "):
                     spaceFilter = spaceFilter.replace(" ", "", 1)
@@ -136,9 +151,9 @@ def osu_file_read(setID, rq_type, moving=False):
                     # windows 특수문자 이슈
                     if diffname != temp["Version"] and temp["Version"] != "":
                         log.error(f"diffname 매치 안됨! .osu안의 결과물 사용! | diffname = {diffname} | temp['Version'] = {temp['Version']}")
-                        RealBid = db("cheesegull").fetch(sql, (setID, temp["Version"]))
+                        RealBid = db("cheesegull").fetch(sql, [setID, temp["Version"]])
                     else:
-                        RealBid = db("cheesegull").fetch(sql, (setID, diffname))
+                        RealBid = db("cheesegull").fetch(sql, [setID, diffname])
 
                     if RealBid is None or type(RealBid) is list:
                         log.warning(f"Realbid = {RealBid} | RealBid가 cheesegull에서 조회되지 않음! 스킵함")
@@ -162,7 +177,7 @@ def osu_file_read(setID, rq_type, moving=False):
                 temp["Version"] = spaceFilter
 
                 #틀딱곡 BeatmapID 넘겨옴
-                if underV10:
+                if underV10 and BeatmapID is None:
                     # 정규식 패턴
                     pattern = r'\[([^\]]+)\]\.osu$'
                     match = re.search(pattern, beatmapName)
@@ -172,9 +187,9 @@ def osu_file_read(setID, rq_type, moving=False):
                         # windows 특수문자 이슈
                         if diffname != temp["Version"] and temp["Version"] != "":
                             log.error(f"diffname 매치 안됨! .osu안의 결과물 사용! | diffname = {diffname} | temp['Version'] = {temp['Version']}")
-                            result = db("cheesegull").fetch(sql, (setID, temp["Version"]))
+                            result = db("cheesegull").fetch(sql, [setID, temp["Version"]])
                         else:
-                            result = db("cheesegull").fetch(sql, (setID, diffname))
+                            result = db("cheesegull").fetch(sql, [setID, diffname])
 
                         if result is None:
                             return None
@@ -281,10 +296,10 @@ def move_files(setID, rq_type):
                 if rq_type == "preview":
                     try:
                         shutil.copy(f"{dataFolder}/dl/{setID}/{item['AudioFilename']}", f"{dataFolder}/preview/{setID}/{item['AudioFilename']}")
-                        log.info(f"{setID} 비트맵셋, {item['BeatmapID']} 비트맵 | preview source_{setID} 처리함")
+                        log.info(f"{setID} 비트맵셋, {item['BeatmapID']} 비트맵 | {item['AudioFilename']} 처리함")
                     except:
                         shutil.copy(f"static/audio/no audio.mp3", f"{dataFolder}/preview/{setID}/no audio_{setID}.mp3")
-                        log.error(f"{setID} 비트맵셋은 preview가 없음 | no audio.mp3로 저장하고, preview도 처리함")
+                        log.error(f"{setID} 비트맵셋은 preview가 없음 | no audio_{setID}.mp3로 저장하고, preview도 처리함")
 
             if rq_type == "bg":
                 try:
@@ -411,12 +426,12 @@ def check(setID, rq_type, checkRenewFile=False):
         #이거 redstar DB에 없는 경우 있으니 cheesegull DB에서도 추가로 참고하기
         if checkRenewFile and int(setID) not in exceptOszList:
             try:
-                rankStatus = db("redstar").fetch(f"SELECT ranked FROM beatmaps WHERE beatmapset_id = %s", (setID))["ranked"]
+                rankStatus = db("redstar").fetch(f"SELECT ranked FROM beatmaps WHERE beatmapset_id = %s", [setID])["ranked"]
                 log.info(f"파일 최신화 redstar DB 랭크상태 조회 완료 : {rankStatus}")
                 if rankStatus == 4:
                     rankStatus = 0
             except:
-                rankStatus = db("cheesegull").fetch(f"SELECT ranked_status FROM sets WHERE id = %s", (setID))["ranked_status"]
+                rankStatus = db("cheesegull").fetch(f"SELECT ranked_status FROM sets WHERE id = %s", [setID])["ranked_status"]
                 log.info(f"파일 최신화 cheesegull DB 랭크상태 조회 완료 : {rankStatus}")
             if rankStatus <= 0:
                 oszHash = calculate_md5(f"{dataFolder}/dl/{fullSongName}")
@@ -456,10 +471,10 @@ def check(setID, rq_type, checkRenewFile=False):
         except Exception as e:
             return e
             
-def crf(id, rq_type):
+def crf(bsid, rq_type):
     #파일 최신화
     if rq_type == "osz":
-        ck = check(id, rq_type, checkRenewFile=True)
+        ck = check(bsid, rq_type, checkRenewFile=True)
         if ck is not None:
             return ck
     else:
@@ -529,7 +544,7 @@ def read_bg(id):
         return f"{dataFolder}/bg/{id}/{file_list[0]}"
     else:
         try:
-            bsid = db("cheesegull").fetch("SELECT parent_set_id FROM cheesegull.beatmaps WHERE id = %s", (id))["parent_set_id"]
+            bsid = db("cheesegull").fetch("SELECT parent_set_id FROM cheesegull.beatmaps WHERE id = %s", [id])["parent_set_id"]
         except:
             try:
                 bsid = int(requests.get(f"https://{osuServerDomain}/api/v1/get_beatmaps?b={id}").json()[0]["beatmapset_id"])
@@ -663,7 +678,9 @@ def read_audio(id):
 
         #audio폴더 파일 체크
         if not os.path.isdir(f"{dataFolder}/audio/{id}"):
-            check(id, rq_type="audio")
+            ck = check(id, rq_type="audio")
+            if ck is not None:
+                return ck
 
         file_list = [file for file in os.listdir(f"{dataFolder}/audio/{id}")]
 
@@ -703,7 +720,7 @@ def read_audio(id):
         crf(id, rq_type="audio")
 
         try:
-            bsid = db("cheesegull").fetch("SELECT parent_set_id FROM cheesegull.beatmaps WHERE id = %s", (id))["parent_set_id"]
+            bsid = db("cheesegull").fetch("SELECT parent_set_id FROM cheesegull.beatmaps WHERE id = %s", [id])["parent_set_id"]
         except:
             try:
                 bsid = int(requests.get(f"https://{osuServerDomain}/api/v1/get_beatmaps?b={id}").json()[0]["beatmapset_id"])
@@ -750,10 +767,15 @@ def read_preview(id):
             #위에서 오디오 없어서 이미 처리댐 (no audio.mp3)
             log.warning(f"no audio_{id}")
             return f"{dataFolder}/preview/{setID}/no audio_{id}"
-
-        ck = check(setID, rq_type="preview")
-        if ck is not None:
-            return ck
+        else:
+            ck = check(setID, rq_type="preview")
+            if ck is not None:
+                return ck
+        
+        if os.path.isfile(f"{dataFolder}/preview/{setID}/no audio_{id}"):
+            #위에서 오디오 없어서 이미 처리댐 (no audio.mp3)
+            log.warning(f"no audio_{id}")
+            return f"{dataFolder}/preview/{setID}/no audio_{id}"
 
         #음원 하이라이트 가져오기, 밀리초라서 / 1000 함
         PreviewTime = -1
@@ -767,7 +789,7 @@ def read_preview(id):
                 if prti == -1:
                     audio = AudioSegment.from_file(f"{dataFolder}/preview/{setID}/{AudioFilename}")
                     PreviewTime = len(audio) / 1000 / 2.5
-                    log.warning(f"{setID}.mp3 (source_{id}) 의 PreviewTime 값이 {prti} 이므로 TotalLength / 2.5 == {PreviewTime} 로 세팅함")
+                    log.warning(f"{setID}.mp3 ({AudioFilename}) 의 PreviewTime 값이 {prti} 이므로 TotalLength / 2.5 == {PreviewTime} 로 세팅함")
                 else:
                     PreviewTime = prti / 1000
         
@@ -783,7 +805,7 @@ def read_preview(id):
 
 def read_video(id):
     try:
-        bsid = db("cheesegull").fetch("SELECT parent_set_id FROM cheesegull.beatmaps WHERE id = %s", (id))["parent_set_id"]
+        bsid = db("cheesegull").fetch("SELECT parent_set_id FROM cheesegull.beatmaps WHERE id = %s", [id])["parent_set_id"]
     except:
         try:
             bsid = int(requests.get(f"https://{osuServerDomain}/api/v1/get_beatmaps?b={id}").json()[0]["beatmapset_id"])
@@ -795,7 +817,7 @@ def read_video(id):
     crf(bsid, rq_type="video")
 
     try:
-        #hasVideo = db("cheesegull").fetch("SELECT has_video FROM cheesegull.sets WHERE id = %s", (bsid))["has_video"]
+        #hasVideo = db("cheesegull").fetch("SELECT has_video FROM cheesegull.sets WHERE id = %s", [bsid])["has_video"]
         #반초로 조회함
         hasVideo = requests.get(f"https://osu.ppy.sh/api/get_beatmaps?k={OSU_APIKEY}&b={id}", headers=requestHeaders)
         hasVideo = hasVideo.json()[0]["video"]
@@ -862,7 +884,7 @@ def read_osz(id):
 
 def read_osz_b(id):
     try:
-        bsid = db("cheesegull").fetch("SELECT parent_set_id FROM cheesegull.beatmaps WHERE id = %s", (id))["parent_set_id"]
+        bsid = db("cheesegull").fetch("SELECT parent_set_id FROM cheesegull.beatmaps WHERE id = %s", [id])["parent_set_id"]
     except:
         try:
             bsid = int(requests.get(f"https://{osuServerDomain}/api/v1/get_beatmaps?b={id}").json()[0]["beatmapset_id"])
@@ -875,7 +897,7 @@ def read_osz_b(id):
 
 def read_osu(id):
     try:
-        bsid = db("cheesegull").fetch("SELECT parent_set_id FROM cheesegull.beatmaps WHERE id = %s", (id))["parent_set_id"]
+        bsid = db("cheesegull").fetch("SELECT parent_set_id FROM cheesegull.beatmaps WHERE id = %s", [id])["parent_set_id"]
     except:
         try:
             bsid = int(requests.get(f"https://{osuServerDomain}/api/v1/get_beatmaps?b={id}").json()[0]["beatmapset_id"])
@@ -898,7 +920,7 @@ def read_osu(id):
             JOIN beatmaps AS b ON s.id = b.parent_set_id
             WHERE b.id = %s
         '''
-        filename = db("cheesegull").fetch(sql, (id))
+        filename = db("cheesegull").fetch(sql, [id])
         log.debug(filename)
         if filename is None:
             log.error(f"filename is None | sql = {sql}")
@@ -957,7 +979,7 @@ def filename_to_GetCheesegullDB(filename):
         JOIN sets AS s ON b.parent_set_id = s.id
         WHERE s.artist = %s AND s.title = %s AND s.creator = %s AND b.diff_name = %s
     '''
-    result = db("cheesegull").fetch(sql, (artist, title, creator, version))
+    result = db("cheesegull").fetch(sql, [artist, title, creator, version])
     if result is None:
         return None
     return result
