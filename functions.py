@@ -89,7 +89,7 @@ def osu_file_read(setID, rq_type, moving=False):
     file_list_osu = [file for file in file_list if file.endswith(".osu")]
 
     first_bid = 0
-    first_bid_v2 = 0
+    first_bid_v2 = False
     result = []
     beatmap_info = []
     oldMapInfo = []
@@ -204,32 +204,32 @@ def osu_file_read(setID, rq_type, moving=False):
                         first_bid_v2 = temp["BeatmapID"]
                     elif first_bid_v2 > temp["BeatmapID"] and temp["BeatmapID"] > 0:
                         first_bid_v2 = temp["BeatmapID"]
-            elif "AudioFilename:" in line and (rq_type == "audio" or rq_type == "preview"):
+            elif "AudioFilename:" in line and (rq_type == "audio" or rq_type == "preview" or rq_type == "all"):
                 spaceFilter = line.replace("AudioFilename:", "").replace("\n", "")
                 if spaceFilter.startswith(" "):
                     spaceFilter = spaceFilter.replace(" ", "", 1)
                 temp["AudioFilename"] = spaceFilter
-            elif "PreviewTime:" in line and (rq_type == "audio" or rq_type == "preview"):
+            elif "PreviewTime:" in line and (rq_type == "audio" or rq_type == "preview" or rq_type == "all"):
                 spaceFilter = line.replace("PreviewTime:", "").replace("\n", "")
                 if spaceFilter.startswith(" "):
                     spaceFilter = spaceFilter.replace(" ", "", 1)
                 temp["PreviewTime"] = spaceFilter
             #비트맵별 BG 파일이름
-            elif ('"' and ".jpg") in lineCheck and not bg_ignore and (rq_type == "bg" or rq_type == "thumb"):
+            elif ('"' and ".jpg") in lineCheck and not bg_ignore and (rq_type == "bg" or rq_type == "thumb" or rq_type == "all"):
                 temp["BeatmapBG"] = line[line.find('"') + 1 : line.find('"', line.find('"') + 1)]
                 bg_ignore = True
-            elif ('"' and ".png") in lineCheck and not bg_ignore and (rq_type == "bg" or rq_type == "thumb"):
+            elif ('"' and ".png") in lineCheck and not bg_ignore and (rq_type == "bg" or rq_type == "thumb" or rq_type == "all"):
                 temp["BeatmapBG"] = line[line.find('"') + 1 : line.find('"', line.find('"') + 1)]
                 bg_ignore = True
-            elif ('"' and ".jpeg") in lineCheck and not bg_ignore and (rq_type == "bg" or rq_type == "thumb"):
+            elif ('"' and ".jpeg") in lineCheck and not bg_ignore and (rq_type == "bg" or rq_type == "thumb" or rq_type == "all"):
                 temp["BeatmapBG"] = line[line.find('"') + 1 : line.find('"', line.find('"') + 1)]
                 bg_ignore = True
             #비트맵별 video 파일이름
             #.avi 추가하기
             #elif '"' and "Video" and ".mp4" in line:
-            elif '"' and "video" and ".mp4" in lineCheck and rq_type == "video":
+            elif '"' and "video" and ".mp4" in lineCheck and (rq_type == "video" or rq_type == "all"):
                 temp["BeatmapVideo"] = line[line.find('"') + 1 : line.find('"', line.find('"') + 1)]
-            elif '"' and ".mp4" in lineCheck and rq_type == "video" and underV10:
+            elif '"' and ".mp4" in lineCheck and (rq_type == "video" or rq_type == "all") and underV10:
                 temp["BeatmapVideo"] = line[line.find('"') + 1 : line.find('"', line.find('"') + 1)]
             temp["beatmapName"] = beatmapName
 
@@ -237,7 +237,7 @@ def osu_file_read(setID, rq_type, moving=False):
         f.close()
 
     log.debug(f"first_bid = {first_bid}")
-    if first_bid != first_bid_v2:
+    if first_bid != first_bid_v2 and first_bid_v2:
         log.error(f"first_bid 값이 다름 first_bid = {first_bid} --> first_bid_v2 = {first_bid_v2}")
         first_bid = first_bid_v2
 

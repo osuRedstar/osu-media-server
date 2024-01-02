@@ -516,6 +516,16 @@ class removeHandler(tornado.web.RequestHandler):
             self.write(json.dumps(removeAllFiles(bsid), indent=2, ensure_ascii=False))
         resPingMs(self)
 
+class filesinfoHandler(tornado.web.RequestHandler):
+    def get(self, bsid):
+        rm = request_msg(self, botpass=False)
+        if rm != 200:
+            return send403(self, rm)
+
+        self.set_header("Content-Type", "application/json")
+        self.write(json.dumps(osu_file_read(bsid, rq_type="all"), indent=2, ensure_ascii=False))
+        resPingMs(self)
+
 def make_app():
     return tornado.web.Application([
         (r"/", MainHandler),
@@ -538,6 +548,7 @@ def make_app():
         (r"/web/maps/(.*)", webMapsHandler),
         (r"/search(.*)", searchHandler),
         (r"/remove/([^/]+)", removeHandler),
+        (r"/filesinfo/([^/]+)", filesinfoHandler),
     ])
 
 if __name__ == "__main__":
