@@ -433,7 +433,7 @@ def check(setID, rq_type, checkRenewFile=False):
         #7일 이상 된 비트맵만 파일체크함
         fED = os.path.getmtime(f"data/dl/{get_osz_fullName(setID)}")
         t = round(time.time() - fED)
-        log.info(f"t:{t} > oszRenewTime:{oszRenewTime} == {t > oszRenewTime}")
+        log.info(f"t:{t} > oszRenewTime:{oszRenewTime} = {t > oszRenewTime}")
         if t > oszRenewTime:
             fED = True
         else:
