@@ -89,6 +89,7 @@ def osu_file_read(setID, rq_type, moving=False):
     file_list_osu = [file for file in file_list if file.endswith(".osu")]
 
     first_bid = 0
+    first_bid_v2 = 0
     result = []
     beatmap_info = []
     oldMapInfo = []
@@ -160,15 +161,16 @@ def osu_file_read(setID, rq_type, moving=False):
                         RealBid = {"id": temp["BeatmapID"]}
 
                 #중?복 bid, bid <= 0 감지
-                if temp["BeatmapID"] != RealBid["id"] or temp["BeatmapID"] <= 0:
-                    log.error(f"{temp['BeatmapID']} --> {RealBid['id']} | .osu 파일들에서 중복 bid 감지! or .osu 파일에서 bid 값이 <= 0 임 | cheesegull db에서 bid 조회함")
-                    temp["BeatmapID"] = RealBid["id"]
+                for i in beatmap_info:
+                    if temp["BeatmapID"] == i["BeatmapID"] or temp["BeatmapID"] <= 0:
+                        log.error(f"{temp['BeatmapID']} --> {RealBid['id']} | .osu 파일들에서 중복 bid 감지! or .osu 파일에서 bid 값이 <= 0 임 | cheesegull db에서 bid 조회함")
+                        temp["BeatmapID"] = RealBid["id"]
 
                 #first_bid 선별
-                if first_bid == 0 and temp["BeatmapID"] > 0:
-                    first_bid = temp["BeatmapID"]
-                elif first_bid > temp["BeatmapID"] and temp["BeatmapID"] > 0:
-                    first_bid = temp["BeatmapID"]
+                if first_bid_v2 == 0 and temp["BeatmapID"] > 0:
+                    first_bid_v2 = temp["BeatmapID"]
+                elif first_bid_v2 > temp["BeatmapID"] and temp["BeatmapID"] > 0:
+                    first_bid_v2 = temp["BeatmapID"]
 
             elif "Version:" in line:
                 spaceFilter = line.replace("Version:", "").replace("\n", "")
@@ -198,10 +200,10 @@ def osu_file_read(setID, rq_type, moving=False):
                     log.info(f"{setID} 틀딱곡 cheesegull db에서 조회완료")
                     log.warning(f"{setID}/{temp['BeatmapID']} 틀딱곡 BeatmapID 세팅 완료")
                     #first_bid 선별
-                    if first_bid == 0:
-                        first_bid = temp["BeatmapID"]
-                    elif first_bid > temp["BeatmapID"] and temp["BeatmapID"] > 0:
-                        first_bid = temp["BeatmapID"]
+                    if first_bid_v2 == 0:
+                        first_bid_v2 = temp["BeatmapID"]
+                    elif first_bid_v2 > temp["BeatmapID"] and temp["BeatmapID"] > 0:
+                        first_bid_v2 = temp["BeatmapID"]
             elif "AudioFilename:" in line and (rq_type == "audio" or rq_type == "preview"):
                 spaceFilter = line.replace("AudioFilename:", "").replace("\n", "")
                 if spaceFilter.startswith(" "):
@@ -235,6 +237,10 @@ def osu_file_read(setID, rq_type, moving=False):
         f.close()
 
     log.debug(f"first_bid = {first_bid}")
+    if first_bid != first_bid_v2:
+        log.error(f"first_bid 값이 다름 first_bid = {first_bid} --> first_bid_v2 = {first_bid_v2}")
+        first_bid = first_bid_v2
+
     result = [setID, first_bid, beatmap_info]
     if not moving:
         shutil.rmtree(f"{dataFolder}/dl/{setID}")
@@ -273,7 +279,6 @@ def move_files(setID, rq_type):
             #log.debug(item)
 
             #BeatmapSetID용 미리듣기 + BG (b.redstar.moe/preview?예정)
-            #if item["BeatmapID"] == result[2][0]["BeatmapID"]:
             if item["BeatmapID"] == result[1]:
                 if rq_type == "bg":
                     try:
