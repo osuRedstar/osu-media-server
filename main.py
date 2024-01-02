@@ -445,7 +445,7 @@ class StatusHandler(tornado.web.RequestHandler):
 
         self.set_header("return-fileinfo", json.dumps({"filename": "", "path": "", "fileMd5": ""}))
         self.set_header("Content-Type", "application/json")
-        self.write(json.dumps({"code": 200, "oszCount": read_list()["osz"]["count"]}, indent=2, ensure_ascii=False))
+        self.write(json.dumps({"code": 200, "oszCount": read_list()["osz"]["count"], "requestTime": round(time.time())}, indent=2, ensure_ascii=False))
         resPingMs(self)
 
 class webMapsHandler(tornado.web.RequestHandler):
