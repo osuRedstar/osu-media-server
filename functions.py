@@ -428,8 +428,17 @@ def check(setID, rq_type, checkRenewFile=False):
 
         exceptOszList = [919187, 871623, 12483, 1197242]
         exceptOszList.append(929972) #네리냥에서 깨진 맵임 버그리봇방에 올려둠
+
+        #7일 이상 된 비트맵만 파일체크함
+        fED = os.path.getmtime(f"data/dl/{get_osz_fullName(setID)}")
+        t = round(time.time() - fED)
+        if t > 604800:
+            fED = True
+        else:
+            fED = False
+
         #이거 redstar DB에 없는 경우 있으니 cheesegull DB에서도 추가로 참고하기
-        if checkRenewFile and int(setID) not in exceptOszList:
+        if checkRenewFile and int(setID) not in exceptOszList and fED:
             try:
                 rankStatus = db("redstar").fetch(f"SELECT ranked FROM beatmaps WHERE beatmapset_id = %s", [setID])["ranked"]
                 log.info(f"파일 최신화 redstar DB 랭크상태 조회 완료 : {rankStatus}")
