@@ -33,6 +33,7 @@ OSU_APIKEY = conf.config["osu"]["osuApikey"]
 IS_YOU_HAVE_OSU_PRIVATE_SERVER = bool(conf.config["osu"]["IS_YOU_HAVE_OSU_PRIVATE_SERVER_WITH_lets.py"])
 lets_beatmaps_Folder = conf.config["osu"]["lets.py_beatmaps_Folder_Path"]
 dataFolder = conf.config["server"]["dataFolder"]
+oszRenewTime = int(conf.config["server"]["oszRenewTime"])
 osuServerDomain = conf.config["server"]["osuServerDomain"]
 
 requestHeaders = {"User-Agent": f"RedstarOSU's MediaServer (python request) | https://b.{osuServerDomain}"}
@@ -432,7 +433,8 @@ def check(setID, rq_type, checkRenewFile=False):
         #7일 이상 된 비트맵만 파일체크함
         fED = os.path.getmtime(f"data/dl/{get_osz_fullName(setID)}")
         t = round(time.time() - fED)
-        if t > 604800:
+        log.info(f"t:{t} > oszRenewTime:{oszRenewTime} == {t > oszRenewTime}")
+        if t > oszRenewTime:
             fED = True
         else:
             fED = False
