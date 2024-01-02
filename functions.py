@@ -427,17 +427,17 @@ def check(setID, rq_type, checkRenewFile=False):
         dlsc = 200
         log.info(f"{get_osz_fullName(setID)} 존재함")
 
-        exceptOszList = [919187, 871623, 12483, 1197242]
+        exceptOszList = [919187, 871623, 12483, 1197242, 1086293]
         exceptOszList.append(929972) #네리냥에서 깨진 맵임 버그리봇방에 올려둠
 
         #7일 이상 된 비트맵만 파일체크함
         fED = os.path.getmtime(f"data/dl/{get_osz_fullName(setID)}")
         t = round(time.time() - fED)
-        log.info(f"t:{t} > oszRenewTime:{oszRenewTime} = {t > oszRenewTime}")
         if t > oszRenewTime:
             fED = True
         else:
             fED = False
+        log.info(f"t:{t} > oszRenewTime:{oszRenewTime} = {t > oszRenewTime} | 최종 조건 = {checkRenewFile and int(setID) not in exceptOszList and fED}")
 
         #이거 redstar DB에 없는 경우 있으니 cheesegull DB에서도 추가로 참고하기
         if checkRenewFile and int(setID) not in exceptOszList and fED:
@@ -473,6 +473,7 @@ def check(setID, rq_type, checkRenewFile=False):
                             os.replace(f"{dataFolder}/dl/t{setID} .osz", f"{dataFolder}/dl/{fullSongName}")
                         else:
                             os.remove(f"{dataFolder}/dl/t{setID} .osz")
+                            os.utime(f"{dataFolder}/dl/{fullSongName}", (time.time(), time.time()))
                         break
                     else:
                         continue
