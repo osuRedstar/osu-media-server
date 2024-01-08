@@ -560,5 +560,5 @@ if __name__ == "__main__":
     app = make_app()
     port = int(conf.config["server"]["port"])
     app.listen(port)
-    log.info(f"Server Listen on {port} Port")
+    log.info(f"Server Listen on http://localhost:{port} Port")
     tornado.ioloop.IOLoop.current().start()
