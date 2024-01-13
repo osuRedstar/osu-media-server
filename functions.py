@@ -429,6 +429,8 @@ def check(setID, rq_type, checkRenewFile=False):
 
         exceptOszList = [919187, 871623, 12483, 1197242, 1086293]
         exceptOszList.append(929972) #네리냥에서 깨진 맵임 버그리봇방에 올려둠
+        exceptOszList.append(1745195)
+        exceptOszList.append(645756)
 
         #7일 이상 된 비트맵만 파일체크함
         fED = os.path.getmtime(f"data/dl/{get_osz_fullName(setID)}")
