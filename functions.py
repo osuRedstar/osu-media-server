@@ -427,7 +427,7 @@ def check(setID, rq_type, checkRenewFile=False):
         dlsc = 200
         log.info(f"{get_osz_fullName(setID)} 존재함")
 
-        exceptOszList = [919187, 871623, 12483, 1197242, 1086293]
+        exceptOszList = [919187, 871623, 12483, 1197242, 1086293, 940322]
         exceptOszList.append(929972) #네리냥에서 깨진 맵임 버그리봇방에 올려둠
         exceptOszList.append(1745195)
         exceptOszList.append(645756)
@@ -1000,11 +1000,64 @@ def filename_to_GetCheesegullDB(filename):
     '''
     result = db("cheesegull").fetch(sql, [artist, title, creator, version])
     if result is None:
-        return None
-    return result
+        #특수문자 등등 조회 안되는거 짤라서 조회
+        log.warning("filename 조회 실패! | 단어별로 짤라서 찾아봄")
+
+        artist_sp = artist.split()
+        title_sp = title.split()
+        creator_sp = creator.split()
+        version_sp = version.split()
+
+        sql_part = '''
+            SELECT b.id, b.parent_set_id, b.diff_name
+            FROM beatmaps AS b
+            JOIN sets AS s ON b.parent_set_id = s.id
+            WHERE
+        '''
+        param_part = []
+        for i, v in enumerate(artist_sp):
+            if i == 0:
+                sql_part += " s.artist LIKE %s"
+                param_part.append(f"{v}%")
+            else:
+                sql_part += " AND s.artist LIKE %s"
+                param_part.append(f"%{v}%")
+        for i, v in enumerate(title_sp):
+            if i == 0:
+                sql_part += " AND s.title LIKE %s"
+                param_part.append(f"{v}%")
+            else:
+                sql_part += " AND s.title LIKE %s"
+                param_part.append(f"%{v}%")
+        for i, v in enumerate(creator_sp):
+            if i == 0:
+                sql_part += " AND s.creator LIKE %s"
+                param_part.append(f"{v}%")
+            else:
+                sql_part += " AND s.creator LIKE %s"
+                param_part.append(f"%{v}%")
+        for i, v in enumerate(version_sp):
+            if i == 0:
+                sql_part += " AND b.diff_name LIKE %s"
+                param_part.append(f"{v}%")
+            else:
+                sql_part += " AND b.diff_name LIKE %s"
+                param_part.append(f"%{v}%")
+
+        result_part = db("cheesegull").fetch(sql_part, param_part)
+        if result_part is None:
+            return None
+        elif type(result_part) == list and len(result_part) > 1:
+            log.warning(f"값이 2개 이상임 ({len(result_part)}) | result_part = {result_part}")
+            return None
+        else:
+            return result_part
+    else:
+        return result
 
 def read_osu_filename(filename):
     result = filename_to_GetCheesegullDB(filename)
+    log.debug(f"result = {result}")
     if result is None:
         #Bancho에 이름으로 bid 찾는 방법 찾아내기
         return None
