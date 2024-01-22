@@ -427,7 +427,7 @@ def check(setID, rq_type, checkRenewFile=False):
         dlsc = 200
         log.info(f"{get_osz_fullName(setID)} 존재함")
 
-        exceptOszList = [919187, 871623, 12483, 1197242, 1086293, 940322]
+        exceptOszList = [919187, 871623, 12483, 1197242, 1086293, 940322, -10000000]
         exceptOszList.append(929972) #네리냥에서 깨진 맵임 버그리봇방에 올려둠
         exceptOszList.append(1745195)
         exceptOszList.append(645756)
