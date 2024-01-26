@@ -20,22 +20,20 @@ else:
     allowedconnentedbot = False
     log.warning("봇 접근 거부")
 
-def request_msg(self, botpass=False):
-    # Logging the request IP address
-    print("")
+def getRequestInfo(self):
     try:
         real_ip = self.request.headers["Cf-Connecting-Ip"]
-        request_uri = self.request.headers["X-Forwarded-Proto"] + "://" + self.request.host + self.request.uri
+        request_url = self.request.headers["X-Forwarded-Proto"] + "://" + self.request.host + self.request.uri
         country_code = self.request.headers["Cf-Ipcountry"]
     except Exception as e:
         log.warning(f"cloudflare를 거치지 않음, real_ip는 nginx header에서 가져옴 | e = {e}")
         try:
             real_ip = self.request.headers["X-Real-Ip"]
-            request_uri = self.request.headers["X-Forwarded-Proto"] + "://" + self.request.host + self.request.uri
+            request_url = self.request.headers["X-Forwarded-Proto"] + "://" + self.request.host + self.request.uri
         except Exception as e:
             log.warning(f"http로 접속시도함 | cloudflare를 거치지 않음, real_ip는 http요청이라서 바로 뜸 | e = {e}")
             real_ip = self.request.remote_ip
-            request_uri = self.request.protocol + "://" + self.request.host + self.request.uri
+            request_url = self.request.protocol + "://" + self.request.host + self.request.uri
 
         #2자리 국가코드
         reader = geoip2.database.Reader("GeoLite2-Country.mmdb")
@@ -47,9 +45,9 @@ def request_msg(self, botpass=False):
         except Exception as e:
             country_code = "XX"
             log.error("국가코드 오류 발생:", e)
-        reader.close()
 
     client_ip = self.request.remote_ip
+
     try:
         User_Agent = self.request.headers["User-Agent"]
     except:
@@ -62,6 +60,14 @@ def request_msg(self, botpass=False):
     except:
         Referer = ""
 
+    return real_ip, request_url, country_code, client_ip, User_Agent, Referer
+
+def request_msg(self, botpass=False):
+    # Logging the request IP address
+    print("")
+    
+    real_ip, request_url, country_code, client_ip, User_Agent, Referer = getRequestInfo(self)
+
     def logmsg(msg):
         if botpass:
             log.warning(msg)
@@ -70,26 +76,26 @@ def request_msg(self, botpass=False):
 
     #필?터?링
     if allowedconnentedbot:
-        log.info(f"Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_uri} | From: {User_Agent} | Referer: {Referer}")
+        log.info(f"Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_url} | From: {User_Agent} | Referer: {Referer}")
         return 200
     else:
         if any(i in User_Agent.lower() for i in ["bot", "bytedance.com"]) and not "discord" in User_Agent.lower():
-            logmsg(f"bot 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_uri} | From: {User_Agent} | Referer: {Referer}")
+            logmsg(f"bot 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_url} | From: {User_Agent} | Referer: {Referer}")
             return "bot"
         elif "python-requests" in User_Agent.lower():
-            logmsg(f"python-requests 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_uri} | From: {User_Agent} | Referer: {Referer}")
+            logmsg(f"python-requests 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_url} | From: {User_Agent} | Referer: {Referer}")
             return "python-requests"
         elif "python-urllib" in User_Agent.lower():
-            logmsg(f"Python-urllib 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_uri} | From: {User_Agent} | Referer: {Referer}")
+            logmsg(f"Python-urllib 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_url} | From: {User_Agent} | Referer: {Referer}")
             return "Python-urllib"
         elif "postmanruntime" in User_Agent.lower():
-            log.debug(f"PostmanRuntime 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_uri} | From: {User_Agent} | Referer: {Referer}")
+            log.debug(f"PostmanRuntime 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_url} | From: {User_Agent} | Referer: {Referer}")
             return 200
         elif User_Agent == "osu!":
-            log.info(f"osu! 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_uri} | From: {User_Agent} | Referer: {Referer}")
+            log.info(f"osu! 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_url} | From: {User_Agent} | Referer: {Referer}")
             return 200
         else:
-            log.info(f"Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_uri} | From: {User_Agent} | Referer: {Referer}")
+            log.info(f"Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_url} | From: {User_Agent} | Referer: {Referer}")
             return 200
 
 def send401(self, errMsg):
@@ -443,9 +449,23 @@ class StatusHandler(tornado.web.RequestHandler):
         if rm != 200:
             pass
 
+        real_ip, request_url, country_code, client_ip, User_Agent, Referer = getRequestInfo(self)
+        data = {
+            "code": 200,
+            "oszCount": read_list()["osz"]["count"],
+            "requestTime": round(time.time()),
+            "request": {
+                "IP": real_ip,
+                "country": country_code,
+                "url": request_url,
+                "User-Agent": User_Agent,
+                "Referer": Referer
+                }
+            }
+
         self.set_header("return-fileinfo", json.dumps({"filename": "", "path": "", "fileMd5": ""}))
         self.set_header("Content-Type", "application/json")
-        self.write(json.dumps({"code": 200, "oszCount": read_list()["osz"]["count"], "requestTime": round(time.time())}, indent=2, ensure_ascii=False))
+        self.write(json.dumps(data, indent=2, ensure_ascii=False))
         resPingMs(self)
 
 class webMapsHandler(tornado.web.RequestHandler):
@@ -560,5 +580,5 @@ if __name__ == "__main__":
     app = make_app()
     port = int(conf.config["server"]["port"])
     app.listen(port)
-    log.info(f"Server Listen on http://localhost:{port} Port")
+    log.info(f"Server Listen on http://localhost:{port} Port | OS = {'Windows' if os.name == 'nt' else 'UNIX'}")
     tornado.ioloop.IOLoop.current().start()
