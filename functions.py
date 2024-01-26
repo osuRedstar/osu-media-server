@@ -10,9 +10,10 @@ from PIL import Image
 import hashlib
 import re
 from pydub import AudioSegment
-import winsound
+from pydub.playback import play as PlaySound
 import threading
 import time
+import json
 
 #beatmap_md5
 def calculate_md5(filename):
@@ -25,7 +26,6 @@ def calculate_md5(filename):
             md5.update(data)
     return md5.hexdigest()
 
-
 conf = config.config("config.ini")
 
 OSU_APIKEY = conf.config["osu"]["osuApikey"]
@@ -36,7 +36,7 @@ dataFolder = conf.config["server"]["dataFolder"]
 oszRenewTime = int(conf.config["server"]["oszRenewTime"])
 osuServerDomain = conf.config["server"]["osuServerDomain"]
 
-requestHeaders = {"User-Agent": f"RedstarOSU's MediaServer (python request) | https://b.{osuServerDomain}"}
+requestHeaders = {"User-Agent": f"RedstarOSU's MediaServer (python requests) | https://b.{osuServerDomain}"}
 
 #API 키 테스트
 log.info("Bancho apikeyStatus check...")
@@ -46,6 +46,20 @@ if apikeyStatus.status_code != 200:
     log.warning("[!] Please edit your config.ini and run the server again.")
     exit()
 log.info("Done!")
+
+#ffmpeg 설치확인
+if os.system(f"ffmpeg -version > {'nul' if os.name == 'nt' else '/dev/null'} 2>&1") != 0:
+    log.warning(f"ffmpeg Does Not Found!! | ignore? (y/n) ")
+    if input("").lower() != "y":
+        print("exit")
+        if os.name != "nt":
+            print("sudo apt install ffmpeg")
+        else:
+            print("https://github.com/BtbN/FFmpeg-Builds/releases")
+        exit()
+    else:
+        print("ignored")
+        log.warning("Maybe Not work preview & audio (DT, NC, HT)")
 
 def folder_check():
     if not os.path.isdir(dataFolder):
@@ -401,7 +415,8 @@ def check(setID, rq_type, checkRenewFile=False):
 
             # WAV 파일 재생을 별도의 스레드에서 수행
             def play_finished_dl():
-                winsound.PlaySound("static/audio/match-confirm (mp3cut.net).wav", winsound.SND_FILENAME)
+                #winsound.PlaySound("static/audio/match-confirm (mp3cut.net).wav", winsound.SND_FILENAME)
+                PlaySound(AudioSegment.from_file("static/audio/match-confirm (mp3cut.net).wav"))
             play_thread = threading.Thread(target=play_finished_dl)
             play_thread.start()
 
@@ -427,10 +442,14 @@ def check(setID, rq_type, checkRenewFile=False):
         dlsc = 200
         log.info(f"{get_osz_fullName(setID)} 존재함")
 
-        exceptOszList = [919187, 871623, 12483, 1197242, 1086293, 940322, -10000000]
+        """ exceptOszList = [919187, 871623, 12483, 1197242, 1086293, 940322, -10000000]
         exceptOszList.append(929972) #네리냥에서 깨진 맵임 버그리봇방에 올려둠
         exceptOszList.append(1745195)
-        exceptOszList.append(645756)
+        exceptOszList.append(645756) """ #Update by <t:1706294656>
+
+        with open("exceptOszList.json", "r") as file:
+            exceptOszList = json.load(file)
+            exceptOszList = exceptOszList["exceptOszList"] + exceptOszList["exceptOszList2"]
 
         #7일 이상 된 비트맵만 파일체크함
         fED = os.path.getmtime(f"data/dl/{get_osz_fullName(setID)}")
