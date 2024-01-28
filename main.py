@@ -8,6 +8,7 @@ import json
 import traceback
 import geoip2.database
 import time
+import subprocess
 
 conf = config.config("config.ini")
 
@@ -21,19 +22,29 @@ else:
     log.warning("봇 접근 거부")
 
 def getRequestInfo(self):
+    IsCloudflare = False
+    IsNginx = False
+    IsHttp = False
     try:
         real_ip = self.request.headers["Cf-Connecting-Ip"]
         request_url = self.request.headers["X-Forwarded-Proto"] + "://" + self.request.host + self.request.uri
         country_code = self.request.headers["Cf-Ipcountry"]
+        IsCloudflare = True
+        IsNginx = True
+        Server = "Cloudflare"
     except Exception as e:
         log.warning(f"cloudflare를 거치지 않음, real_ip는 nginx header에서 가져옴 | e = {e}")
         try:
             real_ip = self.request.headers["X-Real-Ip"]
             request_url = self.request.headers["X-Forwarded-Proto"] + "://" + self.request.host + self.request.uri
+            IsNginx = True
+            Server = subprocess.check_output(["nginx.exe", "-v"], stderr=subprocess.STDOUT).decode().strip().split(":")[1].strip()
         except Exception as e:
             log.warning(f"http로 접속시도함 | cloudflare를 거치지 않음, real_ip는 http요청이라서 바로 뜸 | e = {e}")
             real_ip = self.request.remote_ip
             request_url = self.request.protocol + "://" + self.request.host + self.request.uri
+            IsHttp = True
+            Server = self._headers.get("Server")
 
         #2자리 국가코드
         reader = geoip2.database.Reader("GeoLite2-Country.mmdb")
@@ -60,13 +71,13 @@ def getRequestInfo(self):
     except:
         Referer = ""
 
-    return real_ip, request_url, country_code, client_ip, User_Agent, Referer
+    return real_ip, request_url, country_code, client_ip, User_Agent, Referer, IsCloudflare, IsNginx, IsHttp, Server
 
 def request_msg(self, botpass=False):
     # Logging the request IP address
     print("")
     
-    real_ip, request_url, country_code, client_ip, User_Agent, Referer = getRequestInfo(self)
+    real_ip, request_url, country_code, client_ip, User_Agent, Referer, IsCloudflare, IsNginx, IsHttp, Server = getRequestInfo(self)
 
     def logmsg(msg):
         if botpass:
@@ -98,25 +109,34 @@ def request_msg(self, botpass=False):
             log.info(f"Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_url} | From: {User_Agent} | Referer: {Referer}")
             return 200
 
+def resPingMs(self):
+    pingMs = (time.time() - self.request._start_time) * 1000
+    log.chat(f"{pingMs} ms")
+    return pingMs
+
 def send401(self, errMsg):
     self.set_status(401)
     self.set_header("Content-Type", "application/json")
     self.write(json.dumps({"code": 401, "error": errMsg}, indent=2, ensure_ascii=False))
+    self.set_header("Ping", str(resPingMs(self)))
 
 def send403(self, rm):
     self.set_status(403)
     self.set_header("Content-Type", "application/json")
     self.write(json.dumps({"code": 403, "error": f"{rm} is Not allowed!!", "message": f"contect --> {ContectEmail}"}, indent=2, ensure_ascii=False))
+    self.set_header("Ping", str(resPingMs(self)))
 
 def send404(self, inputType, input):
     self.set_status(404)
     self.set_header("return-fileinfo", json.dumps({"filename": "404.html", "path": "templates/404.html", "fileMd5": calculate_md5("templates/404.html")}))
     self.render("templates/404.html", inputType=inputType, input=input)
+    self.set_header("Ping", str(resPingMs(self)))
 
 def send500(self, inputType, input):
     self.set_status(500)
     self.set_header("return-fileinfo", json.dumps({"filename": "500.html", "path": "templates/500.html", "fileMd5": calculate_md5("templates/500.html")}))
     self.render("templates/500.html", inputType=inputType, input=input)
+    self.set_header("Ping", str(resPingMs(self)))
 
 def send503(self, e, inputType, input):
     self.set_status(503)
@@ -124,15 +144,14 @@ def send503(self, e, inputType, input):
     self.set_header("Exception", json.dumps({"type": str(type(e)), "error": str(e)}))
     self.set_header("return-fileinfo", json.dumps({"filename": "503.html", "path": "templates/503.html", "fileMd5": calculate_md5("templates/503.html")}))
     self.render("templates/503.html", inputType=inputType, input=input, Exception=json.dumps({"type": str(type(e)), "error": str(e)}, ensure_ascii=False))
+    self.set_header("Ping", str(resPingMs(self)))
 
 def send504(self, inputType, input):
     #cloudflare 504 페이지로 연결됨
     self.set_status(504)
     self.set_header("return-fileinfo", json.dumps({"filename": "504.html", "path": "templates/504.html", "fileMd5": calculate_md5("templates/504.html")}))
     self.render("templates/504.html", inputType=inputType, input=input)
-
-def resPingMs(self):
-    log.chat(f"{(time.time() - self.request._start_time) * 1000} ms")
+    self.set_header("Ping", str(resPingMs(self)))
 
 ####################################################################################################
 
@@ -144,7 +163,7 @@ class MainHandler(tornado.web.RequestHandler):
 
         self.set_header("return-fileinfo", json.dumps({"filename": "index.html", "path": "templates/index.html", "fileMd5": calculate_md5("templates/index.html")}))
         self.render("templates/index.html")
-        resPingMs(self)
+        self.set_header("Ping", str(resPingMs(self)))
 
 class ListHandler(tornado.web.RequestHandler):
     def get(self, bsid=""):
@@ -156,7 +175,7 @@ class ListHandler(tornado.web.RequestHandler):
         self.set_header("return-fileinfo", json.dumps({"filename": "", "path": "", "fileMd5": ""}))
         self.set_header("Content-Type", "application/json")
         self.write(json.dumps(read_list(bsid), indent=2, ensure_ascii=False))
-        resPingMs(self)
+        self.set_header("Ping", str(resPingMs(self)))
 
 class BgHandler(tornado.web.RequestHandler):
     def get(self, id):
@@ -188,7 +207,7 @@ class BgHandler(tornado.web.RequestHandler):
             log.error(f"\n{traceback.format_exc()}")
             return send503(self, e, idType, id)
         finally:
-            resPingMs(self)
+            self.set_header("Ping", str(resPingMs(self)))
 
 class ThumbHandler(tornado.web.RequestHandler):
     def get(self, id):
@@ -216,7 +235,7 @@ class ThumbHandler(tornado.web.RequestHandler):
             log.error(f"\n{traceback.format_exc()}")
             return send503(self, e, "bsid", id)
         finally:
-            resPingMs(self)
+            self.set_header("Ping", str(resPingMs(self)))
 
 class PreviewHandler(tornado.web.RequestHandler):
     def get(self, id):
@@ -244,7 +263,7 @@ class PreviewHandler(tornado.web.RequestHandler):
             log.error(f"\n{traceback.format_exc()}")
             return send503(self, e, "bsid", id)
         finally:
-            resPingMs(self)
+            self.set_header("Ping", str(resPingMs(self)))
 
 class AudioHandler(tornado.web.RequestHandler):
     def get(self, id):
@@ -276,7 +295,7 @@ class AudioHandler(tornado.web.RequestHandler):
             log.error(f"\n{traceback.format_exc()}")
             return send503(self, e, idType, id)
         finally:
-            resPingMs(self)
+            self.set_header("Ping", str(resPingMs(self)))
 
 class VideoHandler(tornado.web.RequestHandler):
     def get(self, id):
@@ -309,7 +328,7 @@ class VideoHandler(tornado.web.RequestHandler):
             log.error(f"\n{traceback.format_exc()}")
             return send503(self, e, "bid", id)
         finally:
-            resPingMs(self)
+            self.set_header("Ping", str(resPingMs(self)))
 
 class OszHandler(tornado.web.RequestHandler):
     def get(self, id):
@@ -346,7 +365,7 @@ class OszHandler(tornado.web.RequestHandler):
             log.error(f"\n{traceback.format_exc()}")
             return send503(self, e, "bsid", id)
         finally:
-            resPingMs(self)
+            self.set_header("Ping", str(resPingMs(self)))
 
 class OszBHandler(tornado.web.RequestHandler):
     def get(self, id):
@@ -377,7 +396,7 @@ class OszBHandler(tornado.web.RequestHandler):
             log.error(f"\n{traceback.format_exc()}")
             return send503(self, e, "bid", id)
         finally:
-            resPingMs(self)
+            self.set_header("Ping", str(resPingMs(self)))
 
 class OsuHandler(tornado.web.RequestHandler):
     def get(self, id):
@@ -406,7 +425,7 @@ class OsuHandler(tornado.web.RequestHandler):
             log.error(f"\n{traceback.format_exc()}")
             return send503(self, e, "bid", id)
         finally:
-            resPingMs(self)
+            self.set_header("Ping", str(resPingMs(self)))
 
 class FaviconHandler(tornado.web.RequestHandler):
     def get(self):
@@ -418,7 +437,7 @@ class FaviconHandler(tornado.web.RequestHandler):
         self.set_header('Content-Type', 'image/x-icon')
         with open("static/img/favicon.ico", 'rb') as f:
             self.write(f.read())
-        resPingMs(self)
+        self.set_header("Ping", str(resPingMs(self)))
 
 class StaticHandler(tornado.web.RequestHandler):
     def get(self, item):
@@ -429,7 +448,7 @@ class StaticHandler(tornado.web.RequestHandler):
         self.set_header("return-fileinfo", json.dumps({"filename": item, "path": f"static/{item}", "fileMd5": calculate_md5(f"static/{item}")}))
         with open(f"static/{item}", 'rb') as f:
                 self.write(f.read())
-        resPingMs(self)
+        self.set_header("Ping", str(resPingMs(self)))
 
 class robots_txt(tornado.web.RequestHandler):
     def get(self):
@@ -441,7 +460,7 @@ class robots_txt(tornado.web.RequestHandler):
         self.set_header("Content-Type", "text/plain")
         with open("robots.txt", 'rb') as f:
             self.write(f.read())
-        resPingMs(self)
+        self.set_header("Ping", str(resPingMs(self)))
 
 class StatusHandler(tornado.web.RequestHandler):
     def get(self):
@@ -449,7 +468,7 @@ class StatusHandler(tornado.web.RequestHandler):
         if rm != 200:
             pass
 
-        real_ip, request_url, country_code, client_ip, User_Agent, Referer = getRequestInfo(self)
+        real_ip, request_url, country_code, client_ip, User_Agent, Referer, IsCloudflare, IsNginx, IsHttp, Server = getRequestInfo(self)
         data = {
             "code": 200,
             "oszCount": read_list()["osz"]["count"],
@@ -459,14 +478,19 @@ class StatusHandler(tornado.web.RequestHandler):
                 "country": country_code,
                 "url": request_url,
                 "User-Agent": User_Agent,
-                "Referer": Referer
+                "Referer": Referer,
+                "IsCloudflare": IsCloudflare,
+                "IsNginx": IsNginx,
+                "IsHttp": IsHttp,
+                "Server": Server,
+                "ping": resPingMs(self)
                 }
             }
 
         self.set_header("return-fileinfo", json.dumps({"filename": "", "path": "", "fileMd5": ""}))
         self.set_header("Content-Type", "application/json")
         self.write(json.dumps(data, indent=2, ensure_ascii=False))
-        resPingMs(self)
+        self.set_header("Ping", str(resPingMs(self)))
 
 class webMapsHandler(tornado.web.RequestHandler):
     def get(self, filename):
@@ -498,7 +522,7 @@ class webMapsHandler(tornado.web.RequestHandler):
             log.error(f"\n{traceback.format_exc()}")
             return send503(self, e, "filename", filename)
         finally:
-            resPingMs(self)
+            self.set_header("Ping", str(resPingMs(self)))
 
 class searchHandler(tornado.web.RequestHandler):
     def get(self, q):
@@ -509,7 +533,7 @@ class searchHandler(tornado.web.RequestHandler):
         log.debug(self.request.uri)
         self.set_header("return-fileinfo", json.dumps({"filename": "mirror.html", "path": "templates/mirror.html", "fileMd5": calculate_md5("templates/mirror.html")}))
         self.render("templates/mirror.html", cheesegullUrlParam=self.request.uri)
-        resPingMs(self)
+        self.set_header("Ping", str(resPingMs(self)))
 
 class removeHandler(tornado.web.RequestHandler):
     def get(self, bsid):
@@ -534,7 +558,7 @@ class removeHandler(tornado.web.RequestHandler):
         else:
             self.set_header("Content-Type", "application/json")
             self.write(json.dumps(removeAllFiles(bsid), indent=2, ensure_ascii=False))
-        resPingMs(self)
+        self.set_header("Ping", str(resPingMs(self)))
 
 class filesinfoHandler(tornado.web.RequestHandler):
     def get(self, bsid):
@@ -544,7 +568,7 @@ class filesinfoHandler(tornado.web.RequestHandler):
 
         self.set_header("Content-Type", "application/json")
         self.write(json.dumps(osu_file_read(bsid, rq_type="all"), indent=2, ensure_ascii=False))
-        resPingMs(self)
+        self.set_header("Ping", str(resPingMs(self)))
 
 def make_app():
     return tornado.web.Application([
