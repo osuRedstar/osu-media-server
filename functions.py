@@ -669,7 +669,7 @@ def read_audio(id):
             if os.path.isfile(DTFilename):
                 return DTFilename
             else:
-                ffmpeg_msg = f'ffmpeg -i "{dataFolder}\\audio\{setID}\{file_list[0]}" -af atempo=1.5 -acodec libmp3lame -q:a 0 -y "{dataFolder}\\audio\{setID}\{file_list[0][:-4]}-DT.mp3"'
+                ffmpeg_msg = f'ffmpeg -i "{dataFolder}/audio/{setID}/{file_list[0]}" -af atempo=1.5 -acodec libmp3lame -q:a 0 -y "{dataFolder}/audio/{setID}/{file_list[0][:-4]}-DT.mp3"'
                 log.chat(f"DT ffmpeg_msg = {ffmpeg_msg}")
                 os.system(ffmpeg_msg)
                 return DTFilename
@@ -678,7 +678,7 @@ def read_audio(id):
             if os.path.isfile(NCFilename):
                 return NCFilename
             else:
-                ffmpeg_msg = f'ffmpeg -i "{dataFolder}\\audio\{setID}\{file_list[0]}" -af asetrate={AudioSegment.from_file(f"{dataFolder}/audio/{setID}/{file_list[0]}").frame_rate}*1.5 -acodec libmp3lame -q:a 0 -y "{dataFolder}\\audio\{setID}\{file_list[0][:-4]}-NC.mp3"'
+                ffmpeg_msg = f'ffmpeg -i "{dataFolder}/audio/{setID}/{file_list[0]}" -af asetrate={AudioSegment.from_file(f"{dataFolder}/audio/{setID}/{file_list[0]}").frame_rate}*1.5 -acodec libmp3lame -q:a 0 -y "{dataFolder}/audio/{setID}/{file_list[0][:-4]}-NC.mp3"'
                 log.chat(f"NC ffmpeg_msg = {ffmpeg_msg}")
                 os.system(ffmpeg_msg)
                 return NCFilename
@@ -687,7 +687,7 @@ def read_audio(id):
             if os.path.isfile(HFFilename):
                 return HFFilename
             else:
-                ffmpeg_msg = f'ffmpeg -i "{dataFolder}\\audio\{setID}\{file_list[0]}" -af atempo=0.75 -acodec libmp3lame -q:a 0 -y "{dataFolder}\\audio\{setID}\{file_list[0][:-4]}-HF.mp3"'
+                ffmpeg_msg = f'ffmpeg -i "{dataFolder}/audio/{setID}/{file_list[0]}" -af atempo=0.75 -acodec libmp3lame -q:a 0 -y "{dataFolder}/audio/{setID}/{file_list[0][:-4]}-HF.mp3"'
                 log.chat(f"HF ffmpeg_msg = {ffmpeg_msg}")
                 os.system(ffmpeg_msg)
                 return HFFilename
@@ -832,9 +832,9 @@ def read_preview(id):
                     PreviewTime = prti / 1000
         
         if AudioFilename.endswith(".mp3"):
-            ffmpeg_msg = f'ffmpeg -i "{dataFolder}\preview\{setID}\{AudioFilename}" -ss {PreviewTime} -t 30.821 -acodec copy -y "{dataFolder}\preview\{setID}\{id}"'
+            ffmpeg_msg = f'ffmpeg -i "{dataFolder}/preview/{setID}/{AudioFilename}" -ss {PreviewTime} -t 30.821 -acodec copy -y "{dataFolder}/preview/{setID}/{id}"'
         else:
-            ffmpeg_msg = f'ffmpeg -i "{dataFolder}\preview\{setID}\{AudioFilename}" -ss {PreviewTime} -t 30.821 -acodec libmp3lame -q:a 0 -y "{dataFolder}\preview\{setID}\{id}"'
+            ffmpeg_msg = f'ffmpeg -i "{dataFolder}/preview/{setID}/{AudioFilename}" -ss {PreviewTime} -t 30.821 -acodec libmp3lame -q:a 0 -y "{dataFolder}/preview/{setID}/{id}"'
             log.warning(f"ffmpeg_msg = {ffmpeg_msg}")
         log.chat(f"ffmpeg_msg = {ffmpeg_msg}")
         os.system(ffmpeg_msg)
