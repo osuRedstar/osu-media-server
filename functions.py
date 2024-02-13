@@ -585,7 +585,7 @@ def read_bg(id):
             bsid = db("cheesegull").fetch("SELECT parent_set_id FROM cheesegull.beatmaps WHERE id = %s", [id])["parent_set_id"]
         except:
             try:
-                bsid = int(requests.get(f"https://{osuServerDomain}/api/v1/get_beatmaps?b={id}").json()[0]["beatmapset_id"])
+                bsid = db("redstar").fetch("SELECT beatmapset_id FROM redstar.beatmaps WHERE beatmap_id = %s", [id])["beatmapset_id"]
                 log.info("RedstarOSU API에서 bsid 찾음")
             except:
                 raise KeyError("Not Found bsid!")
@@ -769,7 +769,7 @@ def read_audio(id):
             bsid = db("cheesegull").fetch("SELECT parent_set_id FROM cheesegull.beatmaps WHERE id = %s", [id])["parent_set_id"]
         except:
             try:
-                bsid = int(requests.get(f"https://{osuServerDomain}/api/v1/get_beatmaps?b={id}").json()[0]["beatmapset_id"])
+                bsid = db("redstar").fetch("SELECT beatmapset_id FROM redstar.beatmaps WHERE beatmap_id = %s", [id])["beatmapset_id"]
                 log.info("RedstarOSU API에서 bsid 찾음")
             except:
                 raise KeyError("Not Found bsid!")
@@ -862,7 +862,7 @@ def read_video(id):
         bsid = db("cheesegull").fetch("SELECT parent_set_id FROM cheesegull.beatmaps WHERE id = %s", [id])["parent_set_id"]
     except:
         try:
-            bsid = int(requests.get(f"https://{osuServerDomain}/api/v1/get_beatmaps?b={id}").json()[0]["beatmapset_id"])
+            bsid = db("redstar").fetch("SELECT beatmapset_id FROM redstar.beatmaps WHERE beatmap_id = %s", [id])["beatmapset_id"]
             log.info("RedstarOSU API에서 bsid 찾음")
         except:
             raise KeyError("Not Found bsid!")
@@ -941,7 +941,7 @@ def read_osz_b(id):
         bsid = db("cheesegull").fetch("SELECT parent_set_id FROM cheesegull.beatmaps WHERE id = %s", [id])["parent_set_id"]
     except:
         try:
-            bsid = int(requests.get(f"https://{osuServerDomain}/api/v1/get_beatmaps?b={id}").json()[0]["beatmapset_id"])
+            bsid = db("redstar").fetch("SELECT beatmapset_id FROM redstar.beatmaps WHERE beatmap_id = %s", [id])["beatmapset_id"]
             log.info("RedstarOSU API에서 bsid 찾음")
         except:
             raise KeyError("Not Found bsid!")
@@ -954,7 +954,7 @@ def read_osu(id):
         bsid = db("cheesegull").fetch("SELECT parent_set_id FROM cheesegull.beatmaps WHERE id = %s", [id])["parent_set_id"]
     except:
         try:
-            bsid = int(requests.get(f"https://{osuServerDomain}/api/v1/get_beatmaps?b={id}").json()[0]["beatmapset_id"])
+            bsid = db("redstar").fetch("SELECT beatmapset_id FROM redstar.beatmaps WHERE beatmap_id = %s", [id])["beatmapset_id"]
             log.info("RedstarOSU API에서 bsid 찾음")
         except:
             raise KeyError("Not Found bsid!")
