@@ -669,7 +669,7 @@ def read_audio(id):
             if os.path.isfile(DTFilename):
                 return DTFilename
             else:
-                ffmpeg_msg = f'ffmpeg -i "{dataFolder}/audio/{setID}/{file_list[0]}" -af atempo=1.5 -acodec libmp3lame -q:a 0 -y "{dataFolder}/audio/{setID}/{file_list[0][:-4]}-DT.mp3"'
+                ffmpeg_msg = f'ffmpeg -i "{dataFolder}/audio/{setID}/{file_list[0]}" -af atempo=1.5 -acodec libmp3lame -q:a 0 -y "{DTFilename}"'
                 log.chat(f"DT ffmpeg_msg = {ffmpeg_msg}")
                 os.system(ffmpeg_msg)
                 return DTFilename
@@ -678,7 +678,7 @@ def read_audio(id):
             if os.path.isfile(NCFilename):
                 return NCFilename
             else:
-                ffmpeg_msg = f'ffmpeg -i "{dataFolder}/audio/{setID}/{file_list[0]}" -af asetrate={AudioSegment.from_file(f"{dataFolder}/audio/{setID}/{file_list[0]}").frame_rate}*1.5 -acodec libmp3lame -q:a 0 -y "{dataFolder}/audio/{setID}/{file_list[0][:-4]}-NC.mp3"'
+                ffmpeg_msg = f'ffmpeg -i "{dataFolder}/audio/{setID}/{file_list[0]}" -af asetrate={AudioSegment.from_file(f"{dataFolder}/audio/{setID}/{file_list[0]}").frame_rate}*1.5 -acodec libmp3lame -q:a 0 -y "{NCFilename}"'
                 log.chat(f"NC ffmpeg_msg = {ffmpeg_msg}")
                 os.system(ffmpeg_msg)
                 return NCFilename
@@ -687,7 +687,7 @@ def read_audio(id):
             if os.path.isfile(HFFilename):
                 return HFFilename
             else:
-                ffmpeg_msg = f'ffmpeg -i "{dataFolder}/audio/{setID}/{file_list[0]}" -af atempo=0.75 -acodec libmp3lame -q:a 0 -y "{dataFolder}/audio/{setID}/{file_list[0][:-4]}-HF.mp3"'
+                ffmpeg_msg = f'ffmpeg -i "{dataFolder}/audio/{setID}/{file_list[0]}" -af atempo=0.75 -acodec libmp3lame -q:a 0 -y "{HFFilename}"'
                 log.chat(f"HF ffmpeg_msg = {ffmpeg_msg}")
                 os.system(ffmpeg_msg)
                 return HFFilename
@@ -735,7 +735,15 @@ def read_audio(id):
             ck = check(id, rq_type="audio")
             if ck is not None:
                 return ck
-            return read_audio(f"+{id}")
+            
+            if mods == "DT":
+                return read_audio(f"+{id}DT")
+            elif mods == "NC":
+                return read_audio(f"+{id}NC")
+            elif mods == "HF":
+                return read_audio(f"+{id}HF")
+            else:
+                return read_audio(f"+{id}")
 
         return audioSpeed(mods, id, file_list)
     else:
@@ -789,7 +797,15 @@ def read_audio(id):
             ck = check(bsid, rq_type="audio")
             if ck is not None:
                 return ck
-            return read_audio(id)
+            
+            if mods == "DT":
+                return read_audio(f"{id}DT")
+            elif mods == "NC":
+                return read_audio(f"{id}NC")
+            elif mods == "HF":
+                return read_audio(f"{id}HF")
+            else:
+                return read_audio(id)
 
         return audioSpeed(mods, bsid, file_list)
 
