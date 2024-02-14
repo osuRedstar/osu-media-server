@@ -14,6 +14,7 @@ from pydub.playback import play as PlaySound
 import threading
 import time
 import json
+from collections import Counter
 
 #beatmap_md5
 def calculate_md5(filename):
@@ -103,8 +104,6 @@ def osu_file_read(setID, rq_type, moving=False):
     file_list = os.listdir(f"{dataFolder}/dl/{setID}")
     file_list_osu = [file for file in file_list if file.endswith(".osu")]
 
-    first_bid = 0
-    first_bid_v2 = False
     result = []
     beatmap_info = []
     oldMapInfo = []
@@ -116,150 +115,152 @@ def osu_file_read(setID, rq_type, moving=False):
         temp = {}
         bg_ignore = False
         beatmap_md5 = calculate_md5(f"{dataFolder}/dl/{setID}/{beatmapName}")
+        temp["BeatmapMD5"] = beatmap_md5
 
-        BeatmapID = db("redstar").fetch(f"SELECT beatmap_id FROM beatmaps WHERE beatmap_md5 = %s", [beatmap_md5])
-        if BeatmapID is not None:
-            BeatmapID = BeatmapID["beatmap_id"]
-            if first_bid == 0:
-                first_bid = db("redstar").fetch(f"SELECT beatmap_id FROM beatmaps WHERE beatmapset_id = (SELECT beatmapset_id FROM beatmaps WHERE beatmap_md5 = %s) AND beatmap_id > 0 ORDER BY beatmap_id LIMIT 1;", [beatmap_md5])["beatmap_id"]
-                if first_bid is None:
-                    first_bid = 0
-        else:
-            BeatmapID = None
-        log.debug(f"beatmap_md5 = {beatmap_md5} | BeatmapID = {BeatmapID} | first_bid = {first_bid}")
+        with open(f"{dataFolder}/dl/{setID}/{beatmapName}", 'r', encoding="utf-8") as f:
+            while True:
+                line = f.readline()
+                #간혹 확장자가 대문자인 경우가 있어서 전부 소문자로 변경함
+                lineCheck = line.lower()
+                if not line: break
 
-        f = open(f"{dataFolder}/dl/{setID}/{beatmapName}", 'r', encoding="utf-8")
-        while True:
-            line = f.readline()
-            #간혹 확장자가 대문자인 경우가 있어서 전부 소문자로 변경함
-            lineCheck = line.lower()
-            if not line: break
+                #ㅈ같은 osu file format < osu file format v10 은 거르쟈 시발련들아
+                if "osu file format" in line:
+                    osu_file_format_version = line.replace("osu file format v", "")
 
-            #ㅈ같은 osu file format < osu file format v10 은 거르쟈 시발련들아
-            if "osu file format" in line:
-                osu_file_format_version = line.replace("osu file format v", "")
+                    # BOM 문자 제거
+                    if osu_file_format_version.startswith('\ufeff'):
+                        osu_file_format_version = osu_file_format_version[1:]
+                        log.warning("BOM 문자 제거")
+                    if int(osu_file_format_version) < 10:
+                        underV10 = True
+                        log.error(f"{setID} 비트맵셋의 어떤 비트맵은 시이이이이발 osu file format 이 10이하 ({osu_file_format_version}) 이네요? 시발련들아?")
+                        #틀딱곡 BeatmapID 를 Version 쪽에 넘김
 
-                # BOM 문자 제거
-                if osu_file_format_version.startswith('\ufeff'):
-                    osu_file_format_version = osu_file_format_version[1:]
-                    log.warning("BOM 문자 제거")
-                if int(osu_file_format_version) < 10:
-                    underV10 = True
-                    log.error(f"{setID} 비트맵셋의 어떤 비트맵은 시이이이이발 osu file format 이 10이하 ({osu_file_format_version}) 이네요? 시발련들아?")
-                    #틀딱곡 BeatmapID 를 Version 쪽에 넘김
-            
-            if BeatmapID is not None:
-                temp["BeatmapID"] = BeatmapID
+                if "BeatmapID:" in line and not underV10:
+                    spaceFilter = line.replace("BeatmapID:", "").replace("\n", "")
+                    if spaceFilter.startswith(" "):
+                        spaceFilter = spaceFilter.replace(" ", "", 1)
+                    temp["BeatmapID"] = int(spaceFilter)
+                elif "Version:" in line:
+                    spaceFilter = line.replace("Version:", "").replace("\n", "")
+                    if spaceFilter.startswith(" "):
+                        spaceFilter = spaceFilter.replace(" ", "", 1)
+                    temp["Version"] = spaceFilter
 
-            if BeatmapID is None and "BeatmapID:" in line and not underV10:
-                spaceFilter = line.replace("BeatmapID:", "").replace("\n", "")
-                if spaceFilter.startswith(" "):
-                    spaceFilter = spaceFilter.replace(" ", "", 1)
-                temp["BeatmapID"] = int(spaceFilter)
+                    #틀딱곡 BeatmapID 넘겨옴
+                    if underV10:
+                        # 정규식 패턴
+                        pattern = r'\[([^\]]+)\]\.osu$'
+                        match = re.search(pattern, beatmapName)
+                        if match:
+                            diffname = match.group(1)
+                            sql = "SELECT id FROM beatmaps WHERE parent_set_id = %s AND diff_name = %s"
+                            # windows 특수문자 이슈
+                            if diffname != temp["Version"] and temp["Version"] != "":
+                                log.error(f"diffname 매치 안됨! .osu안의 결과물 사용! | diffname = {diffname} | temp['Version'] = {temp['Version']}")
+                                result = db("cheesegull").fetch(sql, [setID, temp["Version"]])
+                            else:
+                                result = db("cheesegull").fetch(sql, [setID, diffname])
 
-                # 정규식 패턴
-                pattern = r'\[([^\]]+)\]\.osu$'
-                match = re.search(pattern, beatmapName)
-                RealBid = {"id": temp["BeatmapID"]}
-                if match:
-                    diffname = match.group(1)
-                    sql = "SELECT id FROM beatmaps WHERE parent_set_id = %s AND diff_name = %s"
-                    # windows 특수문자 이슈
-                    if diffname != temp["Version"] and temp["Version"] != "":
-                        log.error(f"diffname 매치 안됨! .osu안의 결과물 사용! | diffname = {diffname} | temp['Version'] = {temp['Version']}")
-                        RealBid = db("cheesegull").fetch(sql, [setID, temp["Version"]])
-                    else:
-                        RealBid = db("cheesegull").fetch(sql, [setID, diffname])
+                            if result is None:
+                                return None
+                            temp["BeatmapID"] = result["id"]
 
-                    if RealBid is None or type(RealBid) is list:
-                        log.warning(f"Realbid = {RealBid} | RealBid가 cheesegull에서 조회되지 않음! 스킵함")
-                        RealBid = {"id": temp["BeatmapID"]}
-
-                #중?복 bid, bid <= 0 감지
-                for i in beatmap_info:
-                    if temp["BeatmapID"] == i["BeatmapID"] or temp["BeatmapID"] <= 0:
-                        log.error(f"{temp['BeatmapID']} --> {RealBid['id']} | .osu 파일들에서 중복 bid 감지! or .osu 파일에서 bid 값이 <= 0 임 | cheesegull db에서 bid 조회함")
-                        temp["BeatmapID"] = RealBid["id"]
-
-                #first_bid 선별
-                if first_bid_v2 == 0 and temp["BeatmapID"] > 0:
-                    first_bid_v2 = temp["BeatmapID"]
-                elif first_bid_v2 > temp["BeatmapID"] and temp["BeatmapID"] > 0:
-                    first_bid_v2 = temp["BeatmapID"]
-
-            elif "Version:" in line:
-                spaceFilter = line.replace("Version:", "").replace("\n", "")
-                if spaceFilter.startswith(" "):
-                    spaceFilter = spaceFilter.replace(" ", "", 1)
-                temp["Version"] = spaceFilter
-
-                #틀딱곡 BeatmapID 넘겨옴
-                if underV10 and BeatmapID is None:
-                    # 정규식 패턴
-                    pattern = r'\[([^\]]+)\]\.osu$'
-                    match = re.search(pattern, beatmapName)
-                    if match:
-                        diffname = match.group(1)
-                        sql = "SELECT id FROM beatmaps WHERE parent_set_id = %s AND diff_name = %s"
-                        # windows 특수문자 이슈
-                        if diffname != temp["Version"] and temp["Version"] != "":
-                            log.error(f"diffname 매치 안됨! .osu안의 결과물 사용! | diffname = {diffname} | temp['Version'] = {temp['Version']}")
-                            result = db("cheesegull").fetch(sql, [setID, temp["Version"]])
-                        else:
-                            result = db("cheesegull").fetch(sql, [setID, diffname])
-
-                        if result is None:
-                            return None
-                        temp["BeatmapID"] = result["id"]
-
-                    log.info(f"{setID} 틀딱곡 cheesegull db에서 조회완료")
-                    log.warning(f"{setID}/{temp['BeatmapID']} 틀딱곡 BeatmapID 세팅 완료")
-                    #first_bid 선별
-                    if first_bid_v2 == 0:
-                        first_bid_v2 = temp["BeatmapID"]
-                    elif first_bid_v2 > temp["BeatmapID"] and temp["BeatmapID"] > 0:
-                        first_bid_v2 = temp["BeatmapID"]
-            elif "AudioFilename:" in line and (rq_type == "audio" or rq_type == "preview" or rq_type == "all"):
-                spaceFilter = line.replace("AudioFilename:", "").replace("\n", "")
-                if spaceFilter.startswith(" "):
-                    spaceFilter = spaceFilter.replace(" ", "", 1)
-                temp["AudioFilename"] = spaceFilter
-            elif "PreviewTime:" in line and (rq_type == "audio" or rq_type == "preview" or rq_type == "all"):
-                spaceFilter = line.replace("PreviewTime:", "").replace("\n", "")
-                if spaceFilter.startswith(" "):
-                    spaceFilter = spaceFilter.replace(" ", "", 1)
-                temp["PreviewTime"] = spaceFilter
-            #비트맵별 BG 파일이름
-            elif ('"' and ".jpg") in lineCheck and not bg_ignore and (rq_type == "bg" or rq_type == "thumb" or rq_type == "all"):
-                temp["BeatmapBG"] = line[line.find('"') + 1 : line.find('"', line.find('"') + 1)]
-                bg_ignore = True
-            elif ('"' and ".png") in lineCheck and not bg_ignore and (rq_type == "bg" or rq_type == "thumb" or rq_type == "all"):
-                temp["BeatmapBG"] = line[line.find('"') + 1 : line.find('"', line.find('"') + 1)]
-                bg_ignore = True
-            elif ('"' and ".jpeg") in lineCheck and not bg_ignore and (rq_type == "bg" or rq_type == "thumb" or rq_type == "all"):
-                temp["BeatmapBG"] = line[line.find('"') + 1 : line.find('"', line.find('"') + 1)]
-                bg_ignore = True
-            #비트맵별 video 파일이름
-            #.avi 추가하기
-            #elif '"' and "Video" and ".mp4" in line:
-            elif '"' and "video" and ".mp4" in lineCheck and (rq_type == "video" or rq_type == "all"):
-                temp["BeatmapVideo"] = line[line.find('"') + 1 : line.find('"', line.find('"') + 1)]
-            elif '"' and ".mp4" in lineCheck and (rq_type == "video" or rq_type == "all") and underV10:
-                temp["BeatmapVideo"] = line[line.find('"') + 1 : line.find('"', line.find('"') + 1)]
-            temp["beatmapName"] = beatmapName
-
+                        log.info(f"{setID} 틀딱곡 cheesegull db에서 조회완료")
+                        log.warning(f"{setID}/{temp['BeatmapID']} 틀딱곡 BeatmapID 세팅 완료")
+                elif "AudioFilename:" in line and (rq_type == "audio" or rq_type == "preview" or rq_type == "all"):
+                    spaceFilter = line.replace("AudioFilename:", "").replace("\n", "")
+                    if spaceFilter.startswith(" "):
+                        spaceFilter = spaceFilter.replace(" ", "", 1)
+                    temp["AudioFilename"] = spaceFilter
+                elif "PreviewTime:" in line and (rq_type == "audio" or rq_type == "preview" or rq_type == "all"):
+                    spaceFilter = line.replace("PreviewTime:", "").replace("\n", "")
+                    if spaceFilter.startswith(" "):
+                        spaceFilter = spaceFilter.replace(" ", "", 1)
+                    temp["PreviewTime"] = spaceFilter
+                #비트맵별 BG 파일이름
+                elif ('"' and ".jpg") in lineCheck and not bg_ignore and (rq_type == "bg" or rq_type == "thumb" or rq_type == "all"):
+                    temp["BeatmapBG"] = line[line.find('"') + 1 : line.find('"', line.find('"') + 1)]
+                    bg_ignore = True
+                elif ('"' and ".png") in lineCheck and not bg_ignore and (rq_type == "bg" or rq_type == "thumb" or rq_type == "all"):
+                    temp["BeatmapBG"] = line[line.find('"') + 1 : line.find('"', line.find('"') + 1)]
+                    bg_ignore = True
+                elif ('"' and ".jpeg") in lineCheck and not bg_ignore and (rq_type == "bg" or rq_type == "thumb" or rq_type == "all"):
+                    temp["BeatmapBG"] = line[line.find('"') + 1 : line.find('"', line.find('"') + 1)]
+                    bg_ignore = True
+                #비트맵별 video 파일이름
+                #.avi 추가하기
+                #elif '"' and "Video" and ".mp4" in line:
+                elif '"' and "video" and ".mp4" in lineCheck and (rq_type == "video" or rq_type == "all"):
+                    temp["BeatmapVideo"] = line[line.find('"') + 1 : line.find('"', line.find('"') + 1)]
+                elif '"' and ".mp4" in lineCheck and (rq_type == "video" or rq_type == "all") and underV10:
+                    temp["BeatmapVideo"] = line[line.find('"') + 1 : line.find('"', line.find('"') + 1)]
+                temp["beatmapName"] = beatmapName
+        try:
+            temp["BeatmapVideo"] is None
+        except:
+            temp["BeatmapVideo"] = None
         beatmap_info.append(temp)
-        f.close()
 
-    log.debug(f"first_bid = {first_bid}")
-    if first_bid != first_bid_v2 and first_bid_v2:
-        log.error(f"first_bid 값이 다름 first_bid = {first_bid} --> first_bid_v2 = {first_bid_v2}")
-        first_bid = first_bid_v2
+    bidsList = [i["BeatmapID"] for i in beatmap_info]
+    md5sList = [i["BeatmapMD5"] for i in beatmap_info]
+    verList = [i["Version"] for i in beatmap_info]
 
-    result = [setID, first_bid, beatmap_info]
+    #bid 0 변경
+    for zero in [y for y, x in enumerate(bidsList) if x == 0]:
+        log.warning("bid 0 발견!")
+        try:
+            bidsList[zero] = db("redstar").fetch("SELECT beatmap_id FROM beatmaps WHERE beatmap_md5 = %s", [md5sList[zero]])["beatmap_id"]
+        except:
+            try:
+                bidsList[zero] = db("cheesegull").fetch("SELECT id FROM beatmaps WHERE parent_set_id = %s AND diff_name = %s", [setID, verList[zero]])["id"]
+            except:
+                log.warning("0 | RealBid가 cheesegull에서 조회되지 않음! 스킵함")
+                bidsList[zero] = 0
+
+    #중복 bid 찾기
+    dup = [item for item, cnt in Counter(bidsList).items() if cnt > 1]
+    if len(dup) != 0:
+        log.warning("bid 중복 있음!")
+        for i in dup:
+            #중복 bid list index위치 찾기
+            for idx in [y for y, x in enumerate(bidsList) if x == i]:
+                md5sList.append(md5sList[idx])
+                verList.append(verList[idx])
+        #md5 list에 중복값 일부러 넣고 중복 다시 찾기
+        md5sList = [item for item, cnt in Counter(md5sList).items() if cnt > 1]
+        verList = [item for item, cnt in Counter(verList).items() if cnt > 1]
+
+        nbl = []
+        for m, v in zip(md5sList, verList):
+            try:
+                RealBid = db("redstar").fetch("SELECT beatmap_id FROM beatmaps WHERE beatmap_md5 = %s", [m])["beatmap_id"]
+                nbl.append(RealBid)
+            except:
+                try:
+                    RealBid = db("cheesegull").fetch("SELECT id FROM beatmaps WHERE parent_set_id = %s AND diff_name = %s", [setID, v])["id"]
+                except:
+                    log.warning("RealBid가 cheesegull에서 조회되지 않음! 스킵함")
+                    RealBid = 0
+                nbl.append(RealBid)
+
+        for m, i in zip(md5sList, nbl):
+            log.error(f"{m} | {i}")
+            for j in beatmap_info:
+                if m == j["BeatmapMD5"]:
+                    j["BeatmapID"] = i
+        
+        [log.warning(i) for i in beatmap_info]
+
+    if int(setID) > 0:
+        first_bid = min([x for x in bidsList if x > 0])
+    else:
+        first_bid = min([x for x in bidsList])
+
     if not moving:
         shutil.rmtree(f"{dataFolder}/dl/{setID}")
-    return result
+    return [int(setID), first_bid, beatmap_info]
 
 def move_files(setID, rq_type):
         isOsuFile = False
@@ -882,6 +883,8 @@ def read_video(id):
             ismp4 = osu_file_read(bsid, rq_type="video")
             #사실 의미 없음
             hasVideo = ismp4[2][0]["BeatmapVideo"]
+            if hasVideo is None:
+                raise
         except:
             log.error(f"{id} 해당 비트맵은 .osu 파일에서도 mp4가 발견되지 않음")
             return f"{id} Beatmap doesn't exist on Bancho API!"
@@ -1006,6 +1009,15 @@ def filename_to_GetCheesegullDB(filename):
             title = match.group(2)
             creator = match.group(3)
             version = match.group(4)
+        elif parentheses == 0:
+            # 정규식 패턴
+            pattern = r"^(.+) - (.+) \[([^]]+)\]\.osu$"
+            match = re.match(pattern, filename)
+
+            artist = match.group(1)
+            title = match.group(2)
+            creator = match.group(3)
+            version = match.group(4)
         else:
             # 정규식 패턴
             pattern = r"^(.+) - (.+) (\([^()]+\)) \(([^()]+)\) \[([^]]+)\]\.osu$"
@@ -1016,6 +1028,10 @@ def filename_to_GetCheesegullDB(filename):
             creator = match.group(4)
             version = match.group(5)
     except:
+        artist = None
+        title = None
+        creator = None
+        version = None
         log.error("osu filename에서 artist, title, creator, version 추출중 에러")
 
     """ try:
