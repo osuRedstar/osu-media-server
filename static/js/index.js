@@ -10,6 +10,7 @@ const osu_tag = document.getElementById("osu");
 const web_maps_tag = document.getElementById("/web/maps/")
 //const remove_tag = document.getElementById("remove")
 const filesinfo_tag = document.getElementById("filesinfo")
+const filesinfo2_tag = document.getElementById("filesinfo2")
 
 function bg(arg) {
     //arg.preventDefault();
@@ -218,6 +219,35 @@ function filesinfo(arg) {
     }
 }
 
+function filesinfo2(arg) {
+    //arg.preventDefault();
+    const get_id = prompt("BeatmapSetID")
+    if (get_id === null | get_id === "") {
+        alert("정확하게 입력하세요! \nPlease enter it correctly!");
+        get_id = "";
+        location.reload(true);
+    }
+    else if (isNaN(get_id) === true) {
+        alert("숫자를 입력하세요! \nEnter Number!")
+        location.reload(true);
+    }
+    else {
+        const get_id2 = prompt("BeatmapID")
+        if (get_id2 === null | get_id2 === "") {
+            alert("정확하게 입력하세요! \nPlease enter it correctly!");
+            get_id2 = "";
+            location.reload(true);
+        }
+        else if (isNaN(get_id2) === true) {
+            alert("숫자를 입력하세요! \nEnter Number!")
+            location.reload(true);
+        }
+        else {
+            filesinfo2_tag.href = `${document.location.href}filesinfo/${get_id}/${get_id2}`
+        }
+    }
+}
+
 bg_tag.addEventListener("click", bg);
 thumb_l_tag.addEventListener("click", thumb_l);
 thumb_tag.addEventListener("click", thumb);
@@ -230,3 +260,4 @@ osu_tag.addEventListener("click", osu);
 web_maps_tag.addEventListener("click", web_maps)
 //remove_tag.addEventListener("click", remove)
 filesinfo_tag.addEventListener("click", filesinfo)
+filesinfo2_tag.addEventListener("click", filesinfo2)
