@@ -90,24 +90,30 @@ def request_msg(self, botpass=False):
         log.info(f"Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_url} | From: {User_Agent} | Referer: {Referer}")
         return 200
     else:
-        if any(i in User_Agent.lower() for i in ["bot", "bytedance.com"]) and not "discord" in User_Agent.lower():
-            logmsg(f"bot 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_url} | From: {User_Agent} | Referer: {Referer}")
-            return "bot"
-        elif "python-requests" in User_Agent.lower():
-            logmsg(f"python-requests 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_url} | From: {User_Agent} | Referer: {Referer}")
-            return "python-requests"
-        elif "python-urllib" in User_Agent.lower():
-            logmsg(f"Python-urllib 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_url} | From: {User_Agent} | Referer: {Referer}")
-            return "Python-urllib"
-        elif "postmanruntime" in User_Agent.lower():
-            log.debug(f"PostmanRuntime 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_url} | From: {User_Agent} | Referer: {Referer}")
-            return 200
-        elif User_Agent == "osu!":
-            log.info(f"osu! 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_url} | From: {User_Agent} | Referer: {Referer}")
-            return 200
-        else:
-            log.info(f"Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_url} | From: {User_Agent} | Referer: {Referer}")
-            return 200
+        with open("botList.json", "r") as f:
+            botList = json.load(f)
+            if any(i in User_Agent.lower() for i in botList["no"]) and not any(i in User_Agent.lower() for i in botList["ok"]):
+                logmsg(f"bot 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_url} | From: {User_Agent} | Referer: {Referer}")
+                return "bot"
+            elif "python-requests" in User_Agent.lower():
+                logmsg(f"python-requests 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_url} | From: {User_Agent} | Referer: {Referer}")
+                return "python-requests"
+            elif "python-urllib" in User_Agent.lower():
+                logmsg(f"Python-urllib 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_url} | From: {User_Agent} | Referer: {Referer}")
+                return "Python-urllib"
+
+            elif any(i in User_Agent.lower() for i in botList["ok"]):
+                log.info(f"bot 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_url} | From: {User_Agent} | Referer: {Referer}")
+                return 200
+            elif "postmanruntime" in User_Agent.lower():
+                log.debug(f"PostmanRuntime 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_url} | From: {User_Agent} | Referer: {Referer}")
+                return 200
+            elif User_Agent == "osu!":
+                log.info(f"osu! 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_url} | From: {User_Agent} | Referer: {Referer}")
+                return 200
+            else:
+                log.info(f"Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_url} | From: {User_Agent} | Referer: {Referer}")
+                return 200
 
 def resPingMs(self):
     pingMs = (time.time() - self.request._start_time) * 1000
