@@ -22,7 +22,7 @@ class db:
             self.DB_DATABASE_NOW = self.DB_DATABASE_CHEESEGULL
         else:
             self.DB_DATABASE_NOW = DBType
-            log.debug(f"예외 | {DBType} DB로 연결함")
+            log.chat(f"{DBType} DB로 연결함")
 
         try:
             self.pydb = pymysql.connect(host=self.DB_HOST, port=self.DB_PORT, user=self.DB_USERNAME, passwd=self.DB_PASSWORD, db=self.DB_DATABASE_NOW, charset='utf8')
@@ -66,4 +66,5 @@ class db:
         self.pydb.commit()
 
     def close(self):
+        log.info(f"{self.DB_DATABASE_NOW} db closed")
         self.pydb.close()
