@@ -16,6 +16,9 @@ import time
 import json
 from collections import Counter
 
+dbR = db("redstar")
+dbC = db("cheesegull")
+
 #beatmap_md5
 def calculate_md5(filename):
     md5 = hashlib.md5()
@@ -109,9 +112,7 @@ def osu_file_read(setID, rq_type, moving=False):
     file_list = os.listdir(f"{dataFolder}/dl/{setID}")
     file_list_osu = [file for file in file_list if file.endswith(".osu")]
 
-    result = []
     beatmap_info = []
-    oldMapInfo = []
     underV10 = False
 
     # readline_all.py
@@ -123,7 +124,68 @@ def osu_file_read(setID, rq_type, moving=False):
         temp["BeatmapMD5"] = beatmap_md5
 
         with open(f"{dataFolder}/dl/{setID}/{beatmapName}", 'r', encoding="utf-8") as f:
-            while True:
+            line = f.read()
+
+            line = line[line.find("osu file format v"):]
+            try:
+                osu_file_format_version = int(line.split("\n")[0].replace("osu file format v", "").replace(" ", ""))
+            except:
+                osu_file_format_version = 0
+            if osu_file_format_version == 0:
+                log.error("osu file format v0")
+            elif osu_file_format_version < 10:
+                underV10 = True
+                log.error(f"{setID} 비트맵셋의 어떤 비트맵은 시이이이이발 osu file format 이 10이하 ({osu_file_format_version}) 이네요? 시발련들아?")
+                #틀딱곡 BeatmapID 를 Version 쪽에 넘김
+
+            line = line[line.find("AudioFilename:"):]
+            try:
+                AudioFilename = line.split("\n")[0].replace("AudioFilename:", "").replace(" ", "")
+            except:
+                AudioFilename = None
+
+            line = line[line.find("PreviewTime:"):]
+            try:
+                PreviewTime = int(line.split("\n")[0].replace("PreviewTime:", "").replace(" ", ""))
+            except:
+                PreviewTime = None
+            
+            line = line[line.find("Version:"):]
+            try:
+                Version = line.split("\n")[0].replace("Version:", "").replace(" ", "")
+            except:
+                Version = None
+
+            line = line[line.find("BeatmapID:"):]
+            try:
+                BeatmapID = int(line.split("\n")[0].replace("BeatmapID:", "").replace(" ", ""))
+            except:
+                BeatmapID = 0
+
+            line = line[line.find("//Background and Video events"):]
+            try:
+                if line.split("\n")[1].lower().startswith("video"):
+                    BeatmapVideo = line.split("\n")[1]
+                    BeatmapVideo = BeatmapVideo[BeatmapVideo.find('"') + 1 : BeatmapVideo.find('"', BeatmapVideo.find('"') + 1)]
+                    BeatmapBG = line.split("\n")[2]
+                else:
+                    BeatmapVideo = None
+                    BeatmapBG = line.split("\n")[1]
+                BeatmapBG = BeatmapBG[BeatmapBG.find('"') + 1 : BeatmapBG.find('"', BeatmapBG.find('"') + 1)]
+            except:
+                BeatmapBG = None
+                BeatmapVideo = None
+
+            temp["osu_file_format_v"] = osu_file_format_version
+            temp["AudioFilename"] = AudioFilename
+            temp["PreviewTime"] = PreviewTime
+            temp["Version"] = Version
+            temp["BeatmapID"] = BeatmapID
+            temp["BeatmapBG"] = BeatmapBG
+            temp["BeatmapVideo"] = BeatmapVideo
+            temp["beatmapName"] = beatmapName
+
+            """ while True:
                 line = f.readline()
                 #간혹 확장자가 대문자인 경우가 있어서 전부 소문자로 변경함
                 lineCheck = line.lower()
@@ -137,7 +199,9 @@ def osu_file_read(setID, rq_type, moving=False):
                     if osu_file_format_version.startswith('\ufeff'):
                         osu_file_format_version = osu_file_format_version[1:]
                         log.warning("BOM 문자 제거")
-                    if int(osu_file_format_version) < 10:
+                    osu_file_format_version = int(osu_file_format_version)
+                    temp["osu_file_format_v"] = osu_file_format_version
+                    if osu_file_format_version < 10:
                         underV10 = True
                         log.error(f"{setID} 비트맵셋의 어떤 비트맵은 시이이이이발 osu file format 이 10이하 ({osu_file_format_version}) 이네요? 시발련들아?")
                         #틀딱곡 BeatmapID 를 Version 쪽에 넘김
@@ -164,9 +228,9 @@ def osu_file_read(setID, rq_type, moving=False):
                             # windows 특수문자 이슈
                             if diffname != temp["Version"] and temp["Version"] != "":
                                 log.error(f"diffname 매치 안됨! .osu안의 결과물 사용! | diffname = {diffname} | temp['Version'] = {temp['Version']}")
-                                result = db("cheesegull").fetch(sql, [setID, temp["Version"]])
+                                result = dbC.fetch(sql, [setID, temp["Version"]])
                             else:
-                                result = db("cheesegull").fetch(sql, [setID, diffname])
+                                result = dbC.fetch(sql, [setID, diffname])
 
                             if result is None:
                                 return None
@@ -205,7 +269,7 @@ def osu_file_read(setID, rq_type, moving=False):
         try:
             temp["BeatmapVideo"] is None
         except:
-            temp["BeatmapVideo"] = None
+            temp["BeatmapVideo"] = None """
         beatmap_info.append(temp)
 
     bidsList = [i["BeatmapID"] for i in beatmap_info]
@@ -214,14 +278,14 @@ def osu_file_read(setID, rq_type, moving=False):
 
     #bid 0 변경
     for zero in [y for y, x in enumerate(bidsList) if x == 0]:
-        log.warning("bid 0 발견!")
+        log.warning(f"bid 0 발견! | {md5sList[zero]}")
         try:
-            bidsList[zero] = db("redstar").fetch("SELECT beatmap_id FROM beatmaps WHERE beatmap_md5 = %s", [md5sList[zero]])["beatmap_id"]
+            bidsList[zero] = dbR.fetch("SELECT beatmap_id FROM beatmaps WHERE beatmap_md5 = %s", [md5sList[zero]])["beatmap_id"]
         except:
             try:
-                bidsList[zero] = db("cheesegull").fetch("SELECT id FROM beatmaps WHERE parent_set_id = %s AND diff_name = %s", [setID, verList[zero]])["id"]
+                bidsList[zero] = dbR.fetch("SELECT id FROM beatmaps WHERE parent_set_id = %s AND diff_name = %s", [setID, verList[zero]])["id"]
             except:
-                log.warning("0 | RealBid가 cheesegull에서 조회되지 않음! 스킵함")
+                log.warning("0 | RealBid가 redstarDB + cheesegull에서 조회되지 않음! 스킵함")
                 bidsList[zero] = 0
         for bi, b, m in zip(beatmap_info, bidsList, md5sList):
             if bi["BeatmapMD5"] == m:
@@ -236,10 +300,10 @@ def osu_file_read(setID, rq_type, moving=False):
             for idx in [y for y, x in enumerate(bidsList) if x == i]:
                 #중복 bid 수정
                 try:
-                    bidsList[idx] = db("redstar").fetch("SELECT beatmap_id FROM beatmaps WHERE beatmap_md5 = %s", [md5sList[idx]])["beatmap_id"]
+                    bidsList[idx] = dbR.fetch("SELECT beatmap_id FROM beatmaps WHERE beatmap_md5 = %s", [md5sList[idx]])["beatmap_id"]
                 except:
                     try:
-                        bidsList[idx] = db("cheesegull").fetch("SELECT id FROM beatmaps WHERE parent_set_id = %s AND diff_name = %s", [setID, verList[idx]])["id"]
+                        bidsList[idx] = dbC.fetch("SELECT id FROM beatmaps WHERE parent_set_id = %s AND diff_name = %s", [setID, verList[idx]])["id"]
                     except:
                         log.warning("0 | RealBid가 cheesegull에서 조회되지 않음! 스킵함")
                         bidsList[idx] = 0
@@ -460,12 +524,12 @@ def check(setID, rq_type, checkRenewFile=False):
         #이거 redstar DB에 없는 경우 있으니 cheesegull DB에서도 추가로 참고하기
         if checkRenewFile and int(setID) not in exceptOszList and fED:
             try:
-                rankStatus = db("redstar").fetch(f"SELECT ranked FROM beatmaps WHERE beatmapset_id = %s", [setID])["ranked"]
+                rankStatus = dbR.fetch(f"SELECT ranked FROM beatmaps WHERE beatmapset_id = %s", [setID])["ranked"]
                 log.info(f"파일 최신화 redstar DB 랭크상태 조회 완료 : {rankStatus}")
                 if rankStatus == 4:
                     rankStatus = 0
             except:
-                rankStatus = db("cheesegull").fetch(f"SELECT ranked_status FROM sets WHERE id = %s", [setID])["ranked_status"]
+                rankStatus = dbC.fetch(f"SELECT ranked_status FROM sets WHERE id = %s", [setID])["ranked_status"]
                 log.info(f"파일 최신화 cheesegull DB 랭크상태 조회 완료 : {rankStatus}")
             if rankStatus <= 0:
                 oszHash = calculate_md5(f"{dataFolder}/dl/{fullSongName}")
@@ -579,10 +643,10 @@ def read_bg(id):
         return f"{dataFolder}/bg/{id}/{file_list[0]}"
     else:
         try:
-            bsid = db("cheesegull").fetch("SELECT parent_set_id FROM cheesegull.beatmaps WHERE id = %s", [id])["parent_set_id"]
+            bsid = dbC.fetch("SELECT parent_set_id FROM beatmaps WHERE id = %s", [id])["parent_set_id"]
         except:
             try:
-                bsid = db("redstar").fetch("SELECT beatmapset_id FROM redstar.beatmaps WHERE beatmap_id = %s", [id])["beatmapset_id"]
+                bsid = dbR.fetch("SELECT beatmapset_id FROM beatmaps WHERE beatmap_id = %s", [id])["beatmapset_id"]
                 log.info("RedstarOSU API에서 bsid 찾음")
             except:
                 raise KeyError("Not Found bsid!")
@@ -763,10 +827,10 @@ def read_audio(id):
         crf(id, rq_type="audio")
 
         try:
-            bsid = db("cheesegull").fetch("SELECT parent_set_id FROM cheesegull.beatmaps WHERE id = %s", [id])["parent_set_id"]
+            bsid = dbC.fetch("SELECT parent_set_id FROM beatmaps WHERE id = %s", [id])["parent_set_id"]
         except:
             try:
-                bsid = db("redstar").fetch("SELECT beatmapset_id FROM redstar.beatmaps WHERE beatmap_id = %s", [id])["beatmapset_id"]
+                bsid = dbR.fetch("SELECT beatmapset_id FROM beatmaps WHERE beatmap_id = %s", [id])["beatmapset_id"]
                 log.info("RedstarOSU API에서 bsid 찾음")
             except:
                 raise KeyError("Not Found bsid!")
@@ -856,10 +920,10 @@ def read_preview(id):
 
 def read_video(id):
     try:
-        bsid = db("cheesegull").fetch("SELECT parent_set_id FROM cheesegull.beatmaps WHERE id = %s", [id])["parent_set_id"]
+        bsid = dbC.fetch("SELECT parent_set_id FROM beatmaps WHERE id = %s", [id])["parent_set_id"]
     except:
         try:
-            bsid = db("redstar").fetch("SELECT beatmapset_id FROM redstar.beatmaps WHERE beatmap_id = %s", [id])["beatmapset_id"]
+            bsid = dbR.fetch("SELECT beatmapset_id FROM beatmaps WHERE beatmap_id = %s", [id])["beatmapset_id"]
             log.info("RedstarOSU API에서 bsid 찾음")
         except:
             raise KeyError("Not Found bsid!")
@@ -868,7 +932,7 @@ def read_video(id):
     crf(bsid, rq_type="video")
 
     try:
-        #hasVideo = db("cheesegull").fetch("SELECT has_video FROM cheesegull.sets WHERE id = %s", [bsid])["has_video"]
+        #hasVideo = dbC.fetch("SELECT has_video FROM sets WHERE id = %s", [bsid])["has_video"]
         #반초로 조회함
         hasVideo = requests.get(f"https://osu.ppy.sh/api/get_beatmaps?k={OSU_APIKEY}&b={id}", headers=requestHeaders)
         hasVideo = hasVideo.json()[0]["video"]
@@ -937,10 +1001,10 @@ def read_osz(id):
 
 def read_osz_b(id):
     try:
-        bsid = db("cheesegull").fetch("SELECT parent_set_id FROM cheesegull.beatmaps WHERE id = %s", [id])["parent_set_id"]
+        bsid = dbC.fetch("SELECT parent_set_id FROM beatmaps WHERE id = %s", [id])["parent_set_id"]
     except:
         try:
-            bsid = db("redstar").fetch("SELECT beatmapset_id FROM redstar.beatmaps WHERE beatmap_id = %s", [id])["beatmapset_id"]
+            bsid = dbR.fetch("SELECT beatmapset_id FROM beatmaps WHERE beatmap_id = %s", [id])["beatmapset_id"]
             log.info("RedstarOSU API에서 bsid 찾음")
         except:
             raise KeyError("Not Found bsid!")
@@ -950,10 +1014,10 @@ def read_osz_b(id):
 
 def read_osu(id):
     try:
-        bsid = db("cheesegull").fetch("SELECT parent_set_id FROM cheesegull.beatmaps WHERE id = %s", [id])["parent_set_id"]
+        bsid = dbC.fetch("SELECT parent_set_id FROM beatmaps WHERE id = %s", [id])["parent_set_id"]
     except:
         try:
-            bsid = db("redstar").fetch("SELECT beatmapset_id FROM redstar.beatmaps WHERE beatmap_id = %s", [id])["beatmapset_id"]
+            bsid = dbR.fetch("SELECT beatmapset_id FROM beatmaps WHERE beatmap_id = %s", [id])["beatmapset_id"]
             log.info("RedstarOSU API에서 bsid 찾음")
         except:
             raise KeyError("Not Found bsid!")
@@ -973,7 +1037,7 @@ def read_osu(id):
             JOIN beatmaps AS b ON s.id = b.parent_set_id
             WHERE b.id = %s
         '''
-        filename = db("cheesegull").fetch(sql, [id])
+        filename = dbC.fetch(sql, [id])
         log.debug(filename)
         if filename is None:
             log.error(f"filename is None | sql = {sql}")
@@ -1045,7 +1109,7 @@ def filename_to_GetCheesegullDB(filename):
         JOIN sets AS s ON b.parent_set_id = s.id
         WHERE s.artist = %s AND s.title = %s AND s.creator = %s AND b.diff_name = %s
     '''
-    result = db("cheesegull").fetch(sql, [artist, title, creator, version])
+    result = dbC.fetch(sql, [artist, title, creator, version])
     if result is None:
         #특수문자 등등 조회 안되는거 짤라서 조회
         log.warning("filename 조회 실패! | 단어별로 짤라서 찾아봄")
@@ -1091,7 +1155,7 @@ def filename_to_GetCheesegullDB(filename):
                 sql_part += " AND b.diff_name LIKE %s"
                 param_part.append(f"%{v}%")
 
-        result_part = db("cheesegull").fetch(sql_part, param_part)
+        result_part = dbC.fetch(sql_part, param_part)
         if result_part is None:
             return None
         elif type(result_part) == list and len(result_part) > 1:
@@ -1190,8 +1254,5 @@ def removeAllFiles(bsid):
 
     return {"message": {0: "Doesn't exist", 1: "Delete success"} , "osz": isdelosz, "bg": isdelbg, "thumb": isdelthumb, "audio": isdelaudio, "preview": isdelpreview, "video": isdelvideo, "osu": isdelosu}
 
-
-
-
-
-
+#dbR.close()
+#dbC.close()
