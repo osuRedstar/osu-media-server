@@ -99,6 +99,11 @@ def get_osz_fullName(setID):
         return 0
 
 def osu_file_read(setID, rq_type, moving=False):
+    #/filesinfo 조회시 osz 없을때 오류 방지
+    if get_osz_fullName(setID) == 0 and rq_type == "all":
+        ck = check(setID, rq_type)
+        if ck is not None:
+            return ck
     zipfile.ZipFile(f'{dataFolder}/dl/{get_osz_fullName(setID)}').extractall(f'{dataFolder}/dl/{setID}')
     
     file_list = os.listdir(f"{dataFolder}/dl/{setID}")
@@ -218,6 +223,9 @@ def osu_file_read(setID, rq_type, moving=False):
             except:
                 log.warning("0 | RealBid가 cheesegull에서 조회되지 않음! 스킵함")
                 bidsList[zero] = 0
+        for bi, b, m in zip(beatmap_info, bidsList, md5sList):
+            if bi["BeatmapMD5"] == m:
+                bi["BeatmapID"] = b
 
     #중복 bid 찾기
     dup = [item for item, cnt in Counter(bidsList).items() if cnt > 1]
@@ -226,32 +234,20 @@ def osu_file_read(setID, rq_type, moving=False):
         for i in dup:
             #중복 bid list index위치 찾기
             for idx in [y for y, x in enumerate(bidsList) if x == i]:
-                md5sList.append(md5sList[idx])
-                verList.append(verList[idx])
-        #md5 list에 중복값 일부러 넣고 중복 다시 찾기
-        md5sList = [item for item, cnt in Counter(md5sList).items() if cnt > 1]
-        verList = [item for item, cnt in Counter(verList).items() if cnt > 1]
-
-        nbl = []
-        for m, v in zip(md5sList, verList):
-            try:
-                RealBid = db("redstar").fetch("SELECT beatmap_id FROM beatmaps WHERE beatmap_md5 = %s", [m])["beatmap_id"]
-                nbl.append(RealBid)
-            except:
+                #중복 bid 수정
                 try:
-                    RealBid = db("cheesegull").fetch("SELECT id FROM beatmaps WHERE parent_set_id = %s AND diff_name = %s", [setID, v])["id"]
+                    bidsList[idx] = db("redstar").fetch("SELECT beatmap_id FROM beatmaps WHERE beatmap_md5 = %s", [md5sList[idx]])["beatmap_id"]
                 except:
-                    log.warning("RealBid가 cheesegull에서 조회되지 않음! 스킵함")
-                    RealBid = 0
-                nbl.append(RealBid)
-
-        for m, i in zip(md5sList, nbl):
-            log.error(f"{m} | {i}")
-            for j in beatmap_info:
-                if m == j["BeatmapMD5"]:
-                    j["BeatmapID"] = i
+                    try:
+                        bidsList[idx] = db("cheesegull").fetch("SELECT id FROM beatmaps WHERE parent_set_id = %s AND diff_name = %s", [setID, verList[idx]])["id"]
+                    except:
+                        log.warning("0 | RealBid가 cheesegull에서 조회되지 않음! 스킵함")
+                        bidsList[idx] = 0
+                for bi, b, m in zip(beatmap_info, bidsList, md5sList):
+                    if bi["BeatmapMD5"] == m:
+                        bi["BeatmapID"] = b
         
-        [log.warning(i) for i in beatmap_info]
+        #[log.debug(i) for i in beatmap_info]
 
     if int(setID) > 0:
         first_bid = min([x for x in bidsList if x > 0])
