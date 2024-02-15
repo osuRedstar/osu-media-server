@@ -21,7 +21,7 @@ class db:
         elif DBType.lower() == "cheesegull":
             self.DB_DATABASE_NOW = self.DB_DATABASE_CHEESEGULL
         else:
-            self.DB_DATABASE_NOW = self.DB_DATABASE_CHEESEGULL
+            self.DB_DATABASE_NOW = DBType
             log.debug(f"예외 | {DBType} DB로 연결함")
 
         try:
