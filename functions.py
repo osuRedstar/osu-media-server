@@ -206,14 +206,14 @@ def osu_file_read(setID, rq_type, moving=False):
                 BeatmapBG = None
                 BeatmapVideo = None
 
-            temp["osu_file_format_v"] = osu_file_format_version
-            temp["AudioFilename"] = AudioFilename
-            temp["PreviewTime"] = PreviewTime
-            temp["Version"] = Version
-            temp["BeatmapID"] = BeatmapID
-            temp["BeatmapBG"] = BeatmapBG
-            temp["BeatmapVideo"] = BeatmapVideo
-            temp["beatmapName"] = beatmapName
+            temp["osu_file_format_v"] = osu_file_format_version if osu_file_format_version != "" else None
+            temp["AudioFilename"] = AudioFilename if AudioFilename != "" else None
+            temp["PreviewTime"] = PreviewTime if PreviewTime != "" else None
+            temp["Version"] = Version if Version != "" else None
+            temp["BeatmapID"] = BeatmapID if BeatmapID != "" else None
+            temp["BeatmapBG"] = BeatmapBG if BeatmapBG != "" else None
+            temp["BeatmapVideo"] = BeatmapVideo if BeatmapVideo != "" else None
+            temp["beatmapName"] = beatmapName if beatmapName != "" else None
 
             """ while True:
                 line = f.readline()
