@@ -15,6 +15,7 @@ import threading
 import time
 import json
 from collections import Counter
+import subprocess
 
 dbR = db("redstar")
 dbC = db("cheesegull")
@@ -65,6 +66,20 @@ if os.system(f"ffmpeg -version > {'nul' if os.name == 'nt' else '/dev/null'} 2>&
         print("ignored")
         log.warning("Maybe Not work preview & audio (DT, NC, HT)")
 
+#ffprobe 설치확인
+if os.system(f"ffprobe -version > {'nul' if os.name == 'nt' else '/dev/null'} 2>&1") != 0:
+    log.warning(f"ffprobe Does Not Found!! | ignore? (y/n) ")
+    if input("").lower() != "y":
+        print("exit")
+        if os.name != "nt":
+            print("sudo apt install ffmpeg")
+        else:
+            print("https://github.com/BtbN/FFmpeg-Builds/releases")
+        exit()
+    else:
+        print("ignored")
+        log.warning("Maybe Not work check audio Codec")
+
 def folder_check():
     if not os.path.isdir(dataFolder):
         os.mkdir(dataFolder)
@@ -107,7 +122,18 @@ def osu_file_read(setID, rq_type, moving=False):
         ck = check(setID, rq_type)
         if ck is not None:
             return ck
-    zipfile.ZipFile(f'{dataFolder}/dl/{get_osz_fullName(setID)}').extractall(f'{dataFolder}/dl/{setID}')
+
+    #압축파일에 문제생겼을 때 chimu에서 재 다운로드
+    try:
+        zipfile.ZipFile(f'{dataFolder}/dl/{get_osz_fullName(setID)}').extractall(f'{dataFolder}/dl/{setID}')
+    except zipfile.BadZipFile as e:
+        ck = check(setID, rq_type, site=1)
+        if ck is not None:
+            return ck
+        try:
+            zipfile.ZipFile(f'{dataFolder}/dl/{get_osz_fullName(setID)}').extractall(f'{dataFolder}/dl/{setID}')
+        except zipfile.BadZipFile as e:
+            log.error(f"압축파일 오류: {e}")
     
     file_list = os.listdir(f"{dataFolder}/dl/{setID}")
     file_list_osu = [file for file in file_list if file.endswith(".osu")]
@@ -140,25 +166,29 @@ def osu_file_read(setID, rq_type, moving=False):
 
             line = line[line.find("AudioFilename:"):]
             try:
-                AudioFilename = line.split("\n")[0].replace("AudioFilename:", "").replace(" ", "")
+                AudioFilename = line.split("\n")[0].replace("AudioFilename:", "")
+                AudioFilename = AudioFilename.replace(" ", "", 1) if AudioFilename.startswith(" ") else AudioFilename
             except:
                 AudioFilename = None
 
             line = line[line.find("PreviewTime:"):]
             try:
-                PreviewTime = int(line.split("\n")[0].replace("PreviewTime:", "").replace(" ", ""))
+                PreviewTime = line.split("\n")[0].replace("PreviewTime:", "")
+                PreviewTime = int(PreviewTime.replace(" ", "", 1) if PreviewTime.startswith(" ") else PreviewTime)
             except:
                 PreviewTime = None
             
             line = line[line.find("Version:"):]
             try:
-                Version = line.split("\n")[0].replace("Version:", "").replace(" ", "")
+                Version = line.split("\n")[0].replace("Version:", "")
+                Version = Version.replace(" ", "", 1) if Version.startswith(" ") else Version
             except:
                 Version = None
 
             line = line[line.find("BeatmapID:"):]
             try:
-                BeatmapID = int(line.split("\n")[0].replace("BeatmapID:", "").replace(" ", ""))
+                BeatmapID = line.split("\n")[0].replace("BeatmapID:", "")
+                BeatmapID = int(BeatmapID.replace(" ", "", 1) if BeatmapID.startswith(" ") else BeatmapID)
             except:
                 BeatmapID = 0
 
@@ -426,7 +456,7 @@ def move_files(setID, rq_type):
         #osu_file_read() 함수에 인자값으로 True를 넣어서 dl/{setID} 가 삭제 되지 않으므로 여기서 폴더 삭제함
         shutil.rmtree(f"{dataFolder}/dl/{setID}")
 
-def check(setID, rq_type, checkRenewFile=False):
+def check(setID, rq_type, checkRenewFile=False, site=0):
     #.osz는 무조건 새로 받되, Bancho, Redstar**전용** 맵에서 ranked, loved 등등 은 새로 안받아도 댐. (Redstar에서의 랭크상태 여부는 고민중)
     #근데 생각해보니 파일 있으면 걍 이걸 안오는데?
     folder_check()
@@ -498,7 +528,10 @@ def check(setID, rq_type, checkRenewFile=False):
 
     if fullSongName == 0:
         log.warning(f"{setID} 맵셋 osz 존재하지 않음. 다운로드중...")
-        dlsc = dl(0, limit=0)
+        dlsc = dl(site, limit=0)
+    elif fullSongName != 0 and site == 1:
+        log.warning(f"{setID} 파일 깨진거로 간주하고 chimu에서 새로 다운로드중...")
+        dlsc = dl(site, limit=0)
     else:
         dlsc = 200
         log.info(f"{get_osz_fullName(setID)} 존재함")
@@ -647,7 +680,7 @@ def read_bg(id):
         except:
             try:
                 bsid = dbR.fetch("SELECT beatmapset_id FROM beatmaps WHERE beatmap_id = %s", [id])["beatmapset_id"]
-                log.info("RedstarOSU API에서 bsid 찾음")
+                log.info("RedstarOSU DB에서 bsid 찾음")
             except:
                 raise KeyError("Not Found bsid!")
 
@@ -725,6 +758,11 @@ def read_thumb(id):
 def read_audio(id):
     #ffmpeg -i "audio.ogg" -acodec libmp3lame -q:a 0 -y "audio.mp3"
     def audioSpeed(mods, setID, file_list):
+        #변환 시작 + 에러시 코덱 확인후 재 변환
+        Codec = subprocess.check_output(f"ffprobe -v error -select_streams a:0 -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 {dataFolder}/audio/{setID}/{file_list[0]}", stderr=subprocess.STDOUT).decode().replace("\r\n", "")
+        if Codec != "mp3":
+            log.error(f"{file_list[0]} 코텍은 mp3가 아님 | {Codec}")
+
         if mods == "DT":
             DTFilename = f"{dataFolder}/audio/{setID}/{file_list[0][:-4]}-DT.mp3"
             if os.path.isfile(DTFilename):
@@ -831,7 +869,7 @@ def read_audio(id):
         except:
             try:
                 bsid = dbR.fetch("SELECT beatmapset_id FROM beatmaps WHERE beatmap_id = %s", [id])["beatmapset_id"]
-                log.info("RedstarOSU API에서 bsid 찾음")
+                log.info("RedstarOSU DB에서 bsid 찾음")
             except:
                 raise KeyError("Not Found bsid!")
 
@@ -913,8 +951,17 @@ def read_preview(id):
         else:
             ffmpeg_msg = f'ffmpeg -i "{dataFolder}/preview/{setID}/{AudioFilename}" -ss {PreviewTime} -t 30.821 -acodec libmp3lame -q:a 0 -y "{dataFolder}/preview/{setID}/{id}"'
             log.warning(f"ffmpeg_msg = {ffmpeg_msg}")
+        
         log.chat(f"ffmpeg_msg = {ffmpeg_msg}")
-        os.system(ffmpeg_msg)
+        #변환 시작 + 에러시 코덱 확인후 재 변환
+        if os.system(ffmpeg_msg) != 0:
+            Codec = subprocess.check_output(f"ffprobe -v error -select_streams a:0 -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 {dataFolder}/preview/{setID}/{AudioFilename}", stderr=subprocess.STDOUT).decode().replace("\r\n", "")
+            log.error(f"ffmpeg .mp3 변환 실패! | 코덱 조회: {Codec}")
+            if Codec != "mp3":
+                ffmpeg_msg = f'ffmpeg -i "{dataFolder}/preview/{setID}/{AudioFilename}" -ss {PreviewTime} -t 30.821 -acodec libmp3lame -q:a 0 -y "{dataFolder}/preview/{setID}/{id}"'
+                if os.system(ffmpeg_msg) != 0:
+                    log.error(f"{setID} | {AudioFilename} 변환 실패!")
+
         os.remove(f"{dataFolder}/preview/{setID}/{AudioFilename}")
     return f"{dataFolder}/preview/{setID}/{id}"
 
@@ -924,7 +971,7 @@ def read_video(id):
     except:
         try:
             bsid = dbR.fetch("SELECT beatmapset_id FROM beatmaps WHERE beatmap_id = %s", [id])["beatmapset_id"]
-            log.info("RedstarOSU API에서 bsid 찾음")
+            log.info("RedstarOSU DB에서 bsid 찾음")
         except:
             raise KeyError("Not Found bsid!")
 
@@ -1005,7 +1052,7 @@ def read_osz_b(id):
     except:
         try:
             bsid = dbR.fetch("SELECT beatmapset_id FROM beatmaps WHERE beatmap_id = %s", [id])["beatmapset_id"]
-            log.info("RedstarOSU API에서 bsid 찾음")
+            log.info("RedstarOSU DB에서 bsid 찾음")
         except:
             raise KeyError("Not Found bsid!")
 
@@ -1018,7 +1065,7 @@ def read_osu(id):
     except:
         try:
             bsid = dbR.fetch("SELECT beatmapset_id FROM beatmaps WHERE beatmap_id = %s", [id])["beatmapset_id"]
-            log.info("RedstarOSU API에서 bsid 찾음")
+            log.info("RedstarOSU DB에서 bsid 찾음")
         except:
             raise KeyError("Not Found bsid!")
 
