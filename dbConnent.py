@@ -39,7 +39,6 @@ class db:
 
         columns = [column[0] for column in cursor.description]
         result = cursor.fetchall()
-        self.pydb.close()
 
         if not result:
             log.error(f"None | SQL = {cursor.mogrify(sql, param)}")
@@ -65,4 +64,6 @@ class db:
         else:
             cursor.execute(sql, param)
         self.pydb.commit()
+
+    def close(self):
         self.pydb.close()
