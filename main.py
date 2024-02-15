@@ -570,6 +570,23 @@ class filesinfoHandler(tornado.web.RequestHandler):
         self.write(json.dumps(osu_file_read(bsid, rq_type="all"), indent=2, ensure_ascii=False))
         self.set_header("Ping", str(resPingMs(self)))
 
+class filesinfoHandler2(tornado.web.RequestHandler):
+    def get(self, bsid, bid):
+        rm = request_msg(self, botpass=False)
+        if rm != 200:
+            return send403(self, rm)
+
+        for i in osu_file_read(bsid, rq_type="all")[2]:
+            if i["BeatmapID"] == int(bid):
+                self.set_header("Content-Type", "application/json")
+                self.write(json.dumps(i, indent=2, ensure_ascii=False))
+                self.set_header("Ping", str(resPingMs(self)))
+                return
+        self.set_status(404)
+        self.set_header("Content-Type", "application/json")
+        self.write(json.dumps({"code": 404, "message": "NODATA! Check bsid & bid"}, indent=2, ensure_ascii=False))
+        self.set_header("Ping", str(resPingMs(self)))
+
 def make_app():
     return tornado.web.Application([
         (r"/", MainHandler),
@@ -593,6 +610,7 @@ def make_app():
         (r"/search(.*)", searchHandler),
         (r"/remove/([^/]+)", removeHandler),
         (r"/filesinfo/([^/]+)", filesinfoHandler),
+        (r"/filesinfo/([^/]+)/([^/]+)", filesinfoHandler2),
     ])
 
 if __name__ == "__main__":
