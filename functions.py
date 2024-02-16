@@ -968,6 +968,7 @@ def read_preview(id):
 def read_video(id):
     try:
         bsid = dbC.fetch("SELECT parent_set_id FROM beatmaps WHERE id = %s", [id])["parent_set_id"]
+        log.info(f"{id} bid cheesegull db 조회로 {bsid} bsid 얻음")
     except:
         try:
             bsid = dbR.fetch("SELECT beatmapset_id FROM beatmaps WHERE beatmap_id = %s", [id])["beatmapset_id"]
@@ -978,56 +979,47 @@ def read_video(id):
     #파일 최신화
     crf(bsid, rq_type="video")
 
-    try:
-        #hasVideo = dbC.fetch("SELECT has_video FROM sets WHERE id = %s", [bsid])["has_video"]
-        #반초로 조회함
-        hasVideo = requests.get(f"https://osu.ppy.sh/api/get_beatmaps?k={OSU_APIKEY}&b={id}", headers=requestHeaders)
-        hasVideo = hasVideo.json()[0]["video"]
-    except:
-        try:
-            log.warning(f"{id} 해당 비트맵은 반초 API에서 조회가 되지 않습니다! | .osu 파일에 비디오 있나 체크")
-            log.info(f"{id} bid cheesegull db 조회로 {bsid} bsid 얻음")
-            ismp4 = osu_file_read(bsid, rq_type="video")
-            #사실 의미 없음
-            hasVideo = ismp4[2][0]["BeatmapVideo"]
-            if hasVideo is None:
-                raise
-        except:
-            log.error(f"{id} 해당 비트맵은 .osu 파일에서도 mp4가 발견되지 않음")
-            return f"{id} Beatmap doesn't exist on Bancho API!"
-        
-    #type = str --> type = int
-    if hasVideo == 0:
-        return f"{id} Beatmap has no video!"
-    
     #video폴더 파일 체크
     if not os.path.isdir(f"{dataFolder}/video/{bsid}"):
         ck = check(bsid, rq_type="video")
         if ck is not None:
             return ck
 
-    #임시로 try 박아둠, 나중에 반초라던지 비디오 있나 요청하는거로 바꾸기
-    try:
-        file_list = [file for file in os.listdir(f"{dataFolder}/video/{bsid}") if file.endswith(".mp4")]
-
-        if len(file_list) > 1:
-            AF = osu_file_read(bsid, rq_type="video")
-            for i in AF[2]:
-                if int(id) == i["BeatmapID"]:
-                    file_list = [i['AudioFilename']]
-    
+    hasVideo = next((i["BeatmapVideo"] for i in osu_file_read(bsid, rq_type="video")[2] if int(id) == i["BeatmapID"]), None)
+    if hasVideo is None:
+        log.warning(f"{id} 해당 비트맵은 .osu 파일에 비디오 정보가 없습니다!")
         try:
-            #log.debug(print(file_list[0]))
-            print(file_list[0])
+            #hasVideo = dbC.fetch("SELECT has_video FROM sets WHERE id = %s", [bsid])["has_video"]
+            #반초로 조회함
+            hasVideo = requests.get(f"https://osu.ppy.sh/api/get_beatmaps?k={OSU_APIKEY}&b={id}", headers=requestHeaders)
+            hasVideo = int(hasVideo.json()[0]["video"])
+
+            if hasVideo != 0:
+                file_list = [file for file in os.listdir(f"{dataFolder}/video/{bsid}") if file.endswith(".mp4")]
+                if len(file_list) > 1:
+                    AF = osu_file_read(bsid, rq_type="video")
+                    for i in AF[2]:
+                        if int(id) == i["BeatmapID"]:
+                            file_list = [i['AudioFilename']]
+                try:
+                    #log.debug(print(file_list[0]))
+                    print(file_list[0])
+                except:
+                    log.error(f"bid = {id} | video print(file_list[0]) 에러")
+                    ck = check(bsid, rq_type="video")
+                    if ck is not None:
+                        return ck
+                    return read_video(id)
+                return f"{dataFolder}/video/{bsid}/{file_list[0]}"
+            else:
+                raise
         except:
-            log.error(f"bid = {id} | video print(file_list[0]) 에러")
-            ck = check(bsid, rq_type="video")
-            if ck is not None:
-                return ck
-            return read_video(id)
-        return f"{dataFolder}/video/{bsid}/{file_list[0]}"
-    except:
-        return "ERROR NODATA"
+            return f"{id} Beatmap has no video!"
+    else:
+        #임시로 try 박아둠, 나중에 반초라던지 비디오 있나 요청하는거로 바꾸기
+        if os.path.isfile(f"{dataFolder}/video/{bsid}/{hasVideo}"):
+            return f"{dataFolder}/video/{bsid}/{hasVideo}"
+            
 
 def read_osz(id):
     #파일 최신화
