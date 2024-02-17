@@ -759,7 +759,7 @@ def read_audio(id):
     #ffmpeg -i "audio.ogg" -acodec libmp3lame -q:a 0 -y "audio.mp3"
     def audioSpeed(mods, setID, file_list):
         #변환 시작 + 에러시 코덱 확인후 재 변환
-        Codec = subprocess.check_output(["ffprobe", "-v", "error", "-select_streams", "a:0", "-show_entries", "stream=codec_name", "-of", "default=noprint_wrappers=1:nokey=1", f"{dataFolder}/audio/{setID}/{file_list[0]}"], stderr=subprocess.STDOUT).decode().replace("\r\n", "")
+        Codec = subprocess.check_output(["ffprobe", "-v", "error", "-select_streams", "a:0", "-show_entries", "stream=codec_name", "-of", "default=noprint_wrappers=1:nokey=1", f"{dataFolder}/audio/{setID}/{file_list[0]}"], stderr=subprocess.STDOUT).decode().replace("\r", "").replace("\n", "")
         if Codec != "mp3":
             log.error(f"{file_list[0]} 코텍은 mp3가 아님 | {Codec}")
 
@@ -955,7 +955,7 @@ def read_preview(id):
         log.chat(f"ffmpeg_msg = {ffmpeg_msg}")
         #변환 시작 + 에러시 코덱 확인후 재 변환
         if os.system(ffmpeg_msg) != 0:
-            Codec = subprocess.check_output(["ffprobe", "-v", "error", "-select_streams", "a:0", "-show_entries", "stream=codec_name", "-of", "default=noprint_wrappers=1:nokey=1", f"{dataFolder}/preview/{setID}/{AudioFilename}"], stderr=subprocess.STDOUT).decode().replace("\r\n", "")
+            Codec = subprocess.check_output(["ffprobe", "-v", "error", "-select_streams", "a:0", "-show_entries", "stream=codec_name", "-of", "default=noprint_wrappers=1:nokey=1", f"{dataFolder}/preview/{setID}/{AudioFilename}"], stderr=subprocess.STDOUT).decode().replace("\r", "").replace("\n", "")
             log.error(f"ffmpeg .mp3 변환 실패! | 코덱 조회: {Codec}")
             if Codec != "mp3":
                 ffmpeg_msg = f'ffmpeg -i "{dataFolder}/preview/{setID}/{AudioFilename}" -ss {PreviewTime} -t 30.821 -acodec libmp3lame -q:a 0 -y "{dataFolder}/preview/{setID}/{id}"'
