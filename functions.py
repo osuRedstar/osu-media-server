@@ -185,11 +185,15 @@ def osu_file_read(setID, rq_type, moving=False):
             except:
                 Version = None
 
-            line = line[line.find("BeatmapID:"):]
-            try:
-                BeatmapID = line.split("\n")[0].replace("BeatmapID:", "")
-                BeatmapID = int(BeatmapID.replace(" ", "", 1) if BeatmapID.startswith(" ") else BeatmapID)
-            except:
+            if osu_file_format_version >= 10:
+                line = line[line.find("BeatmapID:"):]
+                try:
+                    BeatmapID = line.split("\n")[0].replace("BeatmapID:", "")
+                    BeatmapID = int(BeatmapID.replace(" ", "", 1) if BeatmapID.startswith(" ") else BeatmapID)
+                except:
+                    BeatmapID = 0
+            else:
+                log.warning(f"osu file format v{osu_file_format_version} | files bid = 0")
                 BeatmapID = 0
 
             line = line[line.find("//Background and Video events"):]
