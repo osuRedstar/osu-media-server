@@ -1104,7 +1104,7 @@ def filename_to_GetCheesegullDB(filename):
     try:
         parentheses = filename.count(" (")
         if parentheses == 1:
-            # 정규식 패턴
+            # 정규식 패턴, 일반적인 경우
             pattern = r"^(.+) - (.+) \(([^)]+)\) \[([^]]+)\]\.osu$"
             match = re.match(pattern, filename)
 
@@ -1113,7 +1113,7 @@ def filename_to_GetCheesegullDB(filename):
             creator = match.group(3)
             version = match.group(4)
         elif parentheses == 0:
-            # 정규식 패턴
+            # 정규식 패턴, 제작자 누락된 경우
             pattern = r"^(.+) - (.+) \[([^]]+)\]\.osu$"
             match = re.match(pattern, filename)
 
@@ -1122,7 +1122,7 @@ def filename_to_GetCheesegullDB(filename):
             creator = match.group(3)
             version = match.group(4)
         else:
-            # 정규식 패턴
+            # 정규식 패턴, 괄호가 하나 더 있어서 에러방지
             pattern = r"^(.+) - (.+) (\([^()]+\)) \(([^()]+)\) \[([^]]+)\]\.osu$"
             match = re.match(pattern, filename)
 
