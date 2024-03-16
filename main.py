@@ -573,7 +573,7 @@ class filesinfoHandler(tornado.web.RequestHandler):
             return send403(self, rm)
 
         self.set_header("Content-Type", "application/json")
-        self.write(json.dumps(osu_file_read(bsid, rq_type="all"), indent=2, ensure_ascii=False))
+        self.write(json.dumps(osu_file_read(bsid, rq_type="all", cheesegull=True), indent=2, ensure_ascii=False))
         self.set_header("Ping", str(resPingMs(self)))
 
 class filesinfoHandler2(tornado.web.RequestHandler):
@@ -581,17 +581,17 @@ class filesinfoHandler2(tornado.web.RequestHandler):
         rm = request_msg(self, botpass=False)
         if rm != 200:
             return send403(self, rm)
-
-        for i in osu_file_read(bsid, rq_type="all")[2]:
-            if i["BeatmapID"] == int(bid):
-                self.set_header("Content-Type", "application/json")
-                self.write(json.dumps(i, indent=2, ensure_ascii=False))
-                self.set_header("Ping", str(resPingMs(self)))
-                return
-        self.set_status(404)
-        self.set_header("Content-Type", "application/json")
-        self.write(json.dumps({"code": 404, "message": "NODATA! Check bsid & bid"}, indent=2, ensure_ascii=False))
-        self.set_header("Ping", str(resPingMs(self)))
+        
+        info = json.dumps(osu_file_read(bsid, rq_type="all", bID=bid, cheesegull=True), indent=2, ensure_ascii=False)
+        if info is not None:
+            self.set_header("Content-Type", "application/json")
+            self.write(info)
+            self.set_header("Ping", str(resPingMs(self)))
+        else:
+            self.set_status(404)
+            self.set_header("Content-Type", "application/json")
+            self.write(json.dumps({"code": 404, "message": "NODATA! Check bsid & bid"}, indent=2, ensure_ascii=False))
+            self.set_header("Ping", str(resPingMs(self)))
 
 def make_app():
     return tornado.web.Application([

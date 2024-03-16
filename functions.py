@@ -116,7 +116,7 @@ def get_osz_fullName(setID):
     except:
         return 0
 
-def osu_file_read(setID, rq_type, moving=False):
+def osu_file_read(setID, rq_type, moving=False, bID=None, cheesegull=False):
     #/filesinfo 조회시 osz 없을때 오류 방지
     if get_osz_fullName(setID) == 0 and rq_type == "all":
         ck = check(setID, rq_type)
@@ -210,8 +210,26 @@ def osu_file_read(setID, rq_type, moving=False):
                 BeatmapBG = None
                 BeatmapVideo = None
 
+            try:
+                def culc_length(l):
+                    h = "{0:02d}".format(l // 60 // 60)
+                    m = "{0:02d}".format(l // 60)
+                    s = "{0:02d}".format(l % 60)
+                    return f"{h}:{m}:{s}"
+                AudioLength = len(AudioSegment.from_file(f"{dataFolder}/dl/{setID}/{AudioFilename}")) / 1000
+                AudioLength = [AudioLength, culc_length(round(AudioLength))]
+                AudioLength_DT = AudioLength_NC = [round(AudioLength[0] / 1.5, 3), culc_length(round(AudioLength[0] / 1.5))]
+                #HF = 1. (AudioLength / 0.75), 2. (AudioLength * 1.5)
+                AudioLength_HF = [round(AudioLength[0] / 0.75, 3), culc_length(round(AudioLength[0] / 0.75))]
+            except:
+                AudioLength = AudioLength_DT = AudioLength_NC = AudioLength_HF = None
+
             temp["osu_file_format_v"] = osu_file_format_version if osu_file_format_version != "" else None
             temp["AudioFilename"] = AudioFilename if AudioFilename != "" else None
+            temp["AudioLength"] = AudioLength
+            temp["AudioLength-DT"] = AudioLength_DT
+            temp["AudioLength-NC"] = AudioLength_NC
+            temp["AudioLength-HF"] = AudioLength_HF
             temp["PreviewTime"] = PreviewTime if PreviewTime != "" else None
             temp["Version"] = Version if Version != "" else None
             temp["BeatmapID"] = BeatmapID if BeatmapID != "" else None
@@ -354,11 +372,22 @@ def osu_file_read(setID, rq_type, moving=False):
 
     if not moving:
         shutil.rmtree(f"{dataFolder}/dl/{setID}")
-    return [int(setID), first_bid, beatmap_info]
+
+    if bID is not None:
+        try:
+            cheesegull = requests.get(f"https://cheesegull.{osuServerDomain}/api/b/{bID}", headers=requestHeaders).json() if cheesegull else None
+            for i in beatmap_info:
+                if i["BeatmapID"] == int(bID):
+                    return {"RedstarOSU": i, "cheesegull": cheesegull}
+        except:
+            return None
+    else:
+        cheesegull = requests.get(f"https://cheesegull.{osuServerDomain}/api/s/{setID}", headers=requestHeaders).json() if cheesegull else None
+        return {"RedstarOSU": [int(setID), first_bid, beatmap_info], "cheesegull": cheesegull}
 
 def move_files(setID, rq_type):
         isOsuFile = False
-        result = osu_file_read(setID, rq_type, moving=True)
+        result = osu_file_read(setID, rq_type, moving=True)["RedstarOSU"]
         #필요한 파일만 각 폴더로 이동
         for item in result[2]:
             isOsuFile = True
@@ -826,7 +855,7 @@ def read_audio(id):
         file_list = [file for file in os.listdir(f"{dataFolder}/audio/{id}")]
 
         if len(file_list) > 1:
-            AF = osu_file_read(id, rq_type="audio")
+            AF = osu_file_read(id, rq_type="audio")["RedstarOSU"]
             for i in AF[2]:
                 if AF[1] == i["BeatmapID"]:
                     file_list = [i['AudioFilename']]
@@ -888,7 +917,7 @@ def read_audio(id):
         file_list = [file for file in os.listdir(f"{dataFolder}/audio/{bsid}")]
 
         if len(file_list) > 1:
-            AF = osu_file_read(bsid, rq_type="audio")
+            AF = osu_file_read(bsid, rq_type="audio")["RedstarOSU"]
             for i in AF[2]:
                 if int(id) == i["BeatmapID"]:
                     file_list = [i['AudioFilename']]
@@ -937,7 +966,7 @@ def read_preview(id):
         #음원 하이라이트 가져오기, 밀리초라서 / 1000 함
         PreviewTime = -1
         AudioFilename = ""
-        j = osu_file_read(setID, rq_type="preview")
+        j = osu_file_read(setID, rq_type="preview")["RedstarOSU"]
         
         for i in j[2]:
             if j[1] == i["BeatmapID"]:
@@ -989,7 +1018,7 @@ def read_video(id):
         if ck is not None:
             return ck
 
-    hasVideo = next((i["BeatmapVideo"] for i in osu_file_read(bsid, rq_type="video")[2] if int(id) == i["BeatmapID"]), None)
+    hasVideo = next((i["BeatmapVideo"] for i in osu_file_read(bsid, rq_type="video")["RedstarOSU"][2] if int(id) == i["BeatmapID"]), None)
     if hasVideo is None:
         log.warning(f"{id} 해당 비트맵은 .osu 파일에 비디오 정보가 없습니다!")
         try:
@@ -1001,7 +1030,7 @@ def read_video(id):
             if hasVideo != 0:
                 file_list = [file for file in os.listdir(f"{dataFolder}/video/{bsid}") if file.endswith(".mp4")]
                 if len(file_list) > 1:
-                    AF = osu_file_read(bsid, rq_type="video")
+                    AF = osu_file_read(bsid, rq_type="video")["RedstarOSU"]
                     for i in AF[2]:
                         if int(id) == i["BeatmapID"]:
                             file_list = [i['AudioFilename']]
