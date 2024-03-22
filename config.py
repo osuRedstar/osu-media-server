@@ -90,12 +90,12 @@ class config:
 		self.config.set("server", "ContectEmail", "support@redstar.moe")
 
 		self.config.add_section("osu")
-		self.config.set("osu", "osuApikey", "")
-		self.config.set("osu", "IS_YOU_HAVE_OSU_PRIVATE_SERVER_WITH_lets.py", "True")
+		self.config.set("osu", "osuApikey", "Go https://old.ppy.sh/p/api and Get Your Key")
+		self.config.set("osu", "IS_YOU_HAVE_OSU_PRIVATE_SERVER_WITH_lets.py", "False")
 		if os.name == "nt":
 			self.config.set("osu", "lets.py_beatmaps_Folder_Path", "B:/redstar/lets/.data/beatmaps")
 		else:
-			self.config.set("osu", "lets.py_beatmaps_Folder_Path", "/home/user/redstar/lets/.data/beatmaps")
+			self.config.set("osu", "lets.py_beatmaps_Folder_Path", "/home/{user}/redstar/lets/.data/beatmaps")
 
 		self.config.add_section("db")
 		self.config.set("db", "host", "localhost")
