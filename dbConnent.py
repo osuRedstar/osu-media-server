@@ -30,7 +30,7 @@ class db:
             log.error(f"{self.DB_DATABASE_NOW} DB 연결 실패!")
             exit()
 
-    def fetch(self, sql, param=None):
+    def fetch(self, sql, param=None, NoneMsg=True):
         cursor = self.pydb.cursor()
         if param is None or param == "":
             cursor.execute(sql)
@@ -41,7 +41,8 @@ class db:
         result = cursor.fetchall()
 
         if not result:
-            log.error(f"None | SQL = {cursor.mogrify(sql, param)}")
+            if NoneMsg:
+                log.error(f"None | SQL = {cursor.mogrify(sql, param)}")
             return None
         elif len(result) == 1:
             data = {}
