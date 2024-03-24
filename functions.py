@@ -141,6 +141,14 @@ def osu_file_read(setID, rq_type, moving=False, bID=None, cheesegull=False):
     beatmap_info = []
     underV10 = False
 
+    #.osu 파일명 기준으로 이름순으로 정렬함
+    gullDB = dbC.fetch("""
+        SELECT b.id, b.file_md5, CONCAT(s.artist, ' - ', s.title, ' (', s.creator, ') [', b.diff_name, ']' '.osu') AS filename, s.artist, s.title, s.creator, b.diff_name
+        FROM sets AS s
+        JOIN beatmaps AS b ON s.id = b.parent_set_id
+        WHERE s.id = %s ORDER BY filename
+    """, [setID])
+
     # readline_all.py
     for beatmapName in file_list_osu:
         log.info(beatmapName)
@@ -190,6 +198,12 @@ def osu_file_read(setID, rq_type, moving=False, bID=None, cheesegull=False):
                 try:
                     BeatmapID = line.split("\n")[0].replace("BeatmapID:", "")
                     BeatmapID = int(BeatmapID.replace(" ", "", 1) if BeatmapID.startswith(" ") else BeatmapID)
+
+                    #.osu 파일에서 실제로 존재하지 않거나, 맞지않는 bid 가 있어서 점검함
+                    for i in gullDB:
+                        if i["file_md5"] == temp["BeatmapMD5"] and BeatmapID != i["id"]:
+                            log.error(f"비트맵ID 정보 서로 일치하지 않음 | [{i['diff_name']}] | BeatmapID = {BeatmapID} <-- i['id'] = {i['id']}")
+                            BeatmapID = i["id"]
                 except:
                     BeatmapID = 0
             else:
@@ -328,6 +342,7 @@ def osu_file_read(setID, rq_type, moving=False, bID=None, cheesegull=False):
     md5sList = [i["BeatmapMD5"] for i in beatmap_info]
     verList = [i["Version"] for i in beatmap_info]
 
+    #이미 위에서 감지해서 알아서 바꿈, 그래도 혹시 몰라서 소스코드는 남겨둠
     #bid 0 변경
     for zero in [y for y, x in enumerate(bidsList) if x == 0]:
         log.warning(f"bid 0 발견! | {md5sList[zero]}")
@@ -368,7 +383,7 @@ def osu_file_read(setID, rq_type, moving=False, bID=None, cheesegull=False):
     if int(setID) > 0:
         first_bid = min([x for x in bidsList if x > 0])
     else:
-        first_bid = min([x for x in bidsList])
+        first_bid = min([x for x in bidsList]) #커스텀 비트맵셋일 경우
 
     if not moving:
         shutil.rmtree(f"{dataFolder}/dl/{setID}")
@@ -376,13 +391,19 @@ def osu_file_read(setID, rq_type, moving=False, bID=None, cheesegull=False):
     if bID is not None:
         try:
             cheesegull = requests.get(f"https://cheesegull.{osuServerDomain}/api/b/{bID}", headers=requestHeaders).json() if cheesegull else None
+        except:
+            cheesegull = None
+        try:
             for i in beatmap_info:
                 if i["BeatmapID"] == int(bID):
                     return {"RedstarOSU": i, "cheesegull": cheesegull}
         except:
             return None
     else:
-        cheesegull = requests.get(f"https://cheesegull.{osuServerDomain}/api/s/{setID}", headers=requestHeaders).json() if cheesegull else None
+        try:
+            cheesegull = requests.get(f"https://cheesegull.{osuServerDomain}/api/s/{setID}", headers=requestHeaders).json() if cheesegull else None
+        except:
+            cheesegull = None
         return {"RedstarOSU": [int(setID), first_bid, beatmap_info], "cheesegull": cheesegull}
 
 def move_files(setID, rq_type):
