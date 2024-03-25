@@ -13,9 +13,11 @@ from pydub import AudioSegment
 from pydub.playback import play as PlaySound
 import threading
 import time
+from datetime import datetime
 import json
 from collections import Counter
 import subprocess
+import geoip2.database
 
 dbR = db("redstar")
 dbC = db("cheesegull")
@@ -79,6 +81,158 @@ if os.system(f"ffprobe -version > {'nul' if os.name == 'nt' else '/dev/null'} 2>
     else:
         print("ignored")
         log.warning("Maybe Not work check audio Codec")
+
+####################################################################################################
+
+# main.py
+ContectEmail = conf.config["server"]["ContectEmail"]
+allowedconnentedbot = conf.config["server"]["allowedconnentedbot"]
+if allowedconnentedbot == "True" or allowedconnentedbot == "1":
+    allowedconnentedbot = True
+    log.chat("봇 접근 허용")
+else:
+    allowedconnentedbot = False
+    log.warning("봇 접근 거부")
+
+def getRequestInfo(self):
+    IsCloudflare = False
+    IsNginx = False
+    IsHttp = False
+    try:
+        real_ip = self.request.headers["Cf-Connecting-Ip"]
+        request_url = self.request.headers["X-Forwarded-Proto"] + "://" + self.request.host + self.request.uri
+        country_code = self.request.headers["Cf-Ipcountry"]
+        IsCloudflare = True
+        IsNginx = True
+        Server = "Cloudflare"
+    except Exception as e:
+        log.warning(f"cloudflare를 거치지 않음, real_ip는 nginx header에서 가져옴 | e = {e}")
+        try:
+            real_ip = self.request.headers["X-Real-Ip"]
+            request_url = self.request.headers["X-Forwarded-Proto"] + "://" + self.request.host + self.request.uri
+            IsNginx = True
+            Server = subprocess.check_output(["nginx.exe", "-v"], stderr=subprocess.STDOUT).decode().strip().split(":")[1].strip()
+        except Exception as e:
+            log.warning(f"http로 접속시도함 | cloudflare를 거치지 않음, real_ip는 http요청이라서 바로 뜸 | e = {e}")
+            real_ip = self.request.remote_ip
+            request_url = self.request.protocol + "://" + self.request.host + self.request.uri
+            IsHttp = True
+            Server = self._headers.get("Server")
+
+        #2자리 국가코드
+        reader = geoip2.database.Reader("GeoLite2-Country.mmdb")
+        try:
+            country_code = reader.country(real_ip).country.iso_code
+        except geoip2.errors.AddressNotFoundError:
+            country_code = "XX"
+            log.error(f"주어진 IP 주소 : {real_ip} 를 찾을 수 없습니다.")
+        except Exception as e:
+            country_code = "XX"
+            log.error("국가코드 오류 발생:", e)
+
+    client_ip = self.request.remote_ip
+
+    try:
+        User_Agent = self.request.headers["User-Agent"]
+    except:
+        User_Agent = ""
+        log.error("User-Agent 값이 존재하지 않음!")
+
+    try:
+        Referer = self.request.headers["Referer"]
+        log.info("Referer 값이 존재함!")
+    except:
+        Referer = ""
+
+    return real_ip, request_url, country_code, client_ip, User_Agent, Referer, IsCloudflare, IsNginx, IsHttp, Server
+
+def request_msg(self, botpass=False):
+    # Logging the request IP address
+    print("")
+    
+    real_ip, request_url, country_code, client_ip, User_Agent, Referer, IsCloudflare, IsNginx, IsHttp, Server = getRequestInfo(self)
+
+    def logmsg(msg):
+        if botpass:
+            log.warning(msg)
+        else:
+            log.error(msg)
+
+    #필?터?링
+    if allowedconnentedbot:
+        log.info(f"Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_url} | From: {User_Agent} | Referer: {Referer}")
+        return 200
+    else:
+        with open("botList.json", "r") as f:
+            botList = json.load(f)
+            if any(i in User_Agent.lower() for i in botList["no"]) and not any(i in User_Agent.lower() for i in botList["ok"]):
+                logmsg(f"bot 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_url} | From: {User_Agent} | Referer: {Referer}")
+                return "bot"
+            elif "python-requests" in User_Agent.lower():
+                logmsg(f"python-requests 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_url} | From: {User_Agent} | Referer: {Referer}")
+                return "python-requests"
+            elif "python-urllib" in User_Agent.lower():
+                logmsg(f"Python-urllib 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_url} | From: {User_Agent} | Referer: {Referer}")
+                return "Python-urllib"
+
+            elif any(i in User_Agent.lower() for i in botList["ok"]):
+                log.info(f"bot 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_url} | From: {User_Agent} | Referer: {Referer}")
+                return 200
+            elif "postmanruntime" in User_Agent.lower():
+                log.debug(f"PostmanRuntime 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_url} | From: {User_Agent} | Referer: {Referer}")
+                return 200
+            elif User_Agent == "osu!":
+                log.info(f"osu! 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_url} | From: {User_Agent} | Referer: {Referer}")
+                return 200
+            else:
+                log.info(f"Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_url} | From: {User_Agent} | Referer: {Referer}")
+                return 200
+
+def resPingMs(self):
+    pingMs = (time.time() - self.request._start_time) * 1000
+    log.chat(f"{pingMs} ms")
+    return pingMs
+
+def send401(self, errMsg):
+    self.set_status(401)
+    self.set_header("Content-Type", "application/json")
+    self.write(json.dumps({"code": 401, "error": errMsg}, indent=2, ensure_ascii=False))
+    self.set_header("Ping", str(resPingMs(self)))
+
+def send403(self, rm):
+    self.set_status(403)
+    self.set_header("Content-Type", "application/json")
+    self.write(json.dumps({"code": 403, "error": f"{rm} is Not allowed!!", "message": f"contect --> {ContectEmail}"}, indent=2, ensure_ascii=False))
+    self.set_header("Ping", str(resPingMs(self)))
+
+def send404(self, inputType, input):
+    self.set_status(404)
+    self.set_header("return-fileinfo", json.dumps({"filename": "404.html", "path": "templates/404.html", "fileMd5": calculate_md5("templates/404.html")}))
+    self.render("templates/404.html", inputType=inputType, input=input)
+    self.set_header("Ping", str(resPingMs(self)))
+
+def send500(self, inputType, input):
+    self.set_status(500)
+    self.set_header("return-fileinfo", json.dumps({"filename": "500.html", "path": "templates/500.html", "fileMd5": calculate_md5("templates/500.html")}))
+    self.render("templates/500.html", inputType=inputType, input=input)
+    self.set_header("Ping", str(resPingMs(self)))
+
+def send503(self, e, inputType, input):
+    self.set_status(503)
+    #Exception = json.dumps({"type": str(type(e)), "error": str(e)}, ensure_ascii=False)
+    self.set_header("Exception", json.dumps({"type": str(type(e)), "error": str(e)}))
+    self.set_header("return-fileinfo", json.dumps({"filename": "503.html", "path": "templates/503.html", "fileMd5": calculate_md5("templates/503.html")}))
+    self.render("templates/503.html", inputType=inputType, input=input, Exception=json.dumps({"type": str(type(e)), "error": str(e)}, ensure_ascii=False))
+    self.set_header("Ping", str(resPingMs(self)))
+
+def send504(self, inputType, input):
+    #cloudflare 504 페이지로 연결됨
+    self.set_status(504)
+    self.set_header("return-fileinfo", json.dumps({"filename": "504.html", "path": "templates/504.html", "fileMd5": calculate_md5("templates/504.html")}))
+    self.render("templates/504.html", inputType=inputType, input=input)
+    self.set_header("Ping", str(resPingMs(self)))
+
+####################################################################################################
 
 def folder_check():
     if not os.path.isdir(dataFolder):
@@ -517,75 +671,69 @@ def check(setID, rq_type, checkRenewFile=False, site=0):
     fullSongName = get_osz_fullName(setID)
     log.debug(fullSongName)
 
-    if fullSongName == f"{setID} .osz":
-        log.error(f"{fullSongName} | 존재는 하나 꺠지거나 문제가 있음. 재 다운로드중...")
-        fullSongName = 0
+    url = [f"https://osu.ppy.sh/beatmapsets/{setID}/download",f'https://api.nerinyan.moe/d/{setID}', f"https://chimu.moe/d/{setID}"]
+    urlName = ["Bancho", "Nerinyan", "chimu"]
+    dlHeader = {"User-Agent": requestHeaders["User-Agent"], "Referer": f"https://osu.ppy.sh/beatmapsets/{setID}", "Cookie": "XSRF-TOKEN=5xjVgPQSC8jhxq30XopWzJv2sqBTIjm9NAWDYWbd; osu_session=eyJpdiI6Ijlpbk1ROS84Y2FKR1FZWnYwL2lwM1E9PSIsInZhbHVlIjoiQ2VuZElFb2hrQ0dwV05ENUx6Z1NkVzNQTFVXVHE1b3U2bFV4dWhZblVZYmxrMnAwdk5rY3NjWWZTeEZUcDRoR0lUYUF5OGduSE1ieTNoUkZzWE9SUFJUVjAxRU9Bb0JCODhYeDJ0eU9QUllidGJuU0FsRTJINGd3NUlwTTVrVDY1RGhMUFNWWDlCbm81ZXc4d0lycFFBPT0iLCJtYWMiOiJiZjc5MjE5MTAxNDNiNDQ4NDgzNWRkNjQwM2UwM2RlZWRlN2ExODE1YWM0MGU5MzIyOGI2NGUxMzkxNDVkY2QzIiwidGFnIjoiIn0%3D"}
 
-    url = [f'https://api.nerinyan.moe/d/{setID}', f"https://chimu.moe/d/{setID}"]
-
-    limit = 0
-    def dl(site, limit):
+    def dl():
         #우선 setID .osz로 다운받고 나중에 파일 이름 변경
         file_name = f'{setID} .osz' #919187 765 MILLION ALLSTARS - UNION!!.osz, 2052147 (Love Live! series) - Colorful Dreams! Colorful Smiles! _  TV2
-        save_path = f'{dataFolder}/dl/'  # 원하는 저장 경로로 변경
-        
-        # 파일 다운로드 요청
-        try:
-            res = requests.get(url[site], headers=requestHeaders, timeout=5, stream=True)
-            statusCode = res.status_code
-        except requests.exceptions.ReadTimeout as e:
-            log.warning(f"{url[site]} Timeout! | e = {e}")
-            statusCode = 504
-        except:
-            log.error(f"파일다운 기본 예외처리 | url = {url[site]}")
+        save_path = f'{dataFolder}/dl/'
 
-        if statusCode == 200:
-            # 파일 크기를 얻습니다.
-            file_size = int(res.headers.get('content-length', 0))
-
-            # tqdm을 사용하여 진행률 표시
-            with open(save_path + file_name, 'wb') as file:
-                with tqdm(total=file_size, unit='B', unit_scale=True, unit_divisor=1024, ncols=120) as pbar:
-                    for data in res.iter_content(1024):
-                        file.write(data)
-                        pbar.update(len(data))
-
-            header_filename = res.headers['content-disposition']
-            newFilename = header_filename[header_filename.find('filename='):].replace("filename=", "").replace('"', "")
-            if site == 1 and  "%20" in newFilename:
-                newFilename = newFilename.replace("%20", " ")
-            newFilename = re.sub(r'[<>:"/\\|?*]', '_', newFilename)
-
-            log.info(f'{file_name} --> {newFilename} 다운로드 완료')
-
-            # WAV 파일 재생을 별도의 스레드에서 수행
-            def play_finished_dl():
-                #winsound.PlaySound("static/audio/match-confirm (mp3cut.net).wav", winsound.SND_FILENAME)
-                PlaySound(AudioSegment.from_file("static/audio/match-confirm (mp3cut.net).wav"))
-            play_thread = threading.Thread(target=play_finished_dl)
-            play_thread.start()
-
+        for i, (link, mn) in enumerate(zip(url, urlName)):
+            # 파일 다운로드 요청
             try:
-                os.rename(f"{dataFolder}/dl/{setID} .osz", f"{dataFolder}/dl/{newFilename}")
-            except FileExistsError:
-                os.replace(f"{dataFolder}/dl/{newFilename}", f"{dataFolder}/dl/{newFilename}-old")
-                os.replace(f"{dataFolder}/dl/{setID} .osz", f"{dataFolder}/dl/{newFilename}")
-            return statusCode
-        else:
-            log.error(f'{statusCode}. 파일을 다운로드할 수 없습니다. chimu로 재시도!')
-            limit += 1
-            if limit < 3:
-                return dl(1, limit)
-            else:
-                log.warning(f"다운로드 요청 자체 limit 걸음! {limit}번 요청함")
+                res = requests.get(link, headers=dlHeader, timeout=5, stream=True)
+                statusCode = res.status_code
+            except requests.exceptions.ReadTimeout as e:
+                log.warning(f"{link} Timeout! | e = {e}")
+                statusCode = 504
+            except:
+                statusCode = 0
+                log.error(f"파일다운 기본 예외처리 | url = {link}")
+
+            if statusCode == 200:
+                # 파일 크기를 얻습니다.
+                file_size = int(res.headers.get('content-length', 0))
+
+                # tqdm을 사용하여 진행률 표시
+                with open(save_path + file_name, 'wb') as file:
+                    with tqdm(total=file_size, unit='B', unit_scale=True, unit_divisor=1024, ncols=120) as pbar:
+                        for data in res.iter_content(1024):
+                            file.write(data)
+                            pbar.update(len(data))
+
+                header_filename = res.headers['content-disposition']
+                newFilename = header_filename[header_filename.find('filename='):].replace("filename=", "").replace('"', "")
+                if urlName[site] == "chimu" and  "%20" in newFilename:
+                    newFilename = newFilename.replace("%20", " ")
+                newFilename = re.sub(r'[<>:"/\\|?*]', '_', newFilename)
+
+                log.info(f'{file_name} --> {newFilename} 다운로드 완료')
+
+                # WAV 파일 재생을 별도의 스레드에서 수행
+                def play_finished_dl():
+                    #winsound.PlaySound("static/audio/match-confirm (mp3cut.net).wav", winsound.SND_FILENAME)
+                    PlaySound(AudioSegment.from_file("static/audio/match-confirm (mp3cut.net).wav"))
+                play_thread = threading.Thread(target=play_finished_dl)
+                play_thread.start()
+
+                try:
+                    os.rename(f"{dataFolder}/dl/{setID} .osz", f"{dataFolder}/dl/{newFilename}")
+                except FileExistsError:
+                    os.replace(f"{dataFolder}/dl/{newFilename}", f"{dataFolder}/dl/{newFilename}-old")
+                    os.replace(f"{dataFolder}/dl/{setID} .osz", f"{dataFolder}/dl/{newFilename}")
                 return statusCode
+            else:
+                log.warning(f'{statusCode}. {mn} 에서 파일을 다운로드할 수 없습니다. {urlName[i + 1] if i < 2 else ""} 로 재시도!')
+            return 404
 
     if fullSongName == 0:
         log.warning(f"{setID} 맵셋 osz 존재하지 않음. 다운로드중...")
-        dlsc = dl(site, limit=0)
-    elif fullSongName != 0 and site == 1:
-        log.warning(f"{setID} 파일 깨진거로 간주하고 chimu에서 새로 다운로드중...")
-        dlsc = dl(site, limit=0)
+        dlsc = dl()
+    elif fullSongName == f'{setID} .osz':
+        log.error(f"{fullSongName} | 존재는 하나 꺠지거나 문제가 있음. 재 다운로드중...")
+        dlsc = dl()
     else:
         dlsc = 200
         log.info(f"{get_osz_fullName(setID)} 존재함")
@@ -599,6 +747,20 @@ def check(setID, rq_type, checkRenewFile=False, site=0):
             exceptOszList = json.load(file)
             exceptOszList = exceptOszList["exceptOszList"] + exceptOszList["exceptOszList2"]
 
+        #반초에 먼저 API 요청 때려봄
+        try:
+            Bancho_LastUpdate = datetime.strptime(requests.get(f"https://osu.ppy.sh/api/get_beatmaps?k={OSU_APIKEY}&s={setID}").json()[0]["last_update"], '%Y-%m-%d %H:%M:%S')
+            gullDB = dbC.fetch("SELECT last_update FROM sets WHERE id = %s", [setID])["last_update"]
+        except:
+            Bancho_LastUpdate = gullDB = None
+        if Bancho_LastUpdate is not None and gullDB is not None and Bancho_LastUpdate > gullDB:
+            BanchoTimeCheck = True
+        elif Bancho_LastUpdate is not None and gullDB is not None:
+            BanchoTimeCheck = True #둘다 None 일 경우 그냥 진행함
+        else:
+            BanchoTimeCheck = False
+
+
         #7일 이상 된 비트맵만 파일체크함
         fED = os.path.getmtime(f"data/dl/{get_osz_fullName(setID)}")
         t = round(time.time() - fED)
@@ -606,10 +768,11 @@ def check(setID, rq_type, checkRenewFile=False, site=0):
             fED = True
         else:
             fED = False
-        log.info(f"t:{t} > oszRenewTime:{oszRenewTime} = {t > oszRenewTime} | 최종 조건 = {checkRenewFile and int(setID) not in exceptOszList and fED}")
+        isRenew = checkRenewFile and int(setID) not in exceptOszList and BanchoTimeCheck and fED
+        log.info(f"t:{t} > oszRenewTime:{oszRenewTime} = {t > oszRenewTime} | 최종 조건 = {isRenew}")
 
         #이거 redstar DB에 없는 경우 있으니 cheesegull DB에서도 추가로 참고하기
-        if checkRenewFile and int(setID) not in exceptOszList and fED:
+        if isRenew:
             try:
                 rankStatus = dbR.fetch(f"SELECT ranked FROM beatmaps WHERE beatmapset_id = %s", [setID])["ranked"]
                 log.info(f"파일 최신화 redstar DB 랭크상태 조회 완료 : {rankStatus}")
@@ -622,7 +785,7 @@ def check(setID, rq_type, checkRenewFile=False, site=0):
                 oszHash = calculate_md5(f"{dataFolder}/dl/{fullSongName}")
                 log.debug(f"oszHash = {oszHash}")
                 for i in url:
-                    newOszHash = requests.get(i, headers=requestHeaders, timeout=5, stream=True)
+                    newOszHash = requests.get(i, headers=dlHeader, timeout=5, stream=True)
                     if newOszHash.status_code == 200:
                         # tqdm을 사용하여 진행률 표시
                         with open(f"{dataFolder}/dl/t{setID} .osz", 'wb') as file:
@@ -644,8 +807,6 @@ def check(setID, rq_type, checkRenewFile=False, site=0):
                             os.remove(f"{dataFolder}/dl/t{setID} .osz")
                             os.utime(f"{dataFolder}/dl/{fullSongName}", (time.time(), time.time()))
                         break
-                    else:
-                        continue
 
     if checkRenewFile:
         return None
@@ -656,6 +817,8 @@ def check(setID, rq_type, checkRenewFile=False, site=0):
             move_files(setID, rq_type)
         except Exception as e:
             return e
+        finally:
+            return None
             
 def crf(bsid, rq_type):
     #파일 최신화
