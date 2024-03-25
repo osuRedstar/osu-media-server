@@ -37,7 +37,8 @@ conf = config.config("config.ini")
 
 OSU_APIKEY = conf.config["osu"]["osuApikey"]
 #lets.py 형태의 사설서버를 소유중이면 lets\.data\beatmaps 에서만 .osu 파일을 가져옴
-IS_YOU_HAVE_OSU_PRIVATE_SERVER = bool(conf.config["osu"]["IS_YOU_HAVE_OSU_PRIVATE_SERVER_WITH_lets.py"])
+IS_YOU_HAVE_OSU_PRIVATE_SERVER = conf.config["osu"]["IS_YOU_HAVE_OSU_PRIVATE_SERVER_WITH_lets.py"]
+IS_YOU_HAVE_OSU_PRIVATE_SERVER = False if IS_YOU_HAVE_OSU_PRIVATE_SERVER.lower() == "false" or IS_YOU_HAVE_OSU_PRIVATE_SERVER == "0" else True
 lets_beatmaps_Folder = conf.config["osu"]["lets.py_beatmaps_Folder_Path"]
 dataFolder = conf.config["server"]["dataFolder"]
 oszRenewTime = int(conf.config["server"]["oszRenewTime"])
@@ -1283,35 +1284,33 @@ def read_osu(id):
     #파일 최신화
     crf(bsid, rq_type=f"read_osu_{id}")
 
+    sql = '''
+        SELECT CONCAT(s.artist, ' - ', s.title, ' (', s.creator, ') [', b.diff_name, ']' '.osu') AS filename
+        FROM sets AS s
+        JOIN beatmaps AS b ON s.id = b.parent_set_id
+        WHERE b.id = %s
+    '''
+    filename = dbC.fetch(sql, [id])
+    log.debug(filename)
+
     #B:\redstar\lets\.data\beatmaps 우선시함
-    if os.path.isfile(f"{lets_beatmaps_Folder}/{id}.osu"):
+    if IS_YOU_HAVE_OSU_PRIVATE_SERVER and os.path.isfile(f"{lets_beatmaps_Folder}/{id}.osu"):
         log.info(f"{id}.osu 파일을 {lets_beatmaps_Folder}/{id}.osu에서 먼저 찾아서 반환함")
-        
-        sql = '''
-            SELECT CONCAT(s.artist, ' - ', s.title, ' (', s.creator, ') [', b.diff_name, ']' '.osu') AS filename
-            FROM sets AS s
-            JOIN beatmaps AS b ON s.id = b.parent_set_id
-            WHERE b.id = %s
-        '''
-        filename = dbC.fetch(sql, [id])
-        log.debug(filename)
         if filename is None:
             log.error(f"filename is None | sql = {sql}")
             return None
         return {"path": f"{lets_beatmaps_Folder}/{id}.osu", "filename": filename["filename"]}
     else:
-        ck = check(bsid, rq_type=f"read_osu_{id}")
-        if ck is not None:
-            return ck
-        return read_osu(id)
-    
-    if os.path.isfile(f"{dataFolder}/osu/{bsid}/{id}.osu"):
-        return {"path": f"{dataFolder}/osu/{bsid}/{id}.osu", "filename": filename}
-    else:
-        ck = check(bsid, rq_type=f"read_osu_{id}")
-        if ck is not None:
-            return ck
-        return read_osu(id)
+        if os.path.isfile(f"{dataFolder}/osu/{bsid}/{id}.osu"):
+            if filename is None:
+                log.error(f"filename is None | sql = {sql}")
+                return None
+            return {"path": f"{dataFolder}/osu/{bsid}/{id}.osu", "filename": filename["filename"]}
+        else:
+            ck = check(bsid, rq_type=f"osu")
+            if ck is not None:
+                return ck
+            return read_osu(id)
 
 def filename_to_GetCheesegullDB(filename):
     try:
