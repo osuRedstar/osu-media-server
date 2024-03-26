@@ -27,8 +27,7 @@ class handler(tornado.web.RequestHandler):
                 self.set_header("return-fileinfo", json.dumps({"filename": path["filename"], "path": path["path"], "fileMd5": calculate_md5(path["path"])}))
                 self.set_header('Content-Type', 'application/x-osu-beatmap-archive')
                 self.set_header('Content-Disposition', f'attachment; filename="{path["filename"]}"')
-                with open(path['path'], 'rb') as f:
-                    self.write(f.read())
+                IDM(self, path["path"])
         except Exception as e:
             log.warning(e)
             log.error(f"\n{traceback.format_exc()}")

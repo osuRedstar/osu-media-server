@@ -28,8 +28,7 @@ class handler(tornado.web.RequestHandler):
             else: 
                 self.set_header("return-fileinfo", json.dumps({"filename": id, "path": file, "fileMd5": calculate_md5(file)}))
                 self.set_header('Content-Type', 'image/jpeg')
-                with open(file, 'rb') as f:
-                    self.write(f.read())
+                IDM(self, file)
         except Exception as e:
             log.warning(e)
             log.error(f"\n{traceback.format_exc()}")

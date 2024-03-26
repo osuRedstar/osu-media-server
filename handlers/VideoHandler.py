@@ -24,8 +24,7 @@ class handler(tornado.web.RequestHandler):
             elif readed_read_video.endswith(".mp4"):
                 self.set_header("return-fileinfo", json.dumps({"filename": id, "path": readed_read_video, "fileMd5": calculate_md5(readed_read_video)}))
                 self.set_header('Content-Type', 'video/mp4')
-                with open(readed_read_video, 'rb') as f:
-                    self.write(f.read())
+                IDM(self, readed_read_video)
             else:
                 self.set_status(404)
                 self.set_header("return-fileinfo", json.dumps({"filename": id, "path": readed_read_video, "fileMd5": calculate_md5(readed_read_video)}))

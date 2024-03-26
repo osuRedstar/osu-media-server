@@ -233,6 +233,33 @@ def send504(self, inputType, input):
     self.render("templates/504.html", inputType=inputType, input=input)
     self.set_header("Ping", str(resPingMs(self)))
 
+def IDM(self, path):
+    if "Range" in self.request.headers: #audio html 음악 안나옴 이슈 있음
+        idm = True
+        log.info("분할 다운로드 활성화!")
+        Range = self.request.headers["Range"].replace("bytes=", "").split("-")
+        fileSize = os.path.getsize(path)
+        start = int(Range[0])
+        end = os.path.getsize(path) - 1 if not Range[1] else int(Range[1])
+        contentLength = end - start + 1
+
+        self.set_status(206) if start != 0 else self.set_status(200)
+        self.set_header("Content-Length", contentLength)
+        self.set_header("Content-Range", f"bytes={start}-{end}/{fileSize}")
+        log.chat({"Content-Range": f"bytes={start}-{end}/{fileSize}", "Content-Length": contentLength})
+
+        with open(path, "rb") as f:
+            f.seek(start) if start != 0 else ""
+            file = f.read(contentLength) if start != 0 else f.read()
+            self.write(file)
+    else:
+        idm = False
+        with open(path, 'rb') as f:
+            self.write(f.read())
+
+    self.set_header("Accept-Ranges", "bytes")
+    return idm
+
 ####################################################################################################
 
 def folder_check():
