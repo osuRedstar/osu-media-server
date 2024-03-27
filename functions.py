@@ -234,7 +234,7 @@ def send504(self, inputType, input):
     self.set_header("Ping", str(resPingMs(self)))
 
 def IDM(self, path):
-    if "Range" in self.request.headers: #audio html 음악 안나옴 이슈 있음
+    if "Range" in self.request.headers and path.endswith(".osz"): #audio html 음악 안나옴 이슈 있음
         idm = True
         log.info("분할 다운로드 활성화!")
         Range = self.request.headers["Range"].replace("bytes=", "").split("-")
@@ -305,11 +305,11 @@ def osu_file_read(setID, rq_type, moving=False, bID=None, cheesegull=False):
         if ck is not None:
             return ck
 
-    #압축파일에 문제생겼을 때 chimu에서 재 다운로드
+    #압축파일에 문제생겼을때 재 다운로드
     try:
         zipfile.ZipFile(f'{dataFolder}/dl/{get_osz_fullName(setID)}').extractall(f'{dataFolder}/dl/{setID}')
     except zipfile.BadZipFile as e:
-        ck = check(setID, rq_type, site=1)
+        ck = check(setID, rq_type)
         if ck is not None:
             return ck
         try:
@@ -331,20 +331,21 @@ def osu_file_read(setID, rq_type, moving=False, bID=None, cheesegull=False):
         WHERE s.id = %s ORDER BY filename
     """, [setID])
 
+    audio_unavailable, download_unavailable = choUnavailable(setID)["pylist_unavailable"]
+
     # readline_all.py
     for beatmapName in file_list_osu:
         log.info(beatmapName)
         temp = {}
         bg_ignore = False
         beatmap_md5 = calculate_md5(f"{dataFolder}/dl/{setID}/{beatmapName}")
-        temp["BeatmapMD5"] = beatmap_md5
 
         with open(f"{dataFolder}/dl/{setID}/{beatmapName}", 'r', encoding="utf-8") as f:
             line = f.read()
 
             line = line[line.find("osu file format v"):]
             try:
-                osu_file_format_version = int(line.split("\n")[0].replace("osu file format v", "").replace(" ", ""))
+                osu_file_format_version = int(line.split("\n")[:4][0].replace("osu file format v", "").replace(" ", ""))
             except:
                 osu_file_format_version = 0
             if osu_file_format_version == 0:
@@ -356,21 +357,21 @@ def osu_file_read(setID, rq_type, moving=False, bID=None, cheesegull=False):
 
             line = line[line.find("AudioFilename:"):]
             try:
-                AudioFilename = line.split("\n")[0].replace("AudioFilename:", "")
+                AudioFilename = line.split("\n")[:4][0].replace("AudioFilename:", "")
                 AudioFilename = AudioFilename.replace(" ", "", 1) if AudioFilename.startswith(" ") else AudioFilename
             except:
                 AudioFilename = None
 
             line = line[line.find("PreviewTime:"):]
             try:
-                PreviewTime = line.split("\n")[0].replace("PreviewTime:", "")
+                PreviewTime = line.split("\n")[:4][0].replace("PreviewTime:", "")
                 PreviewTime = int(PreviewTime.replace(" ", "", 1) if PreviewTime.startswith(" ") else PreviewTime)
             except:
                 PreviewTime = None
             
             line = line[line.find("Version:"):]
             try:
-                Version = line.split("\n")[0].replace("Version:", "")
+                Version = line.split("\n")[:4][0].replace("Version:", "")
                 Version = Version.replace(" ", "", 1) if Version.startswith(" ") else Version
             except:
                 Version = None
@@ -378,12 +379,12 @@ def osu_file_read(setID, rq_type, moving=False, bID=None, cheesegull=False):
             if osu_file_format_version >= 10:
                 line = line[line.find("BeatmapID:"):]
                 try:
-                    BeatmapID = line.split("\n")[0].replace("BeatmapID:", "")
+                    BeatmapID = line.split("\n")[:4][0].replace("BeatmapID:", "")
                     BeatmapID = int(BeatmapID.replace(" ", "", 1) if BeatmapID.startswith(" ") else BeatmapID)
 
                     #.osu 파일에서 실제로 존재하지 않거나, 맞지않는 bid 가 있어서 점검함
                     for i in gullDB:
-                        if i["file_md5"] == temp["BeatmapMD5"] and BeatmapID != i["id"]:
+                        if i["file_md5"] == beatmap_md5 and BeatmapID != i["id"]:
                             log.error(f"비트맵ID 정보 서로 일치하지 않음 | [{i['diff_name']}] | BeatmapID = {BeatmapID} <-- i['id'] = {i['id']}")
                             BeatmapID = i["id"]
                 except:
@@ -394,13 +395,13 @@ def osu_file_read(setID, rq_type, moving=False, bID=None, cheesegull=False):
 
             line = line[line.find("//Background and Video events"):]
             try:
-                if line.split("\n")[1].lower().startswith("video"):
-                    BeatmapVideo = line.split("\n")[1]
-                    BeatmapVideo = BeatmapVideo[BeatmapVideo.find('"') + 1 : BeatmapVideo.find('"', BeatmapVideo.find('"') + 1)]
-                    BeatmapBG = line.split("\n")[2]
+                lineSpilted = line.split("\n")[:4]
+                if lineSpilted[1].lower().startswith("video"):
+                    BeatmapVideo, BeatmapBG = lineSpilted[1], lineSpilted[2]
                 else:
-                    BeatmapVideo = None
-                    BeatmapBG = line.split("\n")[1]
+                    BeatmapVideo, BeatmapBG = lineSpilted[2], lineSpilted[1]
+                    if not BeatmapVideo.lower().startswith("video"): BeatmapVideo = None
+                BeatmapVideo = BeatmapVideo[BeatmapVideo.find('"') + 1 : BeatmapVideo.find('"', BeatmapVideo.find('"') + 1)] if BeatmapVideo else None
                 BeatmapBG = BeatmapBG[BeatmapBG.find('"') + 1 : BeatmapBG.find('"', BeatmapBG.find('"') + 1)]
             except:
                 BeatmapBG = None
@@ -420,18 +421,21 @@ def osu_file_read(setID, rq_type, moving=False, bID=None, cheesegull=False):
             except:
                 AudioLength = AudioLength_DT = AudioLength_NC = AudioLength_HF = None
 
+            temp["beatmapName"] = beatmapName if beatmapName != "" else None
+            temp["BeatmapMD5"] = beatmap_md5
             temp["osu_file_format_v"] = osu_file_format_version if osu_file_format_version != "" else None
             temp["AudioFilename"] = AudioFilename if AudioFilename != "" else None
-            temp["AudioLength"] = AudioLength
-            temp["AudioLength-DT"] = AudioLength_DT
-            temp["AudioLength-NC"] = AudioLength_NC
-            temp["AudioLength-HF"] = AudioLength_HF
             temp["PreviewTime"] = PreviewTime if PreviewTime != "" else None
             temp["Version"] = Version if Version != "" else None
             temp["BeatmapID"] = BeatmapID if BeatmapID != "" else None
             temp["BeatmapBG"] = BeatmapBG if BeatmapBG != "" else None
             temp["BeatmapVideo"] = BeatmapVideo if BeatmapVideo != "" else None
-            temp["beatmapName"] = beatmapName if beatmapName != "" else None
+            temp["audio_unavailable"] = audio_unavailable
+            temp["download_unavailable"] = download_unavailable
+            temp["AudioLength"] = AudioLength
+            temp["AudioLength-DT"] = AudioLength_DT
+            temp["AudioLength-NC"] = AudioLength_NC
+            temp["AudioLength-HF"] = AudioLength_HF
 
             """ while True:
                 line = f.readline()
@@ -692,7 +696,23 @@ def move_files(setID, rq_type):
         #osu_file_read() 함수에 인자값으로 True를 넣어서 dl/{setID} 가 삭제 되지 않으므로 여기서 폴더 삭제함
         shutil.rmtree(f"{dataFolder}/dl/{setID}")
 
-def check(setID, rq_type, checkRenewFile=False, site=0):
+def choUnavailable(setID):
+    unavailable = False
+    audio_unavailable = download_unavailable = 0
+    Bancho_data = requests.get(f"https://osu.ppy.sh/api/get_beatmaps?k={OSU_APIKEY}&s={setID}").json()
+    for i in Bancho_data:
+        if int(i["audio_unavailable"]) == 1 and not audio_unavailable:
+            unavailable = True
+            audio_unavailable = int(i["audio_unavailable"])
+            log.error(f"{setID} 셋은 반초에서 음원 없음({audio_unavailable})")
+        elif int(i["download_unavailable"]) == 1 and not download_unavailable:
+            unavailable = True
+            download_unavailable = int(i["download_unavailable"])
+            log.error(f"{setID} 셋은 반초에서 다운로드 불가({download_unavailable}) 상태임!!")
+        elif audio_unavailable and download_unavailable:
+            break
+    return {"Bancho_data": Bancho_data, "unavailable": unavailable, "audio_unavailable": audio_unavailable, "download_unavailable": download_unavailable, "pylist_unavailable": [audio_unavailable, download_unavailable]}
+def check(setID, rq_type, checkRenewFile=False):
     #.osz는 무조건 새로 받되, Bancho, Redstar**전용** 맵에서 ranked, loved 등등 은 새로 안받아도 댐. (Redstar에서의 랭크상태 여부는 고민중)
     #근데 생각해보니 파일 있으면 걍 이걸 안오는데?
     folder_check()
@@ -702,6 +722,9 @@ def check(setID, rq_type, checkRenewFile=False, site=0):
     url = [f"https://osu.ppy.sh/beatmapsets/{setID}/download",f'https://api.nerinyan.moe/d/{setID}', f"https://chimu.moe/d/{setID}"]
     urlName = ["Bancho", "Nerinyan", "chimu"]
     dlHeader = {"User-Agent": requestHeaders["User-Agent"], "Referer": f"https://osu.ppy.sh/beatmapsets/{setID}", "Cookie": "XSRF-TOKEN=5xjVgPQSC8jhxq30XopWzJv2sqBTIjm9NAWDYWbd; osu_session=eyJpdiI6Ijlpbk1ROS84Y2FKR1FZWnYwL2lwM1E9PSIsInZhbHVlIjoiQ2VuZElFb2hrQ0dwV05ENUx6Z1NkVzNQTFVXVHE1b3U2bFV4dWhZblVZYmxrMnAwdk5rY3NjWWZTeEZUcDRoR0lUYUF5OGduSE1ieTNoUkZzWE9SUFJUVjAxRU9Bb0JCODhYeDJ0eU9QUllidGJuU0FsRTJINGd3NUlwTTVrVDY1RGhMUFNWWDlCbm81ZXc4d0lycFFBPT0iLCJtYWMiOiJiZjc5MjE5MTAxNDNiNDQ4NDgzNWRkNjQwM2UwM2RlZWRlN2ExODE1YWM0MGU5MzIyOGI2NGUxMzkxNDVkY2QzIiwidGFnIjoiIn0%3D"}
+
+    if choUnavailable(setID)["unavailable"]:
+        del url[0], urlName[0]
 
     def dl():
         #우선 setID .osz로 다운받고 나중에 파일 이름 변경
@@ -733,7 +756,7 @@ def check(setID, rq_type, checkRenewFile=False, site=0):
 
                 header_filename = res.headers['content-disposition']
                 newFilename = header_filename[header_filename.find('filename='):].replace("filename=", "").replace('"', "")
-                if urlName[site] == "chimu" and  "%20" in newFilename:
+                if urlName[i] == "chimu" and  "%20" in newFilename:
                     newFilename = newFilename.replace("%20", " ")
                 newFilename = re.sub(r'[<>:"/\\|?*]', '_', newFilename)
 
@@ -777,7 +800,7 @@ def check(setID, rq_type, checkRenewFile=False, site=0):
 
         #반초에 먼저 API 요청 때려봄
         try:
-            Bancho_LastUpdate = datetime.strptime(requests.get(f"https://osu.ppy.sh/api/get_beatmaps?k={OSU_APIKEY}&s={setID}").json()[0]["last_update"], '%Y-%m-%d %H:%M:%S')
+            Bancho_LastUpdate = datetime.strptime(choUnavailable(setID)["Bancho_data"][0]["last_update"], '%Y-%m-%d %H:%M:%S')
             gullDB = dbC.fetch("SELECT last_update FROM sets WHERE id = %s", [setID])["last_update"]
         except:
             Bancho_LastUpdate = gullDB = None
@@ -1526,12 +1549,12 @@ def removeAllFiles(bsid):
         pass
 
     #osu
-    """ try:
+    try:
         shutil.rmtree(f"{dataFolder}/osu/{bsid}")
         log.info(f'폴더 {dataFolder}/osu/{bsid} 가 삭제되었습니다.')
         isdelosu = 1
     except:
-        pass """
+        pass
     isdelosu = 0
 
     return {"message": {0: "Doesn't exist", 1: "Delete success"} , "osz": isdelosz, "bg": isdelbg, "thumb": isdelthumb, "audio": isdelaudio, "preview": isdelpreview, "video": isdelvideo, "osu": isdelosu}
