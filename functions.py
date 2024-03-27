@@ -243,14 +243,14 @@ def IDM(self, path):
         end = os.path.getsize(path) - 1 if not Range[1] else int(Range[1])
         contentLength = end - start + 1
 
-        self.set_status(206) if start != 0 else self.set_status(200)
+        self.set_status(206) if start != 0 or (start == 0 and Range[1]) else self.set_status(200)
         self.set_header("Content-Length", contentLength)
         self.set_header("Content-Range", f"bytes={start}-{end}/{fileSize}")
-        log.chat({"Content-Range": f"bytes={start}-{end}/{fileSize}", "Content-Length": contentLength})
+        log.info({"Content-Range": f"bytes={start}-{end}/{fileSize}", "Content-Length": contentLength})
 
         with open(path, "rb") as f:
-            f.seek(start) if start != 0 else ""
-            file = f.read(contentLength) if start != 0 else f.read()
+            f.seek(start) if start != 0 or (start == 0 and Range[1]) else ""
+            file = f.read(contentLength) if start != 0 or (start == 0 and Range[1]) else f.read()
             self.write(file)
     else:
         idm = False
@@ -797,7 +797,7 @@ def check(setID, rq_type, checkRenewFile=False, site=0):
         else:
             fED = False
         isRenew = checkRenewFile and int(setID) not in exceptOszList and BanchoTimeCheck and fED
-        log.info(f"t:{t} > oszRenewTime:{oszRenewTime} = {t > oszRenewTime} | 최종 조건 = {isRenew}")
+        log.info(f"t:{t} > oszRenewTime:{oszRenewTime} = {t > oszRenewTime} | BanchoTimeCheck = {BanchoTimeCheck} | 최종 조건 = {isRenew}")
 
         #이거 redstar DB에 없는 경우 있으니 cheesegull DB에서도 추가로 참고하기
         if isRenew:
