@@ -25,7 +25,9 @@ class handler(tornado.web.RequestHandler):
                 return send504(self, idType, id)
             elif type(file) == FileNotFoundError:
                 raise file
-            else: 
+            else:
+                if file.endswith(f"noImage_{id}.jpg"):
+                    self.set_status(404)
                 self.set_header("return-fileinfo", json.dumps({"filename": id, "path": file, "fileMd5": calculate_md5(file)}))
                 self.set_header('Content-Type', 'image/jpeg')
                 IDM(self, file)

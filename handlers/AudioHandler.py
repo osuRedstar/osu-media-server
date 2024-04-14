@@ -26,6 +26,8 @@ class handler(tornado.web.RequestHandler):
             elif type(file) == FileNotFoundError:
                 raise file
             else:
+                if file.endswith("noAudio.mp3"):
+                    self.set_status(404)
                 self.set_header("return-fileinfo", json.dumps({"filename": id, "path": file, "fileMd5": calculate_md5(file)}))
                 self.set_header('Content-Type', 'audio/mp3')
                 IDM(self, file)

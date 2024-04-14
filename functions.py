@@ -632,8 +632,15 @@ def move_files(setID, rq_type):
                         shutil.copy(f"{dataFolder}/dl/{setID}/{item['BeatmapBG']}", f"{dataFolder}/bg/{setID}/+{setID}{extension}")
                         log.info(f"{setID} 비트맵셋, {item['BeatmapID']} 비트맵 | BG 처리함")
                     except:
-                        log.error(f"{setID} 비트맵셋은 BG가 없음 | no image.png로 저장함")
-                        shutil.copy(f"static/img/no image.png", f"{dataFolder}/bg/{setID}/+{setID}.png")
+                        try:
+                            log.error(f"{setID} 비트맵셋은 BG가 없음 | 윈도우 파일명 기준으로 첫 번째꺼로 복사해봄")
+                            item2 = result[2][0]["BeatmapBG"]
+                            extension = item2[-5:][item2[-5:].find("."):]
+                            shutil.copy(f"{dataFolder}/dl/{setID}/{item2}", f"{dataFolder}/bg/{setID}/+{setID}{extension}")
+                            log.info(f"{setID} 비트맵셋, {item['BeatmapID']} 비트맵 | BG 처리함")
+                        except:
+                            log.error(f"{setID} 비트맵셋은 BG가 없음 | +noImage_+{setID}.jpg로 저장함")
+                            shutil.copy(f"static/img/noImage.jpg", f"{dataFolder}/bg/{setID}/+noImage_+{setID}.jpg")
 
                 if rq_type == "thumb":
                     try:
@@ -641,16 +648,30 @@ def move_files(setID, rq_type):
                         shutil.copy(f"{dataFolder}/dl/{setID}/{item['BeatmapBG']}", f"{dataFolder}/thumb/{setID}/+{setID}{extension}")
                         log.info(f"{setID} 비트맵셋, {item['BeatmapID']} 비트맵 | thumb 처리함")
                     except:
-                        log.error(f"{setID} 비트맵셋은 thumb가 없음 | no image.png로 저장함")
-                        shutil.copy(f"static/img/no image.png", f"{dataFolder}/thumb/{setID}/+{setID}.png")
+                        #1465772 셋에서 thumb 에러나서 만듦
+                        try:
+                            log.error(f"{setID} 비트맵셋은 thumb가 없음 | 윈도우 파일명 기준으로 첫 번째꺼로 복사해봄")
+                            item2 = result[2][0]["BeatmapBG"]
+                            extension = item2[-5:][item2[-5:].find("."):]
+                            shutil.copy(f"{dataFolder}/dl/{setID}/{item2}", f"{dataFolder}/thumb/{setID}/+{setID}{extension}")
+                            log.info(f"{setID} 비트맵셋, {item['BeatmapID']} 비트맵 | thumb 처리함")
+                        except:
+                            log.error(f"{setID} 비트맵셋은 thumb가 없음 | +noImage_{setID}.jpg로 저장함")
+                            shutil.copy(f"static/img/noImage.jpg", f"{dataFolder}/thumb/{setID}/+noImage_{setID}.jpg")
 
                 if rq_type == "preview":
                     try:
                         shutil.copy(f"{dataFolder}/dl/{setID}/{item['AudioFilename']}", f"{dataFolder}/preview/{setID}/{item['AudioFilename']}")
                         log.info(f"{setID} 비트맵셋, {item['BeatmapID']} 비트맵 | {item['AudioFilename']} 처리함")
                     except:
-                        shutil.copy(f"static/audio/no audio.mp3", f"{dataFolder}/preview/{setID}/no audio_{setID}.mp3")
-                        log.error(f"{setID} 비트맵셋은 preview가 없음 | no audio_{setID}.mp3로 저장하고, preview도 처리함")
+                        try:
+                            log.error(f"{setID} 비트맵셋은 preview가 없음 | 윈도우 파일명 기준으로 첫 번째꺼로 복사해봄")
+                            item2 = result[2][0]["AudioFilename"]
+                            shutil.copy(f"{dataFolder}/dl/{setID}/{item2}", f"{dataFolder}/preview/{setID}/{item2}")
+                            log.info(f"{setID} 비트맵셋, {item['BeatmapID']} 비트맵 | BG 처리함")
+                        except:
+                            shutil.copy(f"static/audio/noAudio.mp3", f"{dataFolder}/preview/{setID}/noAudio_{setID}.mp3")
+                            log.error(f"{setID} 비트맵셋은 preview가 없음 | noAudio_{setID}.mp3로 저장하고, preview도 처리함")
 
             if rq_type == "bg":
                 try:
@@ -658,20 +679,21 @@ def move_files(setID, rq_type):
                     shutil.copy(f"{dataFolder}/dl/{setID}/{item['BeatmapBG']}", f"{dataFolder}/bg/{setID}/{item['BeatmapID']}{extension}")
                     log.info(f"{item['BeatmapID']} 비트맵 | BG 처리함")
                 except:
-                    log.error(f"{item['BeatmapID']} 비트맵은 BG가 없음 | no image.png로 저장함")
-                    shutil.copy(f"static/img/no image.png", f"{dataFolder}/bg/{setID}/{item['BeatmapID']}.png")
+                    log.error(f"{item['BeatmapID']} 비트맵은 BG가 없음 | noImage_{item['BeatmapID']}.jpg로 저장함")
+                    shutil.copy(f"static/img/noImage.jpg", f"{dataFolder}/bg/{setID}/noImage_{item['BeatmapID']}.jpg")
 
             if rq_type == "audio":
                 try:
                     shutil.copy(f"{dataFolder}/dl/{setID}/{item['AudioFilename']}", f"{dataFolder}/audio/{setID}/{item['AudioFilename']}")
                     log.info(f"{item['BeatmapID']} 비트맵 | audio 처리함")
                 except:
-                    log.error(f"{item['BeatmapID']} 비트맵은 audio가 없음 | no audio.mp3로 저장함")
-                    shutil.copy(f"static/audio/no audio.mp3", f"{dataFolder}/audio/{setID}/no audio.mp3")
+                    log.error(f"{item['BeatmapID']} 비트맵은 audio가 없음 | noAudio.mp3로 저장함")
+                    shutil.copy(f"static/audio/noAudio.mp3", f"{dataFolder}/audio/{setID}/noAudio.mp3")
 
             if rq_type == "video":
                 try:
-                    shutil.copy(f"{dataFolder}/dl/{setID}/{item['BeatmapVideo']}", f"{dataFolder}/video/{setID}/{item['BeatmapVideo']}")
+                    extension = item["BeatmapVideo"][-5:][item["BeatmapVideo"][-5:].find("."):]
+                    shutil.copy(f"{dataFolder}/dl/{setID}/{item['BeatmapVideo']}", f"{dataFolder}/video/{setID}/{item['BeatmapID']}{extension}")
                     log.info(f"{item['BeatmapID']} 비트맵은 video가 존재함!")
                 except:
                     pass
@@ -820,7 +842,7 @@ def check(setID, rq_type, checkRenewFile=False):
         else:
             fED = False
         isRenew = checkRenewFile and int(setID) not in exceptOszList and BanchoTimeCheck and fED
-        log.info(f"t:{t} > oszRenewTime:{oszRenewTime} = {t > oszRenewTime} | BanchoTimeCheck = {BanchoTimeCheck} | 최종 조건 = {isRenew}")
+        log.info(f"checkRenewFile = {checkRenewFile} | t:{t} > oszRenewTime:{oszRenewTime} = {fED} | exceptOszList = {int(setID) not in exceptOszList} | BanchoTimeCheck = {BanchoTimeCheck} | 최종 조건 = {isRenew}")
 
         #이거 redstar DB에 없는 경우 있으니 cheesegull DB에서도 추가로 참고하기
         if isRenew:
@@ -964,6 +986,8 @@ def read_bg(id):
                 return ck
 
         file_list = [file for file in os.listdir(f"{dataFolder}/bg/{bsid}") if file.startswith(str(id))]
+        file_list_v2 = [file for file in os.listdir(f"{dataFolder}/bg/{bsid}") if file.startswith("noImage_")]
+        file_list = file_list_v2 if file_list_v2 else file_list
         try:
             print(file_list[0])
         except:
@@ -987,6 +1011,8 @@ def read_thumb(id):
 
     if os.path.isfile(f"{dataFolder}/thumb/{bsid}/{id}"):
         return f"{dataFolder}/thumb/{bsid}/{id}"
+    elif os.path.isfile(f"{dataFolder}/thumb/{bsid}/noImage_{id}"):
+        return f"{dataFolder}/thumb/{bsid}/noImage_{id}"
     else:
         #thumb폴더 파일 체크
         if not os.path.isdir(f"{dataFolder}/thumb/{bsid}"):
@@ -997,6 +1023,9 @@ def read_thumb(id):
         file_list = [file for file in os.listdir(f"{dataFolder}/thumb/{bsid}") if file.startswith("+")]
         try:
             print(file_list[0])
+            if file_list[0].endswith(f"+noImage_{bsid}.jpg"):
+                os.replace(f"{dataFolder}/thumb/{bsid}/{file_list[0]}", f"{dataFolder}/thumb/{bsid}/noImage_{id}")
+                return f"{dataFolder}/thumb/{bsid}/noImage_{id}"
         except:
             log.error(f"bsid = {bsid} | thumb print(file_list[0]) 에러")
             ck = check(bsid, rq_type="thumb")
@@ -1031,8 +1060,8 @@ def read_audio(id):
         if Codec != "mp3":
             log.error(f"{file_list[0]} 코텍은 mp3가 아님 | {Codec}")
 
-        if mods == "DT":
-            DTFilename = f"{dataFolder}/audio/{setID}/{file_list[0][:-4]}-DT.mp3"
+        if mods == "DT" and not "noAudio" in file_list[0]:
+            DTFilename = f"{dataFolder}/audio/{setID}/{file_list[0][:-4]}-DT.mp3" if not file_list[0].endswith("-DT.mp3") else f"{dataFolder}/audio/{setID}/{file_list[0]}"
             if os.path.isfile(DTFilename):
                 return DTFilename
             else:
@@ -1040,8 +1069,8 @@ def read_audio(id):
                 log.chat(f"DT ffmpeg_msg = {ffmpeg_msg}")
                 os.system(ffmpeg_msg)
                 return DTFilename
-        elif mods == "NC":
-            NCFilename = f"{dataFolder}/audio/{setID}/{file_list[0][:-4]}-NC.mp3"
+        elif mods == "NC" and not "noAudio" in file_list[0]:
+            NCFilename = f"{dataFolder}/audio/{setID}/{file_list[0][:-4]}-NC.mp3" if not file_list[0].endswith("-NC.mp3") else f"{dataFolder}/audio/{setID}/{file_list[0]}"
             if os.path.isfile(NCFilename):
                 return NCFilename
             else:
@@ -1049,8 +1078,8 @@ def read_audio(id):
                 log.chat(f"NC ffmpeg_msg = {ffmpeg_msg}")
                 os.system(ffmpeg_msg)
                 return NCFilename
-        elif mods == "HF":
-            HFFilename = f"{dataFolder}/audio/{setID}/{file_list[0][:-4]}-HF.mp3"
+        elif mods == "HF" and not "noAudio" in file_list[0]:
+            HFFilename = f"{dataFolder}/audio/{setID}/{file_list[0][:-4]}-HF.mp3" if not file_list[0].endswith("-HF.mp3") else f"{dataFolder}/audio/{setID}/{file_list[0]}"
             if os.path.isfile(HFFilename):
                 return HFFilename
             else:
@@ -1096,6 +1125,9 @@ def read_audio(id):
                     file_list = [i['AudioFilename']]
 
         try:
+            if not os.path.isfile(f"{dataFolder}/audio/{id}/{file_list[0]}") and os.path.isfile(f"{dataFolder}/audio/{id}/noAudio.mp3"):
+                log.error(f"{id} bid 실제론 음악파일 없어보이며, noAudio.mp3가 폴더내에 존재함")
+                file_list = ["noAudio.mp3"]
             print(file_list[0])
         except:
             log.error(f"bsid = {id} | audio print(file_list[0]) 에러")
@@ -1159,6 +1191,9 @@ def read_audio(id):
 
         try:
             print(file_list[0])
+            if not os.path.isfile(f"{dataFolder}/audio/{bsid}/{file_list[0]}") and os.path.isfile(f"{dataFolder}/audio/{bsid}/noAudio.mp3"):
+                log.error(f"{id} bid 실제론 음악파일 없어보이며, noAudio.mp3가 폴더내에 존재함")
+                file_list = ["noAudio.mp3"]
         except:
             log.error(f"bid = {id} | audio print(file_list[0]) 에러")
             ck = check(bsid, rq_type="audio")
@@ -1184,19 +1219,19 @@ def read_preview(id):
     crf(setID, rq_type="preview")
 
     if not os.path.isfile(f"{dataFolder}/preview/{setID}/{id}"):
-        if os.path.isfile(f"{dataFolder}/preview/{setID}/no audio_{id}"):
-            #위에서 오디오 없어서 이미 처리댐 (no audio.mp3)
-            log.warning(f"no audio_{id}")
-            return f"{dataFolder}/preview/{setID}/no audio_{id}"
+        if os.path.isfile(f"{dataFolder}/preview/{setID}/noAudio_{id}"):
+            #위에서 오디오 없어서 이미 처리댐 (noAudio_{setID}.mp3)
+            log.warning(f"noAudio_{id}")
+            return f"{dataFolder}/preview/{setID}/noAudio_{id}"
         else:
             ck = check(setID, rq_type="preview")
             if ck is not None:
                 return ck
         
-        if os.path.isfile(f"{dataFolder}/preview/{setID}/no audio_{id}"):
-            #위에서 오디오 없어서 이미 처리댐 (no audio.mp3)
-            log.warning(f"no audio_{id}")
-            return f"{dataFolder}/preview/{setID}/no audio_{id}"
+        if os.path.isfile(f"{dataFolder}/preview/{setID}/noAudio_{id}"):
+            #위에서 오디오 없어서 이미 처리댐 (noAudio_{setID}.mp3)
+            log.warning(f"noAudio_{id}")
+            return f"{dataFolder}/preview/{setID}/noAudio_{id}"
 
         #음원 하이라이트 가져오기, 밀리초라서 / 1000 함
         PreviewTime = -1
@@ -1479,6 +1514,20 @@ def read_osu_filename(filename):
         return None
     bid = result["id"]
     return read_osu(bid)
+
+def read_covers(id, cover_type):
+    if not os.path.isfile(f"{dataFolder}/covers/{id}/{cover_type}"):
+        try:
+            result = requests.get(f"https://assets.ppy.sh/beatmaps/{id}/covers/{cover_type}", headers=requestHeaders)
+            with open(f"{dataFolder}/covers/{id}/{cover_type}", "wb") as file:
+                file.write(result.content)
+            return f"{dataFolder}/covers/{id}/{cover_type}"
+        except Exception as e:
+            log.error(f"{id}, {cover_type} | covers 처리중 에러발생!")
+            log.error(e)
+            return 503
+    else:
+        return f"{dataFolder}/covers/{id}/{cover_type}"
 
 def removeAllFiles(bsid):
     osz = get_osz_fullName(bsid)
