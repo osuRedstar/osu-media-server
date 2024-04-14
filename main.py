@@ -25,6 +25,7 @@ from handlers import searchHandler
 from handlers import removeHandler
 from handlers import filesinfoHandler
 from handlers import filesinfoHandler2
+from handlers import coversHandler
 
 conf = config.config("config.ini")
 
@@ -73,6 +74,8 @@ class robots_txt(tornado.web.RequestHandler):
             self.write(f.read())
         self.set_header("Ping", str(resPingMs(self)))
 
+
+
 def make_app():
     return tornado.web.Application([
         (r"/", MainHandler),
@@ -99,6 +102,9 @@ def make_app():
         (r"/remove/([^/]+)", removeHandler.handler),
         (r"/filesinfo/([^/]+)", filesinfoHandler.handler),
         (r"/filesinfo/([^/]+)/([^/]+)", filesinfoHandler2.handler),
+
+        #assets.ppy.sh
+        (r"/beatmaps/([^/]+)/covers/([^/]+)", coversHandler.handler),
     ])
 
 if __name__ == "__main__":
