@@ -262,6 +262,27 @@ def IDM(self, path):
 
 ####################################################################################################
 
+def get_dir_size(path='.'):
+    total = 0
+    stack = [path]
+    while stack:
+        current_path = stack.pop()
+        for entry in os.scandir(current_path):
+            if entry.is_file():
+                total += entry.stat().st_size
+            elif entry.is_dir():
+                stack.append(entry.path)
+    if total < 1024:
+        return f"{total} Byte"
+    if total / (1024 ** 1) < 1024:
+        return f"{round(total / (1024 ** 1), 2)} KB"
+    if total / (1024 ** 2) < 1024:
+        return f"{round(total / (1024 ** 2), 2)} MB"
+    if total / (1024 ** 3) < 1024:
+        return f"{round(total / (1024 ** 3), 2)} GB"
+    if total / (1024 ** 4) < 1024:
+        return f"{round(total / (1024 ** 4), 2)} TB"
+
 def folder_check():
     if not os.path.isdir(dataFolder):
         os.mkdir(dataFolder)
@@ -383,7 +404,7 @@ def osu_file_read(setID, rq_type, moving=False, bID=None, cheesegull=False):
                     BeatmapID = int(BeatmapID.replace(" ", "", 1) if BeatmapID.startswith(" ") else BeatmapID)
 
                     #.osu 파일에서 실제로 존재하지 않거나, 맞지않는 bid 가 있어서 점검함
-                    for i in gullDB:
+                    for i in gullDB if type(gullDB) == list else [gullDB]:
                         if i["file_md5"] == beatmap_md5 and BeatmapID != i["id"]:
                             log.error(f"비트맵ID 정보 서로 일치하지 않음 | [{i['diff_name']}] | BeatmapID = {BeatmapID} <-- i['id'] = {i['id']}")
                             BeatmapID = i["id"]
@@ -1519,9 +1540,12 @@ def read_covers(id, cover_type):
     if not os.path.isfile(f"{dataFolder}/covers/{id}/{cover_type}"):
         try:
             result = requests.get(f"https://assets.ppy.sh/beatmaps/{id}/covers/{cover_type}", headers=requestHeaders)
-            with open(f"{dataFolder}/covers/{id}/{cover_type}", "wb") as file:
-                file.write(result.content)
-            return f"{dataFolder}/covers/{id}/{cover_type}"
+            if result.status_code == 200:
+                with open(f"{dataFolder}/covers/{id}/{cover_type}", "wb") as file:
+                    file.write(result.content)
+                return f"{dataFolder}/covers/{id}/{cover_type}"
+            else:
+                return result.status_code
         except Exception as e:
             log.error(f"{id}, {cover_type} | covers 처리중 에러발생!")
             log.error(e)
