@@ -12,7 +12,7 @@ class handler(tornado.web.RequestHandler):
             return send403(self, rm)
 
         try:
-            info = osu_file_read(bsid, rq_type="all", cheesegull=True)
+            info = osu_file_read(bsid, rq_type="all", cheesegull=True, filesinfo=True)
             if info == 404:
                 return send404(self, "bsid", bsid)
             elif info == 500:
