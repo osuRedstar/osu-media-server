@@ -9,6 +9,7 @@ import config
 from PIL import Image
 import hashlib
 import re
+from pydub.utils import mediainfo
 from pydub import AudioSegment
 from pydub.playback import play as PlaySound
 import threading
@@ -68,20 +69,6 @@ if os.system(f"ffmpeg -version > {'nul' if os.name == 'nt' else '/dev/null'} 2>&
     else:
         print("ignored")
         log.warning("Maybe Not work preview & audio (DT, NC, HT)")
-
-#ffprobe 설치확인
-if os.system(f"ffprobe -version > {'nul' if os.name == 'nt' else '/dev/null'} 2>&1") != 0:
-    log.warning(f"ffprobe Does Not Found!! | ignore? (y/n) ")
-    if input("").lower() != "y":
-        print("exit")
-        if os.name != "nt":
-            print("sudo apt install ffmpeg")
-        else:
-            print("https://github.com/BtbN/FFmpeg-Builds/releases")
-        exit()
-    else:
-        print("ignored")
-        log.warning("Maybe Not work check audio Codec")
 
 ####################################################################################################
 
@@ -319,7 +306,7 @@ def get_osz_fullName(setID):
     except:
         return 0
 
-def osu_file_read(setID, rq_type, moving=False, bID=None, cheesegull=False):
+def osu_file_read(setID, rq_type, moving=False, bID=None, cheesegull=False, filesinfo=False):
     #/filesinfo 조회시 osz 없을때 오류 방지
     if get_osz_fullName(setID) == 0 and rq_type == "all":
         ck = check(setID, rq_type)
@@ -429,16 +416,19 @@ def osu_file_read(setID, rq_type, moving=False, bID=None, cheesegull=False):
                 BeatmapVideo = None
 
             try:
-                def culc_length(l):
-                    h = "{0:02d}".format(l // 60 // 60)
-                    m = "{0:02d}".format(l // 60)
-                    s = "{0:02d}".format(l % 60)
-                    return f"{h}:{m}:{s}"
-                AudioLength = len(AudioSegment.from_file(f"{dataFolder}/dl/{setID}/{AudioFilename}")) / 1000
-                AudioLength = [AudioLength, culc_length(round(AudioLength))]
-                AudioLength_DT = AudioLength_NC = [round(AudioLength[0] / 1.5, 3), culc_length(round(AudioLength[0] / 1.5))]
-                #HF = 1. (AudioLength / 0.75), 2. (AudioLength * 1.5)
-                AudioLength_HF = [round(AudioLength[0] / 0.75, 3), culc_length(round(AudioLength[0] / 0.75))]
+                if filesinfo:
+                    def culc_length(l):
+                        h = "{0:02d}".format(l // 60 // 60)
+                        m = "{0:02d}".format(l // 60)
+                        s = "{0:02d}".format(l % 60)
+                        return f"{h}:{m}:{s}"
+                    AudioLength = round(float(mediainfo(f"{dataFolder}/dl/{setID}/{AudioFilename}")["duration"]), 2)
+                    AudioLength = [AudioLength, culc_length(round(AudioLength))]
+                    AudioLength_DT = AudioLength_NC = [round(AudioLength[0] / 1.5, 2), culc_length(round(AudioLength[0] / 1.5))]
+                    #HF = 1. (AudioLength / 0.75), 2. (AudioLength * 1.5)
+                    AudioLength_HF = [round(AudioLength[0] / 0.75, 2), culc_length(round(AudioLength[0] / 0.75))]
+                else:
+                    AudioLength = AudioLength_DT = AudioLength_NC = AudioLength_HF = None
             except:
                 AudioLength = AudioLength_DT = AudioLength_NC = AudioLength_HF = None
 
@@ -807,8 +797,7 @@ def check(setID, rq_type, checkRenewFile=False):
 
                 # WAV 파일 재생을 별도의 스레드에서 수행
                 def play_finished_dl():
-                    #winsound.PlaySound("static/audio/match-confirm (mp3cut.net).wav", winsound.SND_FILENAME)
-                    PlaySound(AudioSegment.from_file("static/audio/match-confirm (mp3cut.net).wav"))
+                    PlaySound(AudioSegment.from_file("static/audio/match-confirm.mp3"))
                 play_thread = threading.Thread(target=play_finished_dl)
                 play_thread.start()
 
@@ -929,7 +918,7 @@ def read_list(bsid=""):
     result = {}
 
     if bsid == "":
-        osz_file_list = [file for file in os.listdir(f"{dataFolder}/dl/")]
+        osz_file_list = [file for file in os.listdir(f"{dataFolder}/dl/") if file.endswith(".osz")]
         result["osz"] = {"list": osz_file_list, "count": len(osz_file_list)}
     else:
         osz_file_list = [get_osz_fullName(bsid)]
@@ -1059,14 +1048,25 @@ def read_thumb(id):
         img = img.convert("RGB")
 
         width, height = img.size
-        left = (width - (height * (4 / 3))) / 2
-        top = 0
-        right = width - left
-        bottom = height
-        
-        img_cropped = img.crop((left,top,right,bottom))
-        img_resize = img_cropped.resize(img_size, Image.LANCZOS)
-        img_resize.save(f"{dataFolder}/thumb/{bsid}/{id}", quality=100)
+        if width / height == 4 / 3:
+            log.debug(f"이미 4:3 비율이라서 {img_size} 로만 자름")
+            img.resize(img_size, Image.LANCZOS).save(f"{dataFolder}/thumb/{bsid}/{id}", quality=100)
+        else:
+            if width > height:
+                left = (width - (height * (4 / 3))) / 2
+                top = 0
+                right = width - left
+                bottom = height
+            else:
+                croped_height = width / (4 / 3) #원본기준 4:3 비율 (height)
+                left = 0
+                top = (height - croped_height) / 2 # = 160.5
+                right = width
+                bottom = height - top
+            
+            img_cropped = img.crop((left,top,right,bottom))
+            img_resize = img_cropped.resize(img_size, Image.LANCZOS)
+            img_resize.save(f"{dataFolder}/thumb/{bsid}/{id}", quality=100)
 
         os.remove(f"{dataFolder}/thumb/{bsid}/{file_list[0]}")
 
@@ -1077,7 +1077,7 @@ def read_audio(id):
     #ffmpeg -i "audio.ogg" -acodec libmp3lame -q:a 0 -y "audio.mp3"
     def audioSpeed(mods, setID, file_list):
         #변환 시작 + 에러시 코덱 확인후 재 변환
-        Codec = subprocess.check_output(["ffprobe", "-v", "error", "-select_streams", "a:0", "-show_entries", "stream=codec_name", "-of", "default=noprint_wrappers=1:nokey=1", f"{dataFolder}/audio/{setID}/{file_list[0]}"], stderr=subprocess.STDOUT).decode().replace("\r", "").replace("\n", "")
+        Codec = mediainfo(f"{dataFolder}/audio/{setID}/{file_list[0]}")["codec_name"]
         if Codec != "mp3":
             log.error(f"{file_list[0]} 코텍은 mp3가 아님 | {Codec}")
 
@@ -1095,7 +1095,8 @@ def read_audio(id):
             if os.path.isfile(NCFilename):
                 return NCFilename
             else:
-                ffmpeg_msg = f'ffmpeg -i "{dataFolder}/audio/{setID}/{file_list[0]}" -af asetrate={AudioSegment.from_file(f"{dataFolder}/audio/{setID}/{file_list[0]}").frame_rate}*1.5 -acodec libmp3lame -q:a 0 -y "{NCFilename}"'
+                ffmpeg_msg = f'ffmpeg -i "{dataFolder}/audio/{setID}/{file_list[0]}" -af asetrate={int(mediainfo(f"{dataFolder}/audio/{setID}/{file_list[0]}")["sample_rate"])}*1.5 -acodec libmp3lame -q:a 0 -y "{NCFilename}"'
+                
                 log.chat(f"NC ffmpeg_msg = {ffmpeg_msg}")
                 os.system(ffmpeg_msg)
                 return NCFilename
@@ -1264,12 +1265,12 @@ def read_preview(id):
                 prti = int(i["PreviewTime"])
                 AudioFilename = i["AudioFilename"]
                 if prti == -1:
-                    audio = AudioSegment.from_file(f"{dataFolder}/preview/{setID}/{AudioFilename}")
-                    PreviewTime = len(audio) / 1000 / 2.5
+                    audio = float(mediainfo(f"{dataFolder}/preview/{setID}/{AudioFilename}")["duration"])
+                    PreviewTime = audio / 2.5
                     log.warning(f"{setID}.mp3 ({AudioFilename}) 의 PreviewTime 값이 {prti} 이므로 TotalLength / 2.5 == {PreviewTime} 로 세팅함")
                 else:
                     PreviewTime = prti / 1000
-        
+
         if AudioFilename.endswith(".mp3"):
             ffmpeg_msg = f'ffmpeg -i "{dataFolder}/preview/{setID}/{AudioFilename}" -ss {PreviewTime} -t 30.821 -acodec copy -y "{dataFolder}/preview/{setID}/{id}"'
         else:
@@ -1279,7 +1280,7 @@ def read_preview(id):
         log.chat(f"ffmpeg_msg = {ffmpeg_msg}")
         #변환 시작 + 에러시 코덱 확인후 재 변환
         if os.system(ffmpeg_msg) != 0:
-            Codec = subprocess.check_output(["ffprobe", "-v", "error", "-select_streams", "a:0", "-show_entries", "stream=codec_name", "-of", "default=noprint_wrappers=1:nokey=1", f"{dataFolder}/preview/{setID}/{AudioFilename}"], stderr=subprocess.STDOUT).decode().replace("\r", "").replace("\n", "")
+            Codec = mediainfo(f"{dataFolder}/preview/{setID}/{AudioFilename}")["codec_name"]
             log.error(f"ffmpeg .mp3 변환 실패! | 코덱 조회: {Codec}")
             if Codec != "mp3":
                 ffmpeg_msg = f'ffmpeg -i "{dataFolder}/preview/{setID}/{AudioFilename}" -ss {PreviewTime} -t 30.821 -acodec libmp3lame -q:a 0 -y "{dataFolder}/preview/{setID}/{id}"'
