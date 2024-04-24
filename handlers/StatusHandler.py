@@ -15,17 +15,19 @@ class handler(tornado.web.RequestHandler):
         data = {
             "code": 200,
             "oszCount": read_list()["osz"]["count"],
+            "oszSize": get_dir_size("data/dl"),
             "requestTime": round(time.time()),
             "request": {
                 "IP": real_ip,
                 "country": country_code,
-                "url": request_url,
                 "User-Agent": User_Agent,
+                "url": request_url,
                 "Referer": Referer,
                 "IsCloudflare": IsCloudflare,
                 "IsNginx": IsNginx,
                 "IsHttp": IsHttp,
                 "Server": Server,
+                "IsBlocked": True if rm != 200 else False,
                 "ping": resPingMs(self)
                 }
             }
