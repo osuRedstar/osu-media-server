@@ -247,6 +247,53 @@ def IDM(self, path):
     self.set_header("Accept-Ranges", "bytes")
     return idm
 
+def pathToContentType(path):
+    if path.endswith(".aac"): return {"Content-Type": "audio/aac", "exetension": ".aac"}
+    if path.endswith(".apng"): return {"Content-Type": "image/apng", "exetension": ".apng"}
+    if path.endswith(".avif"): return {"Content-Type": "image/avif", "exetension": ".avif"}
+    if path.endswith(".avi"): return {"Content-Type": "video/x-msvideo", "exetension": ".avi"}
+    if path.endswith(".bin"): return {"Content-Type": "application/octet-stream", "exetension": ".bin"}
+    if path.endswith(".css"): return {"Content-Type": "text/css", "exetension": ".css"}
+    if path.endswith(".gif"): return {"Content-Type": "image/gif", "exetension": ".gif"}
+    if path.endswith(".html"): return {"Content-Type": "text/html", "exetension": ".html"}
+    if path.endswith(".ico"): return {"Content-Type": "image/x-icon", "exetension": ".ico"}
+    if path.endswith(".jpeg"): return {"Content-Type": "image/jpeg", "exetension": ".jpeg"}
+    if path.endswith(".jpg"): return {"Content-Type": "image/jpeg", "exetension": ".jpg"}
+    if path.endswith(".js"): return {"Content-Type": "text/javascript", "exetension": ".js"}
+    if path.endswith(".json"): return {"Content-Type": "application/json", "exetension": ".json"}
+    if path.endswith(".mp3"): return {"Content-Type": "audio/mpeg", "exetension": ".mp3"}
+    if path.endswith(".mp4"): return {"Content-Type": "video/mp4", "exetension": ".mp4"}
+    if path.endswith(".mpeg"): return {"Content-Type": "audio/mpeg", "exetension": ".mpeg"}
+    if path.endswith(".oga"): return {"Content-Type": "audio/ogg", "exetension": ".oga"}
+    if path.endswith(".ogg"): return {"Content-Type": "application/ogg", "exetension": ".ogg"}
+    if path.endswith(".ogv"): return {"Content-Type": "video/ogg", "exetension": ".ogv"}
+    if path.endswith(".ogx"): return {"Content-Type": "application/ogg", "exetension": ".ogx"}
+    if path.endswith(".opus"): return {"Content-Type": "audio/opus", "exetension": ".opus"}
+    if path.endswith(".png"): return {"Content-Type": "image/png", "exetension": ".png"}
+    if path.endswith(".svg"): return {"Content-Type": "image/svg+xml", "exetension": ".svg"}
+    if path.endswith(".tif"): return {"Content-Type": "image/tiff", "exetension": ".tif"}
+    if path.endswith(".tiff"): return {"Content-Type": "image/tiff", "exetension": ".tiff"}
+    if path.endswith(".ts"): return {"Content-Type": "video/mp2t", "exetension": ".ts"}
+    if path.endswith(".txt"): return {"Content-Type": "text/plain", "exetension": ".txt"}
+    if path.endswith(".wav"): return {"Content-Type": "audio/wav", "exetension": ".wav"}
+    if path.endswith(".weba"): return {"Content-Type": "audio/webm", "exetension": ".weba"}
+    if path.endswith(".webm"): return {"Content-Type": "video/webm", "exetension": ".webm"}
+    if path.endswith(".webp"): return {"Content-Type": "image/webp", "exetension": ".webp"}
+    if path.endswith(".zip"): return {"Content-Type": "application/zip", "exetension": ".zip"}
+    if path.endswith(".flv"): return {"Content-Type": "video/x-flv", "exetension": ".flv"}
+    if path.endswith(".wmv"): return {"Content-Type": "video/x-ms-wmv", "exetension": ".wmv"}
+    if path.endswith(".mkv"): return {"Content-Type": "video/x-matroska", "exetension": ".mkv"}
+
+    if path.endswith(".osz"): return {"Content-Type": "application/x-osu-beatmap-archive", "exetension": ".osz"}
+    if path.endswith(".osr"): return {"Content-Type": "application/x-osu-replay", "exetension": ".osr"}
+    if path.endswith(".osu"): return {"Content-Type": "application/x-osu-beatmap", "exetension": ".osu"}
+    if path.endswith(".osb"): return {"Content-Type": "application/x-osu-storyboard", "exetension": ".osb"}
+    if path.endswith(".osk"): return {"Content-Type": "application/x-osu-skin", "exetension": ".osk"}
+
+    else: return {"Content-Type": "application/octet-stream", "exetension": "?"}
+    
+    
+
 ####################################################################################################
 
 def get_dir_size(path='.'):
@@ -703,8 +750,7 @@ def move_files(setID, rq_type):
 
             if rq_type == "video":
                 try:
-                    extension = item["BeatmapVideo"][-5:][item["BeatmapVideo"][-5:].find("."):]
-                    shutil.copy(f"{dataFolder}/dl/{setID}/{item['BeatmapVideo']}", f"{dataFolder}/video/{setID}/{item['BeatmapID']}{extension}")
+                    shutil.copy(f"{dataFolder}/dl/{setID}/{item['BeatmapVideo']}", f"{dataFolder}/video/{setID}/{item['BeatmapVideo']}")
                     log.info(f"{item['BeatmapID']} 비트맵은 video가 존재함!")
                 except:
                     pass
@@ -1050,6 +1096,9 @@ def read_thumb(id):
         img = img.convert("RGB")
 
         width, height = img.size
+        log.debug((type(img_size), img_size))
+        log.debug((type(img.size), img.size))
+        log.chat(img_size == img.size)
         if width / height == 4 / 3:
             log.debug(f"이미 4:3 비율이라서 {img_size} 로만 자름")
             img.resize(img_size, Image.LANCZOS).save(f"{dataFolder}/thumb/{bsid}/{id}", quality=100)
