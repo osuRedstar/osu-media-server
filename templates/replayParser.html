@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Replay Parser</title>
+
+    <meta property="og:title" content="RedstarOSU's lets server Replay Parser">
+    <meta property="og:description" content="퓊픠">
+    <meta property="og:image" content="https://b.redstar.moe/favicon.ico">
+    <meta property="og:url" content="https://old.redstar.moe/web/replayparser">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Replay Parser">
+    <meta property="og:locale" content="ko_KR">
+
+    <style>
+        .submit, .file {
+            border: 0;
+            margin: 20px auto;
+            text-align: center;
+            border: 2px solid #2ecc71;
+            padding: 14px 40px;
+            outline: none;
+            border-radius: 24px;
+            transition: 0.25s;
+            cursor: pointer;
+        }
+        .submit:hover, .file:hover {
+            background: #2ecc71;
+        }
+    </style>
+</head>
+<body style="background: #00FFFF;">
+    <form id="formBox" class="box" action="" method="post" enctype="multipart/form-data" style="text-align: center;">
+        <label for="file">osr 파일 선택:</label>
+        <input class="file" type="file" name="score" accept=".osr">
+        <button class="submit" type="submit">업로드</button>
+    </form>
+
+    <script>
+        //비디오 Resize
+        const formResize = document.getElementById("formBox")
+        function rs() {
+            let width = innerWidth
+            let height = innerHeight
+            console.log(width, height, `${height / 2.5}px`)
+            
+            formResize.style.marginTop = `${height / 2.5}px`
+        }
+        rs()
+        window.addEventListener("resize", rs)
+    </script>
+</body>
+</html>

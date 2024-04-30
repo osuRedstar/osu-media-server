@@ -16,6 +16,7 @@ from handlers import VideoHandler, VideoHandler_async
 from handlers import OszHandler, OszHandler_async
 from handlers import OszBHandler, OszBHandler_async
 from handlers import OsuHandler, OsuHandler_async
+from handlers import replayParserHandler
 #from handlers import FaviconHandler
 #from handlers import StaticHandler
 #from handlers import robots_txt
@@ -89,6 +90,7 @@ def make_app():
         (r"/d/([^/]+)", OszHandler.handler),
         (r"/b/([^/]+)", OszBHandler.handler),
         (r"/osu/([^/]+)", OsuHandler.handler),
+        (r"/replayparser", replayParserHandler.handler),
 
         (r"/favicon.ico", FaviconHandler),
         (r"/static/(.*)", StaticHandler),
@@ -120,6 +122,7 @@ def make_app():
         (r"/d/([^/]+)", OszHandler_async.handler),
         (r"/b/([^/]+)", OszBHandler_async.handler),
         (r"/osu/([^/]+)", OsuHandler_async.handler),
+        (r"/replayparser", replayParserHandler.handler),
 
         (r"/favicon.ico", FaviconHandler),
         (r"/static/(.*)", StaticHandler),
