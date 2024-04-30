@@ -752,8 +752,8 @@ def check(setID, rq_type, checkRenewFile=False):
     fullSongName = get_osz_fullName(setID)
     log.debug(fullSongName)
 
-    url = [f"https://osu.ppy.sh/beatmapsets/{setID}/download",f'https://api.nerinyan.moe/d/{setID}', f"https://chimu.moe/d/{setID}"]
-    urlName = ["Bancho", "Nerinyan", "chimu"]
+    url = [f"https://osu.ppy.sh/beatmapsets/{setID}/download",f'https://api.nerinyan.moe/d/{setID}', f"https://chimu.moe/d/{setID}", f"https://catboy.best/d/{setID}"]
+    urlName = ["Bancho", "Nerinyan", "chimu", "catboy"]
     dlHeader = {"User-Agent": requestHeaders["User-Agent"], "Referer": f"https://osu.ppy.sh/beatmapsets/{setID}", "Cookie": "XSRF-TOKEN=5xjVgPQSC8jhxq30XopWzJv2sqBTIjm9NAWDYWbd; osu_session=eyJpdiI6Ijlpbk1ROS84Y2FKR1FZWnYwL2lwM1E9PSIsInZhbHVlIjoiQ2VuZElFb2hrQ0dwV05ENUx6Z1NkVzNQTFVXVHE1b3U2bFV4dWhZblVZYmxrMnAwdk5rY3NjWWZTeEZUcDRoR0lUYUF5OGduSE1ieTNoUkZzWE9SUFJUVjAxRU9Bb0JCODhYeDJ0eU9QUllidGJuU0FsRTJINGd3NUlwTTVrVDY1RGhMUFNWWDlCbm81ZXc4d0lycFFBPT0iLCJtYWMiOiJiZjc5MjE5MTAxNDNiNDQ4NDgzNWRkNjQwM2UwM2RlZWRlN2ExODE1YWM0MGU5MzIyOGI2NGUxMzkxNDVkY2QzIiwidGFnIjoiIn0%3D"}
 
     if choUnavailable(setID)["unavailable"]:
@@ -773,8 +773,8 @@ def check(setID, rq_type, checkRenewFile=False):
                 log.warning(f"{link} Timeout! | e = {e}")
                 statusCode = 504
             except:
-                statusCode = 0
-                log.error(f"파일다운 기본 예외처리 | url = {link}")
+                statusCode = res.status_code
+                log.error(f"{statusCode} | 파일다운 기본 예외처리 | url = {link}")
 
             if statusCode == 200:
                 # 파일 크기를 얻습니다.
@@ -808,8 +808,10 @@ def check(setID, rq_type, checkRenewFile=False):
                     os.replace(f"{dataFolder}/dl/{setID} .osz", f"{dataFolder}/dl/{newFilename}")
                 return statusCode
             else:
-                log.warning(f'{statusCode}. {mn} 에서 파일을 다운로드할 수 없습니다. {urlName[i + 1] if i < 2 else ""} 로 재시도!')
-            return 404
+                if i < 3:
+                    log.warning(f'{statusCode}. {mn} 에서 파일을 다운로드할 수 없습니다. {urlName[i + 1]} 로 재시도!')
+                else:
+                    return statusCode
 
     if fullSongName == 0:
         log.warning(f"{setID} 맵셋 osz 존재하지 않음. 다운로드중...")
