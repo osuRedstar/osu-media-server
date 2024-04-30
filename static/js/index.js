@@ -11,6 +11,7 @@ const web_maps_tag = document.getElementById("/web/maps/")
 //const remove_tag = document.getElementById("remove")
 const filesinfo_tag = document.getElementById("filesinfo")
 const filesinfo2_tag = document.getElementById("filesinfo2")
+const replayparser_tag = document.getElementById("replayparser")
 
 function bg(arg) {
     //arg.preventDefault();
@@ -248,6 +249,22 @@ function filesinfo2(arg) {
     }
 }
 
+function replayparser(arg) {
+    //arg.preventDefault();
+    const get_id = prompt("정보 = info \nrawReplay 다운로드 = dl \n\n info = info \nrawReplay download = dl")
+    if (get_id === "info") {
+        replayparser_tag.href = `${document.location.href}replayparser`
+    }
+    else if (get_id === "dl") {
+        replayparser_tag.href = `${document.location.href}replayparser?dl`
+    }
+    else {
+        alert("정확하게 입력하세요! \nPlease enter it correctly!");
+        get_id = "";
+        location.reload(true);
+    }
+}
+
 bg_tag.addEventListener("click", bg);
 thumb_l_tag.addEventListener("click", thumb_l);
 thumb_tag.addEventListener("click", thumb);
@@ -261,3 +278,4 @@ web_maps_tag.addEventListener("click", web_maps)
 //remove_tag.addEventListener("click", remove)
 filesinfo_tag.addEventListener("click", filesinfo)
 filesinfo2_tag.addEventListener("click", filesinfo2)
+replayparser_tag.addEventListener("click", replayparser)
