@@ -23,7 +23,7 @@ class handler(tornado.web.RequestHandler):
                 raise info
             else:
                 info = json.dumps(info, indent=2, ensure_ascii=False)
-                self.set_header("Content-Type", "application/json")
+                self.set_header("Content-Type", pathToContentType(".json")["Content-Type"])
                 self.write(info)
         except Exception as e:
             log.warning(e)

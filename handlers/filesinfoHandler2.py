@@ -23,11 +23,11 @@ class handler(tornado.web.RequestHandler):
                 raise info
             elif info is None:
                 self.set_status(404)
-                self.set_header("Content-Type", "application/json")
+                self.set_header("Content-Type", pathToContentType(".json")["Content-Type"])
                 self.write(json.dumps({"code": 404, "message": "NODATA! Check bsid & bid"}, indent=2, ensure_ascii=False))
             else:
                 info = json.dumps(info, indent=2, ensure_ascii=False)
-                self.set_header("Content-Type", "application/json")
+                self.set_header("Content-Type", pathToContentType(".json")["Content-Type"])
                 self.write(info)
         except Exception as e:
             log.warning(e)

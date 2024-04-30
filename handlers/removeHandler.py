@@ -26,6 +26,6 @@ class handler(tornado.web.RequestHandler):
         elif key2 != int(bsid):
             send401(self, f"{key2} is Wrong key2")
         else:
-            self.set_header("Content-Type", "application/json")
+            self.set_header("Content-Type", pathToContentType(".json")["Content-Type"])
             self.write(json.dumps(removeAllFiles(bsid), indent=2, ensure_ascii=False))
         self.set_header("Ping", str(resPingMs(self)))

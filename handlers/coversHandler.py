@@ -17,7 +17,9 @@ class handler(tornado.web.RequestHandler):
             
         try:
             file = read_covers(id, cover_type)
+            #covers용 sendXXX() 함수 만들기
             if file == 404:
+                return self.set_status(404)
                 return send404(self, "bsid", id)
             elif file == 500:
                 return send500(self, "bsid", id)
@@ -27,7 +29,7 @@ class handler(tornado.web.RequestHandler):
                 raise file
             else: 
                 self.set_header("return-fileinfo", json.dumps({"filename": id, "path": file, "fileMd5": calculate_md5(file)}))
-                self.set_header('Content-Type', 'image/jpeg')
+                self.set_header('Content-Type', pathToContentType(file)["Content-Type"])
                 IDM(self, file)
         except Exception as e:
             log.warning(e)

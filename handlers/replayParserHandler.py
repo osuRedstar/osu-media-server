@@ -1,6 +1,7 @@
 import tornado.ioloop
 import tornado.web
 import lets_common_log.logUtils as log
+from functions import *
 import json
 import traceback
 import struct
@@ -113,5 +114,5 @@ class handler(tornado.web.RequestHandler):
                 self.set_header('Content-Type', self.request.files["score"][0]["content_type"])
                 self.write(scoreData)
             else:
-                self.set_header("Content-Type", "application/json")
+                self.set_header("Content-Type", pathToContentType(".json")["Content-Type"])
                 self.write(scoreData)

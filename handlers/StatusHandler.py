@@ -33,6 +33,6 @@ class handler(tornado.web.RequestHandler):
             }
 
         self.set_header("return-fileinfo", json.dumps({"filename": "", "path": "", "fileMd5": ""}))
-        self.set_header("Content-Type", "application/json")
+        self.set_header("Content-Type", pathToContentType(".json")["Content-Type"])
         self.write(json.dumps(data, indent=2, ensure_ascii=False))
         self.set_header("Ping", str(resPingMs(self)))

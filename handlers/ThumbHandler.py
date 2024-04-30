@@ -25,7 +25,7 @@ class handler(tornado.web.RequestHandler):
                 if file.endswith(f"noImage_{id}"):
                     self.set_status(404)
                 self.set_header("return-fileinfo", json.dumps({"filename": id, "path": file, "fileMd5": calculate_md5(file)}))
-                self.set_header('Content-Type', 'image/jpeg')
+                self.set_header('Content-Type', pathToContentType(file)["Content-Type"])
                 IDM(self, file)
         except Exception as e:
             log.warning(e)

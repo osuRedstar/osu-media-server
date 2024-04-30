@@ -13,6 +13,7 @@ class handler(tornado.web.RequestHandler):
 
         try:
             readed_read_video = read_video(id)
+            log.debug(readed_read_video)
             if readed_read_video == 404:
                 return send404(self, "bid", id)
             elif readed_read_video == 500:
@@ -21,14 +22,14 @@ class handler(tornado.web.RequestHandler):
                 return send504(self, "bid", id)
             elif type(readed_read_video) == FileNotFoundError:
                 raise readed_read_video
-            elif readed_read_video.endswith(".mp4"):
+            elif readed_read_video.startswith("data/video/"):
                 self.set_header("return-fileinfo", json.dumps({"filename": id, "path": readed_read_video, "fileMd5": calculate_md5(readed_read_video)}))
-                self.set_header('Content-Type', 'video/mp4')
+                self.set_header('Content-Type', pathToContentType(readed_read_video)["Content-Type"])
                 IDM(self, readed_read_video)
             else:
                 self.set_status(404)
                 self.set_header("return-fileinfo", json.dumps({"filename": id, "path": readed_read_video, "fileMd5": calculate_md5(readed_read_video)}))
-                self.set_header("Content-Type", "application/json")
+                self.set_header("Content-Type", pathToContentType(".json")["Content-Type"])
                 self.write(json.dumps({"code": 404, "message": "Sorry Beatmap has no videos", "funcmsg": readed_read_video}, indent=2, ensure_ascii=False))
         except Exception as e:
             log.warning(e)

@@ -47,7 +47,7 @@ class FaviconHandler(tornado.web.RequestHandler):
             pass
 
         self.set_header("return-fileinfo", json.dumps({"filename": "favicon.ico", "path": "static/img/favicon.ico", "fileMd5": calculate_md5("static/img/favicon.ico")}))
-        self.set_header('Content-Type', 'image/x-icon')
+        self.set_header('Content-Type', pathToContentType("static/img/favicon.ico")["Content-Type"])
         with open("static/img/favicon.ico", 'rb') as f:
             self.write(f.read())
         self.set_header("Ping", str(resPingMs(self)))
@@ -70,7 +70,7 @@ class robots_txt(tornado.web.RequestHandler):
             pass
 
         self.set_header("return-fileinfo", json.dumps({"filename": "robots.txt", "path": "robots.txt", "fileMd5": calculate_md5("robots.txt")}))
-        self.set_header("Content-Type", "text/plain")
+        self.set_header("Content-Type", pathToContentType("robots.txt")["Content-Type"])
         with open("robots.txt", 'rb') as f:
             self.write(f.read())
         self.set_header("Ping", str(resPingMs(self)))
@@ -82,6 +82,8 @@ def make_app():
         (r"/", MainHandler),
         (r"/list", ListHandler.handler),
         (r"/list/([^/]+)", ListHandler.handler),
+        (r"/status", StatusHandler.handler),
+        (r"/search(.*)", searchHandler.handler),
         (r"/bg/([^/]+)", BgHandler.handler),
         (r"/thumb/([^/]+)", ThumbHandler.handler),
         (r"/preview/([^/]+)", PreviewHandler.handler),
@@ -90,6 +92,10 @@ def make_app():
         (r"/d/([^/]+)", OszHandler.handler),
         (r"/b/([^/]+)", OszBHandler.handler),
         (r"/osu/([^/]+)", OsuHandler.handler),
+        (r"/web/maps/(.*)", webMapsHandler.handler),
+        (r"/remove/([^/]+)", removeHandler.handler),
+        (r"/filesinfo/([^/]+)", filesinfoHandler.handler),
+        (r"/filesinfo/([^/]+)/([^/]+)", filesinfoHandler2.handler),
         (r"/replayparser", replayParserHandler.handler),
 
         (r"/favicon.ico", FaviconHandler),
@@ -97,13 +103,6 @@ def make_app():
         #(r"/favicon.ico", tornado.web.StaticFileHandler, {"path": "static/img/favicon.ico"})
         #(r'/static/(.*)', tornado.web.StaticFileHandler, {'path': 'static'}),
         (r"/robots.txt", robots_txt),
-
-        (r"/status", StatusHandler.handler),
-        (r"/web/maps/(.*)", webMapsHandler.handler),
-        (r"/search(.*)", searchHandler.handler),
-        (r"/remove/([^/]+)", removeHandler.handler),
-        (r"/filesinfo/([^/]+)", filesinfoHandler.handler),
-        (r"/filesinfo/([^/]+)/([^/]+)", filesinfoHandler2.handler),
 
         #assets.ppy.sh
         (r"/beatmaps/([^/]+)/covers/([^/]+)", coversHandler.handler),
@@ -122,6 +121,12 @@ def make_app():
         (r"/d/([^/]+)", OszHandler_async.handler),
         (r"/b/([^/]+)", OszBHandler_async.handler),
         (r"/osu/([^/]+)", OsuHandler_async.handler),
+        (r"/status", StatusHandler.handler),
+        (r"/web/maps/(.*)", webMapsHandler.handler),
+        (r"/search(.*)", searchHandler.handler),
+        (r"/remove/([^/]+)", removeHandler.handler),
+        (r"/filesinfo/([^/]+)", filesinfoHandler_async.handler),
+        (r"/filesinfo/([^/]+)/([^/]+)", filesinfoHandler2_async.handler),
         (r"/replayparser", replayParserHandler.handler),
 
         (r"/favicon.ico", FaviconHandler),
@@ -129,13 +134,6 @@ def make_app():
         #(r"/favicon.ico", tornado.web.StaticFileHandler, {"path": "static/img/favicon.ico"})
         #(r'/static/(.*)', tornado.web.StaticFileHandler, {'path': 'static'}),
         (r"/robots.txt", robots_txt),
-
-        (r"/status", StatusHandler.handler),
-        (r"/web/maps/(.*)", webMapsHandler.handler),
-        (r"/search(.*)", searchHandler.handler),
-        (r"/remove/([^/]+)", removeHandler.handler),
-        (r"/filesinfo/([^/]+)", filesinfoHandler_async.handler),
-        (r"/filesinfo/([^/]+)/([^/]+)", filesinfoHandler2_async.handler),
 
         #assets.ppy.sh
         (r"/beatmaps/([^/]+)/covers/([^/]+)", coversHandler.handler),
