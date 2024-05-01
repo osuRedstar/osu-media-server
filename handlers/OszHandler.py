@@ -19,7 +19,6 @@ class handler(tornado.web.RequestHandler):
 
         try:
             path = read_osz(id)
-            log.debug(path)
             if path == 404:
                 return send404(self, "bsid", id)
             elif path == 500:
