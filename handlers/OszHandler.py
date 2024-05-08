@@ -32,7 +32,6 @@ class handler(tornado.web.RequestHandler):
             else:
                 self.set_header("return-fileinfo", json.dumps({"filename": path["filename"], "path": path["path"], "fileMd5": calculate_md5(path["path"])}))
                 self.set_header('Content-Type', pathToContentType(path["path"])["Content-Type"])
-                self.set_header('Content-Disposition', f'attachment; filename="{path["filename"]}"')
                 IDM(self, path["path"])
         except Exception as e:
             log.warning(e)

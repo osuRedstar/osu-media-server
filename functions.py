@@ -244,6 +244,8 @@ def IDM(self, path):
         with open(path, 'rb') as f:
             self.write(f.read())
 
+    filename = path.split("/")[len(path.split("/")) - 1]
+    self.set_header('Content-Disposition', f'inline; filename="{filename}"')
     self.set_header("Accept-Ranges", "bytes")
     return idm
 
@@ -257,6 +259,7 @@ def pathToContentType(path):
     if path.endswith(".gif"): return {"Content-Type": "image/gif", "exetension": ".gif"}
     if path.endswith(".html"): return {"Content-Type": "text/html", "exetension": ".html"}
     if path.endswith(".ico"): return {"Content-Type": "image/x-icon", "exetension": ".ico"}
+    if path.endswith(".jfif"): return {"Content-Type": "image/jpeg", "exetension": ".jfif"}
     if path.endswith(".jpeg"): return {"Content-Type": "image/jpeg", "exetension": ".jpeg"}
     if path.endswith(".jpg"): return {"Content-Type": "image/jpeg", "exetension": ".jpg"}
     if path.endswith(".js"): return {"Content-Type": "text/javascript", "exetension": ".js"}
@@ -1096,15 +1099,13 @@ def read_thumb(id):
         img = img.convert("RGB")
 
         width, height = img.size
-        log.debug((type(img_size), img_size))
-        log.debug((type(img.size), img.size))
-        log.chat(img_size == img.size)
         if width / height == 4 / 3:
-            log.debug(f"이미 4:3 비율이라서 {img_size} 로만 자름")
+            log.info(f"이미 4:3 비율이라서 {img_size} 로만 자름")
             img.resize(img_size, Image.LANCZOS).save(f"{dataFolder}/thumb/{bsid}/{id}", quality=100)
         else:
-            if width > height:
-                left = (width - (height * (4 / 3))) / 2
+            if width / height > 4 / 3:
+                croped_width = height * (4 / 3) #원본기준 4:3 비율 (width)
+                left = (width - croped_width) / 2
                 top = 0
                 right = width - left
                 bottom = height
@@ -1114,13 +1115,12 @@ def read_thumb(id):
                 top = (height - croped_height) / 2 # = 160.5
                 right = width
                 bottom = height - top
-            
+
             img_cropped = img.crop((left,top,right,bottom))
             img_resize = img_cropped.resize(img_size, Image.LANCZOS)
             img_resize.save(f"{dataFolder}/thumb/{bsid}/{id}", quality=100)
 
         os.remove(f"{dataFolder}/thumb/{bsid}/{file_list[0]}")
-
         return f"{dataFolder}/thumb/{bsid}/{id}"
 
 #osu_file_read() 역할 분할하기 (각각 따로 두기)
