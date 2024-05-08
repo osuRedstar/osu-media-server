@@ -62,7 +62,6 @@ class config:
 			noneCheck.append(self.config.get("db","username"))
 			noneCheck.append(self.config.get("db","password"))
 			noneCheck.append(self.config.get("db","database"))
-			noneCheck.append(self.config.get("db","database-cheesegull"))
 			return True
 		except:
 			return False
@@ -103,7 +102,6 @@ class config:
 		self.config.set("db", "username", "root")
 		self.config.set("db", "password", "")
 		self.config.set("db", "database", "redstar")
-		self.config.set("db", "database-cheesegull", "cheesegull")
 
 		# Write ini to file and close
 		self.config.write(f)
