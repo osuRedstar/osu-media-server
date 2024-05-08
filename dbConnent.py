@@ -12,12 +12,12 @@ class db:
         self.DB_USERNAME = self.conf.config["db"]["username"]
         self.DB_PASSWORD = self.conf.config["db"]["password"]
         self.DB_DATABASE = DBType
-        log.chat(f"{DBType} DB로 연결함")
 
         try:
             self.pydb = pymysql.connect(host=self.DB_HOST, port=self.DB_PORT, user=self.DB_USERNAME, passwd=self.DB_PASSWORD, db=self.DB_DATABASE, charset='utf8')
+            log.chat(f"{DBType} DB로 연결함")
         except:
-            log.error(f"{self.DB_DATABASE_NOW} DB 연결 실패!")
+            log.error(f"{DBType} DB 연결 실패!")
             exit()
 
     def fetch(self, sql, param=None, NoneMsg=True):
