@@ -7,25 +7,15 @@ from lets_common_log import logUtils as log
 class db:
     def __init__(self, DBType):
         self.conf = config.config("config.ini")
-
         self.DB_HOST = self.conf.config["db"]["host"]
         self.DB_PORT = int(self.conf.config["db"]["port"])
         self.DB_USERNAME = self.conf.config["db"]["username"]
         self.DB_PASSWORD = self.conf.config["db"]["password"]
-        self.DB_DATABASE = self.conf.config["db"]["database"]
-        self.DB_DATABASE_CHEESEGULL = self.conf.config["db"]["database-cheesegull"]
-        self.OSU_APIKEY = self.conf.config["osu"]["osuApikey"]
-
-        if DBType.lower() == "redstar":
-            self.DB_DATABASE_NOW = self.DB_DATABASE
-        elif DBType.lower() == "cheesegull":
-            self.DB_DATABASE_NOW = self.DB_DATABASE_CHEESEGULL
-        else:
-            self.DB_DATABASE_NOW = DBType
-            log.chat(f"{DBType} DB로 연결함")
+        self.DB_DATABASE = DBType
+        log.chat(f"{DBType} DB로 연결함")
 
         try:
-            self.pydb = pymysql.connect(host=self.DB_HOST, port=self.DB_PORT, user=self.DB_USERNAME, passwd=self.DB_PASSWORD, db=self.DB_DATABASE_NOW, charset='utf8')
+            self.pydb = pymysql.connect(host=self.DB_HOST, port=self.DB_PORT, user=self.DB_USERNAME, passwd=self.DB_PASSWORD, db=self.DB_DATABASE, charset='utf8')
         except:
             log.error(f"{self.DB_DATABASE_NOW} DB 연결 실패!")
             exit()
@@ -57,7 +47,7 @@ class db:
                     data[c] = r
                 d.append(data)
             return d
-        
+
     def execute(self, sql, param=None):
         cursor = self.pydb.cursor()
         if param is None or param == "":
