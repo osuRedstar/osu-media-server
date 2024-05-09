@@ -4,6 +4,7 @@
 	],
 	"no": [
 		"bot",
+		"crawler",
 		"bytedance.com",
 		"censysinspect"
 	]
