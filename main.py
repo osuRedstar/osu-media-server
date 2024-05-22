@@ -17,6 +17,7 @@ from handlers import OszHandler, OszHandler_async
 from handlers import OszBHandler, OszBHandler_async
 from handlers import OsuHandler, OsuHandler_async
 from handlers import replayParserHandler
+from handlers import readableModsHandler, readableModsReverseHandler
 #from handlers import FaviconHandler
 #from handlers import StaticHandler
 #from handlers import robots_txt
@@ -59,6 +60,7 @@ class StaticHandler(tornado.web.RequestHandler):
             pass
 
         self.set_header("return-fileinfo", json.dumps({"filename": item, "path": f"static/{item}", "fileMd5": calculate_md5(f"static/{item}")}))
+        self.set_header("Content-Type", pathToContentType(item)["Content-Type"])
         with open(f"static/{item}", 'rb') as f:
                 self.write(f.read())
         self.set_header("Ping", str(resPingMs(self)))
@@ -97,6 +99,8 @@ def make_app():
         (r"/filesinfo/([^/]+)", filesinfoHandler.handler),
         (r"/filesinfo/([^/]+)/([^/]+)", filesinfoHandler2.handler),
         (r"/replayparser", replayParserHandler.handler),
+        (r"/readableMods", readableModsHandler.handler),
+        (r"/readableModsReverse", readableModsReverseHandler.handler),
 
         (r"/favicon.ico", FaviconHandler),
         (r"/static/(.*)", StaticHandler),
@@ -128,6 +132,8 @@ def make_app():
         (r"/filesinfo/([^/]+)", filesinfoHandler_async.handler),
         (r"/filesinfo/([^/]+)/([^/]+)", filesinfoHandler2_async.handler),
         (r"/replayparser", replayParserHandler.handler),
+        (r"/readableMods", readableModsHandler.handler),
+        (r"/readableModsReverse", readableModsReverseHandler.handler),
 
         (r"/favicon.ico", FaviconHandler),
         (r"/static/(.*)", StaticHandler),
