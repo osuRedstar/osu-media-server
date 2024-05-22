@@ -19,9 +19,7 @@ import json
 from collections import Counter
 import subprocess
 import geoip2.database
-
-dbR = db("redstar")
-dbC = db("cheesegull")
+import mods
 
 #beatmap_md5
 def calculate_md5(filename):
@@ -44,6 +42,10 @@ lets_beatmaps_Folder = conf.config["osu"]["lets.py_beatmaps_Folder_Path"]
 dataFolder = conf.config["server"]["dataFolder"]
 oszRenewTime = int(conf.config["server"]["oszRenewTime"])
 osuServerDomain = conf.config["server"]["osuServerDomain"]
+
+dbR = db(conf.config["db"]["database"])
+dbC = db("cheesegull")
+dbO = db("osu_media_server")
 
 requestHeaders = {"User-Agent": f"RedstarOSU's MediaServer (python requests) | https://b.{osuServerDomain}"}
 
@@ -249,55 +251,155 @@ def IDM(self, path):
     self.set_header("Accept-Ranges", "bytes")
     return idm
 
-def pathToContentType(path):
-    if path.endswith(".aac"): return {"Content-Type": "audio/aac", "exetension": ".aac"}
-    if path.endswith(".apng"): return {"Content-Type": "image/apng", "exetension": ".apng"}
-    if path.endswith(".avif"): return {"Content-Type": "image/avif", "exetension": ".avif"}
-    if path.endswith(".avi"): return {"Content-Type": "video/x-msvideo", "exetension": ".avi"}
-    if path.endswith(".bin"): return {"Content-Type": "application/octet-stream", "exetension": ".bin"}
-    if path.endswith(".css"): return {"Content-Type": "text/css", "exetension": ".css"}
-    if path.endswith(".gif"): return {"Content-Type": "image/gif", "exetension": ".gif"}
-    if path.endswith(".html"): return {"Content-Type": "text/html", "exetension": ".html"}
-    if path.endswith(".ico"): return {"Content-Type": "image/x-icon", "exetension": ".ico"}
-    if path.endswith(".jfif"): return {"Content-Type": "image/jpeg", "exetension": ".jfif"}
-    if path.endswith(".jpeg"): return {"Content-Type": "image/jpeg", "exetension": ".jpeg"}
-    if path.endswith(".jpg"): return {"Content-Type": "image/jpeg", "exetension": ".jpg"}
-    if path.endswith(".js"): return {"Content-Type": "text/javascript", "exetension": ".js"}
-    if path.endswith(".json"): return {"Content-Type": "application/json", "exetension": ".json"}
-    if path.endswith(".mp3"): return {"Content-Type": "audio/mpeg", "exetension": ".mp3"}
-    if path.endswith(".mp4"): return {"Content-Type": "video/mp4", "exetension": ".mp4"}
-    if path.endswith(".mpeg"): return {"Content-Type": "audio/mpeg", "exetension": ".mpeg"}
-    if path.endswith(".oga"): return {"Content-Type": "audio/ogg", "exetension": ".oga"}
-    if path.endswith(".ogg"): return {"Content-Type": "application/ogg", "exetension": ".ogg"}
-    if path.endswith(".ogv"): return {"Content-Type": "video/ogg", "exetension": ".ogv"}
-    if path.endswith(".ogx"): return {"Content-Type": "application/ogg", "exetension": ".ogx"}
-    if path.endswith(".opus"): return {"Content-Type": "audio/opus", "exetension": ".opus"}
-    if path.endswith(".png"): return {"Content-Type": "image/png", "exetension": ".png"}
-    if path.endswith(".svg"): return {"Content-Type": "image/svg+xml", "exetension": ".svg"}
-    if path.endswith(".tif"): return {"Content-Type": "image/tiff", "exetension": ".tif"}
-    if path.endswith(".tiff"): return {"Content-Type": "image/tiff", "exetension": ".tiff"}
-    if path.endswith(".ts"): return {"Content-Type": "video/mp2t", "exetension": ".ts"}
-    if path.endswith(".txt"): return {"Content-Type": "text/plain", "exetension": ".txt"}
-    if path.endswith(".wav"): return {"Content-Type": "audio/wav", "exetension": ".wav"}
-    if path.endswith(".weba"): return {"Content-Type": "audio/webm", "exetension": ".weba"}
-    if path.endswith(".webm"): return {"Content-Type": "video/webm", "exetension": ".webm"}
-    if path.endswith(".webp"): return {"Content-Type": "image/webp", "exetension": ".webp"}
-    if path.endswith(".zip"): return {"Content-Type": "application/zip", "exetension": ".zip"}
-    if path.endswith(".flv"): return {"Content-Type": "video/x-flv", "exetension": ".flv"}
-    if path.endswith(".wmv"): return {"Content-Type": "video/x-ms-wmv", "exetension": ".wmv"}
-    if path.endswith(".mkv"): return {"Content-Type": "video/x-matroska", "exetension": ".mkv"}
+def pathToContentType(path, isInclude=False):
+    if isInclude and ".aac" in path or not isInclude and path.endswith(".aac"): return {"Content-Type": "audio/aac", "exetension": ".aac", "type": "audio", "path": path}
+    if isInclude and ".apng" in path or not isInclude and path.endswith(".apng"): return {"Content-Type": "image/apng", "exetension": ".apng", "type": "image", "path": path}
+    if isInclude and ".avif" in path or not isInclude and path.endswith(".avif"): return {"Content-Type": "image/avif", "exetension": ".avif", "type": "image", "path": path}
+    if isInclude and ".avi" in path or not isInclude and path.endswith(".avi"): return {"Content-Type": "video/x-msvideo", "exetension": ".avi", "type": "video", "path": path}
+    if isInclude and ".bin" in path or not isInclude and path.endswith(".bin"): return {"Content-Type": "application/octet-stream", "exetension": ".bin", "type": "file", "path": path}
+    if isInclude and ".css" in path or not isInclude and path.endswith(".css"): return {"Content-Type": "text/css", "exetension": ".css", "type": "file", "path": path}
+    if isInclude and ".gif" in path or not isInclude and path.endswith(".gif"): return {"Content-Type": "image/gif", "exetension": ".gif", "type": "image", "path": path}
+    if isInclude and ".html" in path or not isInclude and path.endswith(".html"): return {"Content-Type": "text/html", "exetension": ".html", "type": "file", "path": path}
+    if isInclude and ".ico" in path or not isInclude and path.endswith(".ico"): return {"Content-Type": "image/x-icon", "exetension": ".ico", "type": "image", "path": path}
+    if isInclude and ".jfif" in path or not isInclude and path.endswith(".jfif"): return {"Content-Type": "image/jpeg", "exetension": ".jfif", "type": "image", "path": path}
+    if isInclude and ".jpeg" in path or not isInclude and path.endswith(".jpeg"): return {"Content-Type": "image/jpeg", "exetension": ".jpeg", "type": "image", "path": path}
+    if isInclude and ".jpg" in path or not isInclude and path.endswith(".jpg"): return {"Content-Type": "image/jpeg", "exetension": ".jpg", "type": "image", "path": path}
+    if isInclude and ".js" in path or not isInclude and path.endswith(".js"): return {"Content-Type": "text/javascript", "exetension": ".js", "type": "file", "path": path}
+    if isInclude and ".json" in path or not isInclude and path.endswith(".json"): return {"Content-Type": "application/json", "exetension": ".json", "type": "file", "path": path}
+    if isInclude and ".mp3" in path or not isInclude and path.endswith(".mp3"): return {"Content-Type": "audio/mpeg", "exetension": ".mp3", "type": "audio", "path": path}
+    if isInclude and ".mp4" in path or not isInclude and path.endswith(".mp4"): return {"Content-Type": "video/mp4", "exetension": ".mp4", "type": "video", "path": path}
+    if isInclude and ".mpeg" in path or not isInclude and path.endswith(".mpeg"): return {"Content-Type": "audio/mpeg", "exetension": ".mpeg", "type": "audio", "path": path}
+    if isInclude and ".oga" in path or not isInclude and path.endswith(".oga"): return {"Content-Type": "audio/ogg", "exetension": ".oga", "type": "audio", "path": path}
+    if isInclude and ".ogg" in path or not isInclude and path.endswith(".ogg"): return {"Content-Type": "application/ogg", "exetension": ".ogg", "type": "audio", "path": path}
+    if isInclude and ".ogv" in path or not isInclude and path.endswith(".ogv"): return {"Content-Type": "video/ogg", "exetension": ".ogv", "type": "video", "path": path}
+    if isInclude and ".ogx" in path or not isInclude and path.endswith(".ogx"): return {"Content-Type": "application/ogg", "exetension": ".ogx", "type": "audio", "path": path}
+    if isInclude and ".opus" in path or not isInclude and path.endswith(".opus"): return {"Content-Type": "audio/opus", "exetension": ".opus", "type": "audio", "path": path}
+    if isInclude and ".png" in path or not isInclude and path.endswith(".png"): return {"Content-Type": "image/png", "exetension": ".png", "type": "image", "path": path}
+    if isInclude and ".svg" in path or not isInclude and path.endswith(".svg"): return {"Content-Type": "image/svg+xml", "exetension": ".svg", "type": "image", "path": path}
+    if isInclude and ".tif" in path or not isInclude and path.endswith(".tif"): return {"Content-Type": "image/tiff", "exetension": ".tif", "type": "image", "path": path}
+    if isInclude and ".tiff" in path or not isInclude and path.endswith(".tiff"): return {"Content-Type": "image/tiff", "exetension": ".tiff", "type": "image", "path": path}
+    if isInclude and ".ts" in path or not isInclude and path.endswith(".ts"): return {"Content-Type": "video/mp2t", "exetension": ".ts", "type": "video", "path": path}
+    if isInclude and ".txt" in path or not isInclude and path.endswith(".txt"): return {"Content-Type": "text/plain", "exetension": ".txt", "type": "file", "path": path}
+    if isInclude and ".wav" in path or not isInclude and path.endswith(".wav"): return {"Content-Type": "audio/wav", "exetension": ".wav", "type": "audio", "path": path}
+    if isInclude and ".weba" in path or not isInclude and path.endswith(".weba"): return {"Content-Type": "audio/webm", "exetension": ".weba", "type": "audio", "path": path}
+    if isInclude and ".webm" in path or not isInclude and path.endswith(".webm"): return {"Content-Type": "video/webm", "exetension": ".webm", "type": "video", "path": path}
+    if isInclude and ".webp" in path or not isInclude and path.endswith(".webp"): return {"Content-Type": "image/webp", "exetension": ".webp", "type": "image", "path": path}
+    if isInclude and ".zip" in path or not isInclude and path.endswith(".zip"): return {"Content-Type": "application/zip", "exetension": ".zip", "type": "file", "path": path}
+    if isInclude and ".flv" in path or not isInclude and path.endswith(".flv"): return {"Content-Type": "video/x-flv", "exetension": ".flv", "type": "video", "path": path}
+    if isInclude and ".wmv" in path or not isInclude and path.endswith(".wmv"): return {"Content-Type": "video/x-ms-wmv", "exetension": ".wmv", "type": "video", "path": path}
+    if isInclude and ".mkv" in path or not isInclude and path.endswith(".mkv"): return {"Content-Type": "video/x-matroska", "exetension": ".mkv", "type": "video", "path": path}
 
-    if path.endswith(".osz"): return {"Content-Type": "application/x-osu-beatmap-archive", "exetension": ".osz"}
-    if path.endswith(".osr"): return {"Content-Type": "application/x-osu-replay", "exetension": ".osr"}
-    if path.endswith(".osu"): return {"Content-Type": "application/x-osu-beatmap", "exetension": ".osu"}
-    if path.endswith(".osb"): return {"Content-Type": "application/x-osu-storyboard", "exetension": ".osb"}
-    if path.endswith(".osk"): return {"Content-Type": "application/x-osu-skin", "exetension": ".osk"}
+    if isInclude and ".osz" in path or not isInclude and path.endswith(".osz"): return {"Content-Type": "application/x-osu-beatmap-archive", "exetension": ".osz", "type": "file", "path": path}
+    if isInclude and ".osr" in path or not isInclude and path.endswith(".osr"): return {"Content-Type": "application/x-osu-replay", "exetension": ".osr", "type": "file", "path": path}
+    if isInclude and ".osu" in path or not isInclude and path.endswith(".osu"): return {"Content-Type": "application/x-osu-beatmap", "exetension": ".osu", "type": "file", "path": path}
+    if isInclude and ".osb" in path or not isInclude and path.endswith(".osb"): return {"Content-Type": "application/x-osu-storyboard", "exetension": ".osb", "type": "file", "path": path}
+    if isInclude and ".osk" in path or not isInclude and path.endswith(".osk"): return {"Content-Type": "application/x-osu-skin", "exetension": ".osk", "type": "file", "path": path}
 
-    else: return {"Content-Type": "application/octet-stream", "exetension": "?"}
+    else: return {"Content-Type": "application/octet-stream", "exetension": "?", "type": "?", "path": path}
     
     
 
 ####################################################################################################
+def readableMods(__mods: int):
+    """
+	:param __mods: mods bitwise number
+	:return: readable mods string, eg HDDT
+	"""
+    r = ""
+    if __mods == mods.NOMOD: return ""
+    if __mods & mods.NOFAIL: r += "NF"
+    if __mods & mods.EASY: r += "EZ"
+    if __mods & mods.TOUCHSCREEN: r += "TD"
+    if __mods & mods.HIDDEN: r += "HD"
+    if __mods & mods.HARDROCK: r += "HR"
+    if __mods & mods.SUDDENDEATH: r += "SD"
+    if __mods & mods.DOUBLETIME: r += "DT"
+    if __mods & mods.RELAX: r += "RX"
+    if __mods & mods.HALFTIME: r += "HT"
+    if __mods & mods.NIGHTCORE: r = r.replace("DT", "NC") if "DT" in r else r + "NC" #576 = DT, NC
+    if __mods & mods.FLASHLIGHT: r += "FL"
+    if __mods & mods.AUTOPLAY: r += "AU(AUTO)"
+    if __mods & mods.SPUNOUT: r += "SO"
+    if __mods & mods.RELAX2: r += "AP"
+    if __mods & mods.PERFECT: r = r.replace("SD", "PF") if "SD" in r else r + "PF" #16416 = SD, PF
+    if __mods & mods.KEY4: r += "K4"
+    if __mods & mods.KEY5: r += "K5"
+    if __mods & mods.KEY6: r += "K6"
+    if __mods & mods.KEY7: r += "K7"
+    if __mods & mods.KEY8: r += "K8"
+    if __mods & mods.KEYMOD: r += "KEYMOD" #?
+    if __mods & mods.FADEIN: r += "FI"
+    if __mods & mods.RANDOM: r += "RD"
+    if __mods & mods.LASTMOD: r += "LASTMOD" #?
+    if __mods & mods.KEY9: r += "K9"
+    if __mods & mods.KEY10: r += "K10"
+    if __mods & mods.KEY1: r += "K1"
+    if __mods & mods.KEY3: r += "K3"
+    if __mods & mods.KEY2: r += "K2"
+    if __mods & mods.SCOREV2: r += "SV2(v2)"
+    if __mods & mods.MIRROR: r += "MR"
+    return r
+
+def readableModsReverse(__mods: str):
+    # Check passed mods and convert to enum
+    if len(__mods.upper().replace("K10", "")) % 2: __mods = "^^"
+    if "K10" in __mods: __mods = __mods.replace("K10", "") + "K10"
+    modsEnum = 0
+    for r in [__mods[i:i+3].upper() if __mods[i:i+3].upper() == "K10" else __mods[i:i+2].upper() for i in range(0, len(__mods) if not "K10" in __mods else len(__mods) - 1, 2)]:
+        if r not in ["NO", "NF", "EZ", "TD", "HD", "HR", "SD", "DT", "HT", "NC", "FL", "SO", "PF", "RX", "AP", "K4", "K5", "K6", "K7", "K8", "FI", "RD", "K9", "K10", "K1", "K3", "K2", "v2", "MR"]:
+            return "Invalid mods. Allowed mods: NO, NF, EZ, TD, HD, HR, SD, DT, HT, NC, FL, SO, PF, RX, AP, K4, K5, K6, K7, K8, FI, RD, K9, K10, K1, K3, K2, v2(SV2), MR. Do not use spaces for multiple mods."
+        if r == "NO": return 0
+        elif r == "NF": modsEnum += mods.NOFAIL
+        elif r == "EZ": modsEnum += mods.EASY
+        elif r == "TD": modsEnum += mods.TOUCHSCREEN
+        elif r == "HD": modsEnum += mods.HIDDEN
+        elif r == "HR": modsEnum += mods.HARDROCK
+        elif r == "SD": modsEnum += mods.SUDDENDEATH
+        elif r == "DT": modsEnum += mods.DOUBLETIME
+        elif r == "RX": modsEnum += mods.RELAX
+        elif r == "HT": modsEnum += mods.HALFTIME
+        elif r == "NC": modsEnum += 576 #576 = DT, NC
+        elif r == "FL": modsEnum += mods.FLASHLIGHT
+        elif r == "AT": modsEnum += mods.AUTOPLAY
+        elif r == "SO": modsEnum += mods.SPUNOUT
+        elif r == "AP": modsEnum += mods.RELAX2
+        elif r == "PF": modsEnum += 16416 #16416 = SD, PF
+        elif r == "K4": modsEnum += mods.KEY4
+        elif r == "K5": modsEnum += mods.KEY5
+        elif r == "K6": modsEnum += mods.KEY6
+        elif r == "K7": modsEnum += mods.KEY7
+        elif r == "K8": modsEnum += mods.k8
+        #elif r == "KEYMOD": modsEnum += mods.KEYMOD
+        elif r == "FI": modsEnum += mods.FADEIN
+        elif r == "RD": modsEnum += mods.RANDOM
+        #elif r == "LASTMOD": modsEnum += mods.LASTMOD
+        elif r == "K9": modsEnum += mods.KEY9
+        elif r == "K10": modsEnum += mods.KEY10
+        elif r == "K1": modsEnum += mods.KEY1
+        elif r == "K3": modsEnum += mods.KEY3
+        elif r == "K2": modsEnum += mods.KEY2
+        elif r == "v2": modsEnum += mods.SCOREV2
+        elif r == "MR": modsEnum += mods.MIRROR
+    return modsEnum
+
+def get_AudioLength(filesinfo, setID, AudioFilename):
+    try:
+        if filesinfo:
+            def culc_length(l):
+                h = "{0:02d}".format(l // 60 // 60)
+                m = "{0:02d}".format(l // 60)
+                s = "{0:02d}".format(l % 60)
+                return f"{h}:{m}:{s}"
+            AudioLength = round(float(mediainfo(f"{dataFolder}/dl/{setID}/{AudioFilename}")["duration"]), 2)
+            AudioLength = [AudioLength, culc_length(round(AudioLength))]
+            AudioLength_DT = AudioLength_NC = [round(AudioLength[0] / 1.5, 2), culc_length(round(AudioLength[0] / 1.5))]
+            #HF = 1. (AudioLength / 0.75), 2. (AudioLength * 1.5)
+            AudioLength_HF = [round(AudioLength[0] / 0.75, 2), culc_length(round(AudioLength[0] / 0.75))]
+        else:
+            AudioLength = AudioLength_DT = AudioLength_NC = AudioLength_HF = None
+    except:
+        AudioLength = AudioLength_DT = AudioLength_NC = AudioLength_HF = None
+    return (AudioLength, AudioLength_DT, AudioLength_NC, AudioLength_HF)
 
 def get_dir_size(path='.'):
     total = 0
@@ -360,7 +462,7 @@ def osu_file_read(setID, rq_type, moving=False, bID=None, cheesegull=False, file
     #/filesinfo 조회시 osz 없을때 오류 방지
     if get_osz_fullName(setID) == 0 and rq_type == "all":
         ck = check(setID, rq_type)
-        if ck is not None:
+        if type(ck) is not list:
             return ck
 
     #압축파일에 문제생겼을때 재 다운로드
@@ -368,13 +470,13 @@ def osu_file_read(setID, rq_type, moving=False, bID=None, cheesegull=False, file
         zipfile.ZipFile(f'{dataFolder}/dl/{get_osz_fullName(setID)}').extractall(f'{dataFolder}/dl/{setID}')
     except zipfile.BadZipFile as e:
         ck = check(setID, rq_type)
-        if ck is not None:
+        if type(ck) is not list:
             return ck
         try:
             zipfile.ZipFile(f'{dataFolder}/dl/{get_osz_fullName(setID)}').extractall(f'{dataFolder}/dl/{setID}')
         except zipfile.BadZipFile as e:
             log.error(f"압축파일 오류: {e}")
-    
+
     file_list = os.listdir(f"{dataFolder}/dl/{setID}")
     file_list_osu = [file for file in file_list if file.endswith(".osu")]
 
@@ -389,200 +491,106 @@ def osu_file_read(setID, rq_type, moving=False, bID=None, cheesegull=False, file
         WHERE s.id = %s ORDER BY filename
     """, [setID])
 
-    audio_unavailable, download_unavailable = choUnavailable(setID)["pylist_unavailable"]
+    Bancho_data = choUnavailable(setID)
+    audio_unavailable, download_unavailable, storyboard = Bancho_data["pylist_unavailable"]
+    Bancho = Bancho_data["Bancho_data"]
+    oszUpdateCheck = Bancho[0]["last_update"] if Bancho else None
 
     # readline_all.py
     for beatmapName in file_list_osu:
         log.info(beatmapName)
-        temp = {}
-        bg_ignore = False
         beatmap_md5 = calculate_md5(f"{dataFolder}/dl/{setID}/{beatmapName}")
 
-        with open(f"{dataFolder}/dl/{setID}/{beatmapName}", 'r', encoding="utf-8") as f:
-            line = f.read()
+        sql = """
+            SELECT file_name as beatmapName, BeatmapMD5, osu_file_format_v, AudioFilename,
+                PreviewTime, Version, BeatmapID, BeatmapBG,
+                BeatmapVideo, audio_unavailable, download_unavailable, storyboard
+            FROM beatmapsinfo_copy WHERE BeatmapMD5 = %s
+        """
+        temp = omsDB = dbO.fetch(sql, [beatmap_md5], NoneMsg=False)
+        if not temp: temp = {}
 
-            line = line[line.find("osu file format v"):]
-            try:
-                osu_file_format_version = int(line.split("\n")[:4][0].replace("osu file format v", "").replace(" ", ""))
-            except:
-                osu_file_format_version = 0
-            if osu_file_format_version == 0:
-                log.error("osu file format v0")
-            elif osu_file_format_version < 10:
-                underV10 = True
-                log.error(f"{setID} 비트맵셋의 어떤 비트맵은 시이이이이발 osu file format 이 10이하 ({osu_file_format_version}) 이네요? 시발련들아?")
-                #틀딱곡 BeatmapID 를 Version 쪽에 넘김
+        if temp:
+            temp["AudioLength"], temp["AudioLength-DT"], temp["AudioLength-NC"], temp["AudioLength-HF"] = get_AudioLength(filesinfo, setID, temp["AudioFilename"])
+            log.debug((temp, omsDB, oszUpdateCheck))
+        else:
+            with open(f"{dataFolder}/dl/{setID}/{beatmapName}", 'r', encoding="utf-8") as f:
+                line = f.read()
 
-            line = line[line.find("AudioFilename:"):]
-            try:
-                AudioFilename = line.split("\n")[:4][0].replace("AudioFilename:", "")
-                AudioFilename = AudioFilename.replace(" ", "", 1) if AudioFilename.startswith(" ") else AudioFilename
-            except:
-                AudioFilename = None
-
-            line = line[line.find("PreviewTime:"):]
-            try:
-                PreviewTime = line.split("\n")[:4][0].replace("PreviewTime:", "")
-                PreviewTime = int(PreviewTime.replace(" ", "", 1) if PreviewTime.startswith(" ") else PreviewTime)
-            except:
-                PreviewTime = None
-            
-            line = line[line.find("Version:"):]
-            try:
-                Version = line.split("\n")[:4][0].replace("Version:", "")
-                Version = Version.replace(" ", "", 1) if Version.startswith(" ") else Version
-            except:
-                Version = None
-
-            if osu_file_format_version >= 10:
-                line = line[line.find("BeatmapID:"):]
+                line = line[line.find("osu file format v"):]
                 try:
-                    BeatmapID = line.split("\n")[:4][0].replace("BeatmapID:", "")
-                    BeatmapID = int(BeatmapID.replace(" ", "", 1) if BeatmapID.startswith(" ") else BeatmapID)
-
-                    #.osu 파일에서 실제로 존재하지 않거나, 맞지않는 bid 가 있어서 점검함
-                    for i in gullDB if type(gullDB) == list else [gullDB]:
-                        if i["file_md5"] == beatmap_md5 and BeatmapID != i["id"]:
-                            log.error(f"비트맵ID 정보 서로 일치하지 않음 | [{i['diff_name']}] | BeatmapID = {BeatmapID} <-- i['id'] = {i['id']}")
-                            BeatmapID = i["id"]
+                    osu_file_format_version = int(line.split("\n")[:4][0].replace("osu file format v", "").replace(" ", ""))
                 except:
+                    osu_file_format_version = 0
+                if osu_file_format_version == 0:
+                    log.error("osu file format v0")
+                elif osu_file_format_version < 10:
+                    underV10 = True
+                    log.error(f"{setID} 비트맵셋의 어떤 비트맵은 시이이이이발 osu file format 이 10이하 ({osu_file_format_version}) 이네요? 시발련들아?")
+                    #틀딱곡 BeatmapID 를 Version 쪽에 넘김
+
+                line = line[line.find("AudioFilename:"):]
+                try:
+                    AudioFilename = line.split("\n")[:4][0].replace("AudioFilename:", "")
+                    AudioFilename = AudioFilename.replace(" ", "", 1) if AudioFilename.startswith(" ") else AudioFilename
+                except:
+                    AudioFilename = None
+
+                line = line[line.find("PreviewTime:"):]
+                try:
+                    PreviewTime = line.split("\n")[:4][0].replace("PreviewTime:", "")
+                    PreviewTime = int(PreviewTime.replace(" ", "", 1) if PreviewTime.startswith(" ") else PreviewTime)
+                except:
+                    PreviewTime = None
+                
+                line = line[line.find("Version:"):]
+                try:
+                    Version = line.split("\n")[:4][0].replace("Version:", "")
+                    Version = Version.replace(" ", "", 1) if Version.startswith(" ") else Version
+                except:
+                    Version = None
+
+                if osu_file_format_version >= 10:
+                    line = line[line.find("BeatmapID:"):]
+                    try:
+                        BeatmapID = line.split("\n")[:4][0].replace("BeatmapID:", "")
+                        BeatmapID = int(BeatmapID.replace(" ", "", 1) if BeatmapID.startswith(" ") else BeatmapID)
+
+                        #.osu 파일에서 실제로 존재하지 않거나, 맞지않는 bid 가 있어서 점검함
+                        for i in gullDB if type(gullDB) == list else [gullDB]:
+                            if i["file_md5"] == beatmap_md5 and BeatmapID != i["id"]:
+                                log.error(f"비트맵ID 정보 서로 일치하지 않음 | [{i['diff_name']}] | BeatmapID = {BeatmapID} <-- i['id'] = {i['id']}")
+                                BeatmapID = i["id"]
+                    except:
+                        BeatmapID = 0
+                else:
+                    log.warning(f"osu file format v{osu_file_format_version} | files bid = 0")
                     BeatmapID = 0
-            else:
-                log.warning(f"osu file format v{osu_file_format_version} | files bid = 0")
-                BeatmapID = 0
 
-            line = line[line.find("//Background and Video events"):]
-            try:
-                lineSpilted = line.split("\n")[:4]
-                if lineSpilted[1].lower().startswith("video"):
-                    BeatmapVideo, BeatmapBG = lineSpilted[1], lineSpilted[2]
-                else:
-                    BeatmapVideo, BeatmapBG = lineSpilted[2], lineSpilted[1]
-                    if not BeatmapVideo.lower().startswith("video"): BeatmapVideo = None
-                BeatmapVideo = BeatmapVideo[BeatmapVideo.find('"') + 1 : BeatmapVideo.find('"', BeatmapVideo.find('"') + 1)] if BeatmapVideo else None
-                BeatmapBG = BeatmapBG[BeatmapBG.find('"') + 1 : BeatmapBG.find('"', BeatmapBG.find('"') + 1)]
-            except:
-                BeatmapBG = None
-                BeatmapVideo = None
+                line = line[line.find("//Background and Video events"):]
+                try:
+                    BeatmapVideo = BeatmapBG = None
+                    lineSpilted = line.split("\n")[:4]
+                    for p in lineSpilted:
+                        t = pathToContentType(p, isInclude=True)
+                        if t["type"] == "video": BeatmapVideo = p[p.find('"') + 1 : p.find('"', p.find('"') + 1)]
+                        elif t["type"] == "image": BeatmapBG = p[p.find('"') + 1 : p.find('"', p.find('"') + 1)]
+                except:
+                    BeatmapBG = BeatmapVideo = None
 
-            try:
-                if filesinfo:
-                    def culc_length(l):
-                        h = "{0:02d}".format(l // 60 // 60)
-                        m = "{0:02d}".format(l // 60)
-                        s = "{0:02d}".format(l % 60)
-                        return f"{h}:{m}:{s}"
-                    AudioLength = round(float(mediainfo(f"{dataFolder}/dl/{setID}/{AudioFilename}")["duration"]), 2)
-                    AudioLength = [AudioLength, culc_length(round(AudioLength))]
-                    AudioLength_DT = AudioLength_NC = [round(AudioLength[0] / 1.5, 2), culc_length(round(AudioLength[0] / 1.5))]
-                    #HF = 1. (AudioLength / 0.75), 2. (AudioLength * 1.5)
-                    AudioLength_HF = [round(AudioLength[0] / 0.75, 2), culc_length(round(AudioLength[0] / 0.75))]
-                else:
-                    AudioLength = AudioLength_DT = AudioLength_NC = AudioLength_HF = None
-            except:
-                AudioLength = AudioLength_DT = AudioLength_NC = AudioLength_HF = None
-
-            temp["beatmapName"] = beatmapName if beatmapName != "" else None
-            temp["BeatmapMD5"] = beatmap_md5
-            temp["osu_file_format_v"] = osu_file_format_version if osu_file_format_version != "" else None
-            temp["AudioFilename"] = AudioFilename if AudioFilename != "" else None
-            temp["PreviewTime"] = PreviewTime if PreviewTime != "" else None
-            temp["Version"] = Version if Version != "" else None
-            temp["BeatmapID"] = BeatmapID if BeatmapID != "" else None
-            temp["BeatmapBG"] = BeatmapBG if BeatmapBG != "" else None
-            temp["BeatmapVideo"] = BeatmapVideo if BeatmapVideo != "" else None
-            temp["audio_unavailable"] = audio_unavailable
-            temp["download_unavailable"] = download_unavailable
-            temp["AudioLength"] = AudioLength
-            temp["AudioLength-DT"] = AudioLength_DT
-            temp["AudioLength-NC"] = AudioLength_NC
-            temp["AudioLength-HF"] = AudioLength_HF
-
-            """ while True:
-                line = f.readline()
-                #간혹 확장자가 대문자인 경우가 있어서 전부 소문자로 변경함
-                lineCheck = line.lower()
-                if not line: break
-
-                #ㅈ같은 osu file format < osu file format v10 은 거르쟈 시발련들아
-                if "osu file format" in line:
-                    osu_file_format_version = line.replace("osu file format v", "")
-
-                    # BOM 문자 제거
-                    if osu_file_format_version.startswith('\ufeff'):
-                        osu_file_format_version = osu_file_format_version[1:]
-                        log.warning("BOM 문자 제거")
-                    osu_file_format_version = int(osu_file_format_version)
-                    temp["osu_file_format_v"] = osu_file_format_version
-                    if osu_file_format_version < 10:
-                        underV10 = True
-                        log.error(f"{setID} 비트맵셋의 어떤 비트맵은 시이이이이발 osu file format 이 10이하 ({osu_file_format_version}) 이네요? 시발련들아?")
-                        #틀딱곡 BeatmapID 를 Version 쪽에 넘김
-
-                if "BeatmapID:" in line and not underV10:
-                    spaceFilter = line.replace("BeatmapID:", "").replace("\n", "")
-                    if spaceFilter.startswith(" "):
-                        spaceFilter = spaceFilter.replace(" ", "", 1)
-                    temp["BeatmapID"] = int(spaceFilter)
-                elif "Version:" in line:
-                    spaceFilter = line.replace("Version:", "").replace("\n", "")
-                    if spaceFilter.startswith(" "):
-                        spaceFilter = spaceFilter.replace(" ", "", 1)
-                    temp["Version"] = spaceFilter
-
-                    #틀딱곡 BeatmapID 넘겨옴
-                    if underV10:
-                        # 정규식 패턴
-                        pattern = r'\[([^\]]+)\]\.osu$'
-                        match = re.search(pattern, beatmapName)
-                        if match:
-                            diffname = match.group(1)
-                            sql = "SELECT id FROM beatmaps WHERE parent_set_id = %s AND diff_name = %s"
-                            # windows 특수문자 이슈
-                            if diffname != temp["Version"] and temp["Version"] != "":
-                                log.error(f"diffname 매치 안됨! .osu안의 결과물 사용! | diffname = {diffname} | temp['Version'] = {temp['Version']}")
-                                result = dbC.fetch(sql, [setID, temp["Version"]])
-                            else:
-                                result = dbC.fetch(sql, [setID, diffname])
-
-                            if result is None:
-                                return None
-                            temp["BeatmapID"] = result["id"]
-
-                        log.info(f"{setID} 틀딱곡 cheesegull db에서 조회완료")
-                        log.warning(f"{setID}/{temp['BeatmapID']} 틀딱곡 BeatmapID 세팅 완료")
-                elif "AudioFilename:" in line and (rq_type == "audio" or rq_type == "preview" or rq_type == "all"):
-                    spaceFilter = line.replace("AudioFilename:", "").replace("\n", "")
-                    if spaceFilter.startswith(" "):
-                        spaceFilter = spaceFilter.replace(" ", "", 1)
-                    temp["AudioFilename"] = spaceFilter
-                elif "PreviewTime:" in line and (rq_type == "audio" or rq_type == "preview" or rq_type == "all"):
-                    spaceFilter = line.replace("PreviewTime:", "").replace("\n", "")
-                    if spaceFilter.startswith(" "):
-                        spaceFilter = spaceFilter.replace(" ", "", 1)
-                    temp["PreviewTime"] = spaceFilter
-                #비트맵별 BG 파일이름
-                elif ('"' and ".jpg") in lineCheck and not bg_ignore and (rq_type == "bg" or rq_type == "thumb" or rq_type == "all"):
-                    temp["BeatmapBG"] = line[line.find('"') + 1 : line.find('"', line.find('"') + 1)]
-                    bg_ignore = True
-                elif ('"' and ".png") in lineCheck and not bg_ignore and (rq_type == "bg" or rq_type == "thumb" or rq_type == "all"):
-                    temp["BeatmapBG"] = line[line.find('"') + 1 : line.find('"', line.find('"') + 1)]
-                    bg_ignore = True
-                elif ('"' and ".jpeg") in lineCheck and not bg_ignore and (rq_type == "bg" or rq_type == "thumb" or rq_type == "all"):
-                    temp["BeatmapBG"] = line[line.find('"') + 1 : line.find('"', line.find('"') + 1)]
-                    bg_ignore = True
-                #비트맵별 video 파일이름
-                #.avi 추가하기
-                #elif '"' and "Video" and ".mp4" in line:
-                elif '"' and "video" and ".mp4" in lineCheck and (rq_type == "video" or rq_type == "all"):
-                    temp["BeatmapVideo"] = line[line.find('"') + 1 : line.find('"', line.find('"') + 1)]
-                elif '"' and ".mp4" in lineCheck and (rq_type == "video" or rq_type == "all") and underV10:
-                    temp["BeatmapVideo"] = line[line.find('"') + 1 : line.find('"', line.find('"') + 1)]
-                temp["beatmapName"] = beatmapName
-        try:
-            temp["BeatmapVideo"] is None
-        except:
-            temp["BeatmapVideo"] = None """
+                temp["beatmapName"] = beatmapName if beatmapName != "" else None
+                temp["BeatmapMD5"] = beatmap_md5
+                temp["osu_file_format_v"] = osu_file_format_version if osu_file_format_version != "" else None
+                temp["AudioFilename"] = AudioFilename if AudioFilename != "" else None
+                temp["PreviewTime"] = PreviewTime if PreviewTime != "" else None
+                temp["Version"] = Version if Version != "" else None
+                temp["BeatmapID"] = BeatmapID if BeatmapID != "" else None
+                temp["BeatmapBG"] = BeatmapBG if BeatmapBG != "" else None
+                temp["BeatmapVideo"] = BeatmapVideo if BeatmapVideo != "" else None
+                temp["audio_unavailable"] = audio_unavailable
+                temp["download_unavailable"] = download_unavailable
+                temp["storyboard"] = storyboard
+                temp["AudioLength"], temp["AudioLength-DT"], temp["AudioLength-NC"], temp["AudioLength-HF"] = get_AudioLength(filesinfo, setID, AudioFilename)
         beatmap_info.append(temp)
 
     bidsList = [i["BeatmapID"] for i in beatmap_info]
@@ -637,21 +645,32 @@ def osu_file_read(setID, rq_type, moving=False, bID=None, cheesegull=False, file
 
     if bID is not None:
         try:
-            cheesegull = requests.get(f"https://cheesegull.{osuServerDomain}/api/b/{bID}", headers=requestHeaders).json() if cheesegull else None
+            redstar = next((i for i in beatmap_info if i["BeatmapID"] == int(bID)))
+        except:
+            redstar = None
+        try:
+            cheesegull = requests.get(f"https://cheesegull.{osuServerDomain}/api/b/{bID}", headers=requestHeaders).json()
+            if not cheesegull and cheesegull["ParentSetID"] != int(setID): cheesegull = None
         except:
             cheesegull = None
         try:
-            for i in beatmap_info:
-                if i["BeatmapID"] == int(bID):
-                    return {"RedstarOSU": i, "cheesegull": cheesegull}
+            cho = [b for b in Bancho if b["beatmap_id"] == bID]
+            if not cho: cho = None
         except:
-            return None
+            cho = None
+        return_result = {"RedstarOSU": redstar, "cheesegull": cheesegull, "Bancho": cho} if redstar and cheesegull and cho else None
     else:
         try:
             cheesegull = requests.get(f"https://cheesegull.{osuServerDomain}/api/s/{setID}", headers=requestHeaders).json() if cheesegull else None
         except:
             cheesegull = None
-        return {"RedstarOSU": [int(setID), first_bid, beatmap_info], "cheesegull": cheesegull}
+        return_result = {"RedstarOSU": [int(setID), first_bid, beatmap_info], "cheesegull": cheesegull, "Bancho": Bancho}
+
+    if not omsDB:
+        pass #TODO : osu_media_server 테이블에 beatmapsinfo 항목에 INSERT 문 코드 넣기 (beatmapsinfo.py 복사해서 모듈형태로 가져오게 하기)
+    else:
+        pass #TODO : UPDATE 문으로 넣기
+    return return_result
 
 def move_files(setID, rq_type):
         isOsuFile = False
@@ -777,11 +796,13 @@ def move_files(setID, rq_type):
 
         #osu_file_read() 함수에 인자값으로 True를 넣어서 dl/{setID} 가 삭제 되지 않으므로 여기서 폴더 삭제함
         shutil.rmtree(f"{dataFolder}/dl/{setID}")
+        return result
 
 def choUnavailable(setID):
     unavailable = False
-    audio_unavailable = download_unavailable = 0
+    audio_unavailable = download_unavailable = storyboard = 0
     Bancho_data = requests.get(f"https://osu.ppy.sh/api/get_beatmaps?k={OSU_APIKEY}&s={setID}").json()
+    if not Bancho_data: return {"Bancho_data": None, "unavailable": None, "audio_unavailable": None, "download_unavailable": None, "storyboard": None, "pylist_unavailable": [None, None, None]}
     for i in Bancho_data:
         if int(i["audio_unavailable"]) == 1 and not audio_unavailable:
             unavailable = True
@@ -791,21 +812,33 @@ def choUnavailable(setID):
             unavailable = True
             download_unavailable = int(i["download_unavailable"])
             log.error(f"{setID} 셋은 반초에서 다운로드 불가({download_unavailable}) 상태임!!")
+        elif int(i["storyboard"]) == 1:
+            storyboard = int(i["storyboard"])
         elif audio_unavailable and download_unavailable:
             break
-    return {"Bancho_data": Bancho_data, "unavailable": unavailable, "audio_unavailable": audio_unavailable, "download_unavailable": download_unavailable, "pylist_unavailable": [audio_unavailable, download_unavailable]}
+    return {"Bancho_data": Bancho_data, "unavailable": unavailable, "audio_unavailable": audio_unavailable, "download_unavailable": download_unavailable, "storyboard": storyboard, "pylist_unavailable": [audio_unavailable, download_unavailable, storyboard]}
 def check(setID, rq_type, checkRenewFile=False):
     #.osz는 무조건 새로 받되, Bancho, Redstar**전용** 맵에서 ranked, loved 등등 은 새로 안받아도 댐. (Redstar에서의 랭크상태 여부는 고민중)
     #근데 생각해보니 파일 있으면 걍 이걸 안오는데?
     folder_check()
     fullSongName = get_osz_fullName(setID)
     log.debug(fullSongName)
+    choData = choUnavailable(setID)
 
-    url = [f"https://osu.ppy.sh/beatmapsets/{setID}/download",f'https://api.nerinyan.moe/d/{setID}', f"https://chimu.moe/d/{setID}", f"https://catboy.best/d/{setID}"]
-    urlName = ["Bancho", "Nerinyan", "chimu", "catboy"]
+    url = [
+        f"https://osu.ppy.sh/beatmapsets/{setID}/download",
+        f'https://api.nerinyan.moe/d/{setID}',
+        f"https://chimu.moe/d/{setID}",
+        f"https://catboy.best/d/{setID}",
+        f"https://osu.direct/d/{setID}",
+        f"https://beatconnect.io/b/{setID}",
+        f"https://txy1.sayobot.cn/beatmaps/download/full/{setID}",
+        f"https://storage.ripple.moe/d/{setID}"
+    ]
+    urlName = ["Bancho", "Nerinyan", "chimu", "catboy", "osu.direct", "beatconnect", "sayobot", "Ripple"]
     dlHeader = {"User-Agent": requestHeaders["User-Agent"], "Referer": f"https://osu.ppy.sh/beatmapsets/{setID}", "Cookie": "XSRF-TOKEN=5xjVgPQSC8jhxq30XopWzJv2sqBTIjm9NAWDYWbd; osu_session=eyJpdiI6Ijlpbk1ROS84Y2FKR1FZWnYwL2lwM1E9PSIsInZhbHVlIjoiQ2VuZElFb2hrQ0dwV05ENUx6Z1NkVzNQTFVXVHE1b3U2bFV4dWhZblVZYmxrMnAwdk5rY3NjWWZTeEZUcDRoR0lUYUF5OGduSE1ieTNoUkZzWE9SUFJUVjAxRU9Bb0JCODhYeDJ0eU9QUllidGJuU0FsRTJINGd3NUlwTTVrVDY1RGhMUFNWWDlCbm81ZXc4d0lycFFBPT0iLCJtYWMiOiJiZjc5MjE5MTAxNDNiNDQ4NDgzNWRkNjQwM2UwM2RlZWRlN2ExODE1YWM0MGU5MzIyOGI2NGUxMzkxNDVkY2QzIiwidGFnIjoiIn0%3D"}
 
-    if choUnavailable(setID)["unavailable"]:
+    if choData["unavailable"]:
         del url[0], urlName[0]
 
     def dl():
@@ -857,9 +890,10 @@ def check(setID, rq_type, checkRenewFile=False):
                     os.replace(f"{dataFolder}/dl/{setID} .osz", f"{dataFolder}/dl/{newFilename}")
                 return statusCode
             else:
-                if i < 3:
+                if i < len(url) - 1:
                     log.warning(f'{statusCode}. {mn} 에서 파일을 다운로드할 수 없습니다. {urlName[i + 1]} 로 재시도!')
                 else:
+                    log.warning(f'{statusCode}. {mn} 에서 파일을 다운로드할 수 없습니다!')
                     return statusCode
 
     if fullSongName == 0:
@@ -872,38 +906,43 @@ def check(setID, rq_type, checkRenewFile=False):
         dlsc = 200
         log.info(f"{get_osz_fullName(setID)} 존재함")
 
-        """ exceptOszList = [919187, 871623, 12483, 1197242, 1086293, 940322, -10000000]
-        exceptOszList.append(929972) #네리냥에서 깨진 맵임 버그리봇방에 올려둠
-        exceptOszList.append(1745195)
-        exceptOszList.append(645756) """ #Update by <t:1706294656>
-
         with open("exceptOszList.json", "r") as file:
             exceptOszList = json.load(file)
             exceptOszList = exceptOszList["exceptOszList"] + exceptOszList["exceptOszList2"]
 
         #반초에 먼저 API 요청 때려봄
         try:
-            Bancho_LastUpdate = datetime.strptime(choUnavailable(setID)["Bancho_data"][0]["last_update"], '%Y-%m-%d %H:%M:%S')
-            gullDB = dbC.fetch("SELECT last_update FROM sets WHERE id = %s", [setID])["last_update"]
+            Bancho_LastUpdate = datetime.strptime(choData["Bancho_data"][0]["last_update"], '%Y-%m-%d %H:%M:%S')
+            if int(setID) > 0:
+                omsDB = dbO.fetch("SELECT last_update, update_lock FROM beatmapsinfo_copy WHERE BeatmapSetID = %s AND BeatmapID > 0 LIMIT 1", [setID])
+            else:
+                omsDB = dbO.fetch("SELECT last_update, update_lock FROM beatmapsinfo_copy WHERE BeatmapSetID = %s LIMIT 1", [setID])
+            if not omsDB: raise
         except:
-            Bancho_LastUpdate = gullDB = None
-        if Bancho_LastUpdate is not None and gullDB is not None and Bancho_LastUpdate > gullDB:
+            Bancho_LastUpdate,  omsDB = (None, {"last_update": None, "update_lock": 0})
+        if omsDB["update_lock"] == 1:
+            BanchoTimeCheck = False
+        elif not omsDB["last_update"]:
             BanchoTimeCheck = True
-        elif Bancho_LastUpdate is not None and gullDB is not None:
+        elif Bancho_LastUpdate and omsDB["last_update"] and Bancho_LastUpdate > omsDB["last_update"]:
+            BanchoTimeCheck = True
+        elif Bancho_LastUpdate is None and omsDB["last_update"] is None:
             BanchoTimeCheck = True #둘다 None 일 경우 그냥 진행함
         else:
             BanchoTimeCheck = False
 
-
         #7일 이상 된 비트맵만 파일체크함
-        fED = os.path.getmtime(f"data/dl/{get_osz_fullName(setID)}")
+        """ fED = os.path.getmtime(f"data/dl/{get_osz_fullName(setID)}")
         t = round(time.time() - fED)
         if t > oszRenewTime:
             fED = True
         else:
             fED = False
         isRenew = checkRenewFile and int(setID) not in exceptOszList and BanchoTimeCheck and fED
-        log.info(f"checkRenewFile = {checkRenewFile} | t:{t} > oszRenewTime:{oszRenewTime} = {fED} | exceptOszList = {int(setID) not in exceptOszList} | BanchoTimeCheck = {BanchoTimeCheck} | 최종 조건 = {isRenew}")
+        log.info(f"checkRenewFile = {checkRenewFile} | t:{t} > oszRenewTime:{oszRenewTime} = {fED} | exceptOszList = {int(setID) not in exceptOszList} | BanchoTimeCheck = {BanchoTimeCheck} | 최종 조건 = {isRenew}") """
+
+        isRenew = checkRenewFile and int(setID) not in exceptOszList and BanchoTimeCheck
+        log.info(f"checkRenewFile = {checkRenewFile} | exceptOszList = {int(setID) not in exceptOszList} | BanchoTimeCheck = {BanchoTimeCheck} | 최종 조건 = {isRenew}")
 
         #이거 redstar DB에 없는 경우 있으니 cheesegull DB에서도 추가로 참고하기
         if isRenew:
@@ -943,22 +982,20 @@ def check(setID, rq_type, checkRenewFile=False):
                         break
 
     if checkRenewFile:
-        return None
+        return []
     elif dlsc != 200:
         return dlsc
     else:
         try:
-            move_files(setID, rq_type)
+            return move_files(setID, rq_type)
         except Exception as e:
             return e
-        finally:
-            return None
             
 def crf(bsid, rq_type):
     #파일 최신화
     if rq_type == "osz":
         ck = check(bsid, rq_type, checkRenewFile=True)
-        if ck is not None:
+        if type(ck) is not list:
             return ck
     else:
         pass
@@ -1012,7 +1049,7 @@ def read_bg(id):
         if not os.path.isdir(f"{dataFolder}/bg/{id}"):
             #파일 다운로드시에 500 뜨면 500 코드로 반환 예정, 만약 우리서버 문제면 main.py 에서 503 코드로 반환
             ck = check(id, rq_type="bg")
-            if ck is not None:
+            if type(ck) is not list:
                 return ck
 
         file_list = [file for file in os.listdir(f"{dataFolder}/bg/{id}") if file.startswith("+")]
@@ -1021,7 +1058,7 @@ def read_bg(id):
         except:
             log.error(f"bsid = {id} | BG print(file_list[0]) 에러")
             ck = check(id, rq_type="bg")
-            if ck is not None:
+            if type(ck) is not list:
                 return ck
             return read_bg(f"+{id}")
         return f"{dataFolder}/bg/{id}/{file_list[0]}"
@@ -1043,7 +1080,7 @@ def read_bg(id):
         #bg폴더 파일 체크
         if not os.path.isdir(f"{dataFolder}/bg/{bsid}"):
             ck = check(bsid, rq_type="bg")
-            if ck is not None:
+            if type(ck) is not list:
                 return ck
 
         file_list = [file for file in os.listdir(f"{dataFolder}/bg/{bsid}") if file.startswith(str(id))]
@@ -1054,7 +1091,7 @@ def read_bg(id):
         except:
             log.error(f"bid = {id} | BG print(file_list[0]) 에러")
             ck = check(bsid, rq_type="bg")
-            if ck is not None:
+            if type(ck) is not list:
                 return ck
             return read_bg(id)
         return f"{dataFolder}/bg/{bsid}/{file_list[0]}"
@@ -1078,7 +1115,7 @@ def read_thumb(id):
         #thumb폴더 파일 체크
         if not os.path.isdir(f"{dataFolder}/thumb/{bsid}"):
             ck = check(bsid, rq_type="thumb")
-            if ck is not None:
+            if type(ck) is not list:
                 return ck
 
         file_list = [file for file in os.listdir(f"{dataFolder}/thumb/{bsid}") if file.startswith("+")]
@@ -1090,7 +1127,7 @@ def read_thumb(id):
         except:
             log.error(f"bsid = {bsid} | thumb print(file_list[0]) 에러")
             ck = check(bsid, rq_type="thumb")
-            if ck is not None:
+            if type(ck) is not list:
                 return ck
             return read_thumb(id)
 
@@ -1124,15 +1161,24 @@ def read_thumb(id):
         return f"{dataFolder}/thumb/{bsid}/{id}"
 
 #osu_file_read() 역할 분할하기 (각각 따로 두기)
-def read_audio(id):
+def read_audio(id, m=None):
     #ffmpeg -i "audio.ogg" -acodec libmp3lame -q:a 0 -y "audio.mp3"
-    def audioSpeed(mods, setID, file_list):
+    def audioSpeed(m, setID, file_list):
         #변환 시작 + 에러시 코덱 확인후 재 변환
         Codec = mediainfo(f"{dataFolder}/audio/{setID}/{file_list[0]}")["codec_name"]
         if Codec != "mp3":
             log.error(f"{file_list[0]} 코텍은 mp3가 아님 | {Codec}")
 
-        if mods == "DT" and not "noAudio" in file_list[0]:
+        try:
+            m = int(m)
+            if m == mods.DOUBLETIME: m = "DT"
+            elif m == mods.NIGHTCORE or m == 576: m = "NC"
+            elif m == mods.HALFTIME: m = "HT"
+        except:
+            m = m.upper() if m else None
+
+        if m == "DT" and not "noAudio" in file_list[0]:
+            log.chat("DT 감지")
             DTFilename = f"{dataFolder}/audio/{setID}/{file_list[0][:-4]}-DT.mp3" if not file_list[0].endswith("-DT.mp3") else f"{dataFolder}/audio/{setID}/{file_list[0]}"
             if os.path.isfile(DTFilename):
                 return DTFilename
@@ -1141,7 +1187,8 @@ def read_audio(id):
                 log.chat(f"DT ffmpeg_msg = {ffmpeg_msg}")
                 os.system(ffmpeg_msg)
                 return DTFilename
-        elif mods == "NC" and not "noAudio" in file_list[0]:
+        elif m == "NC" and not "noAudio" in file_list[0]:
+            log.chat("NC 감지")
             NCFilename = f"{dataFolder}/audio/{setID}/{file_list[0][:-4]}-NC.mp3" if not file_list[0].endswith("-NC.mp3") else f"{dataFolder}/audio/{setID}/{file_list[0]}"
             if os.path.isfile(NCFilename):
                 return NCFilename
@@ -1151,8 +1198,9 @@ def read_audio(id):
                 log.chat(f"NC ffmpeg_msg = {ffmpeg_msg}")
                 os.system(ffmpeg_msg)
                 return NCFilename
-        elif mods == "HF" and not "noAudio" in file_list[0]:
-            HFFilename = f"{dataFolder}/audio/{setID}/{file_list[0][:-4]}-HF.mp3" if not file_list[0].endswith("-HF.mp3") else f"{dataFolder}/audio/{setID}/{file_list[0]}"
+        elif m == "HT" and not "noAudio" in file_list[0]:
+            log.chat("HT 감지")
+            HFFilename = f"{dataFolder}/audio/{setID}/{file_list[0][:-4]}-HT.mp3" if not file_list[0].endswith("-HT.mp3") else f"{dataFolder}/audio/{setID}/{file_list[0]}"
             if os.path.isfile(HFFilename):
                 return HFFilename
             else:
@@ -1160,25 +1208,32 @@ def read_audio(id):
                 log.chat(f"HF ffmpeg_msg = {ffmpeg_msg}")
                 os.system(ffmpeg_msg)
                 return HFFilename
+        elif m == "PREVIEW" and not "noAudio" in file_list[0]:
+            log.chat("preview 감지")
+            PreviewFilename = f"{dataFolder}/audio/{setID}/{file_list[0][:-4]}-preview.mp3" if not file_list[0].endswith("-preview.mp3") else f"{dataFolder}/audio/{setID}/{file_list[0]}"
+            if os.path.isfile(PreviewFilename):
+                return PreviewFilename
+            else:
+                j = osu_file_read(setID, rq_type="preview")["RedstarOSU"]
+                for i in j[2]:
+                    if j[1] == i["BeatmapID"]:
+                        prti = int(i["PreviewTime"])
+                        if prti == -1:
+                            audio = float(mediainfo(f"{dataFolder}/audio/{setID}/{file_list[0]}")["duration"])
+                            PreviewTime = audio / 2.5
+                            log.warning(f"{setID}.mp3 ({file_list[0]}) 의 PreviewTime 값이 {prti} 이므로 TotalLength / 2.5 == {PreviewTime} 로 세팅함")
+                        else:
+                            PreviewTime = prti / 1000
+
+                ffmpeg_msg = f'ffmpeg -i "{dataFolder}/audio/{setID}/{file_list[0]}" -ss {PreviewTime} -acodec libmp3lame -q:a 0 -y "{PreviewFilename}"'
+                log.chat(f"preview ffmpeg_msg = {ffmpeg_msg}")
+                os.system(ffmpeg_msg)
+                return PreviewFilename
         else:
             return f"{dataFolder}/audio/{setID}/{file_list[0]}"
 
     if "+" in id:
         id = str(id).replace("+", "")
-        if id.upper()[-2:] == "DT":
-            log.chat("DT 감지")
-            mods = "DT"
-            id = id[:-2]
-        elif id.upper()[-2:] == "NC":
-            log.chat("NC 감지")
-            mods = "NC"
-            id = id[:-2]
-        elif id.upper()[-2:] == "HF":
-            log.chat("HF 감지")
-            mods = "HF"
-            id = id[:-2]
-        else:
-            mods = None
 
         #파일 최신화
         crf(id, rq_type="audio")
@@ -1186,7 +1241,7 @@ def read_audio(id):
         #audio폴더 파일 체크
         if not os.path.isdir(f"{dataFolder}/audio/{id}"):
             ck = check(id, rq_type="audio")
-            if ck is not None:
+            if type(ck) is not list:
                 return ck
 
         file_list = [file for file in os.listdir(f"{dataFolder}/audio/{id}")]
@@ -1205,35 +1260,12 @@ def read_audio(id):
         except:
             log.error(f"bsid = {id} | audio print(file_list[0]) 에러")
             ck = check(id, rq_type="audio")
-            if ck is not None:
+            if type(ck) is not list:
                 return ck
-            
-            if mods == "DT":
-                return read_audio(f"+{id}DT")
-            elif mods == "NC":
-                return read_audio(f"+{id}NC")
-            elif mods == "HF":
-                return read_audio(f"+{id}HF")
-            else:
-                return read_audio(f"+{id}")
+            return read_audio(f"+{id}", m)
 
-        return audioSpeed(mods, id, file_list)
+        return audioSpeed(m, id, file_list)
     else:
-        if id.upper()[-2:] == "DT":
-            log.chat("DT 감지")
-            mods = "DT"
-            id = id[:-2]
-        elif id.upper()[-2:] == "NC":
-            log.chat("NC 감지")
-            mods = "NC"
-            id = id[:-2]
-        elif id.upper()[-2:] == "HF":
-            log.chat("HF 감지")
-            mods = "HF"
-            id = id[:-2]
-        else:
-            mods = None
-
         #파일 최신화
         crf(id, rq_type="audio")
 
@@ -1251,7 +1283,7 @@ def read_audio(id):
         #audio폴더 파일 체크
         if not os.path.isdir(f"{dataFolder}/audio/{bsid}"):
             ck = check(bsid, rq_type="audio")
-            if ck is not None:
+            if type(ck) is not list:
                 return ck
 
         file_list = [file for file in os.listdir(f"{dataFolder}/audio/{bsid}")]
@@ -1270,19 +1302,11 @@ def read_audio(id):
         except:
             log.error(f"bid = {id} | audio print(file_list[0]) 에러")
             ck = check(bsid, rq_type="audio")
-            if ck is not None:
+            if type(ck) is not list:
                 return ck
-            
-            if mods == "DT":
-                return read_audio(f"{id}DT")
-            elif mods == "NC":
-                return read_audio(f"{id}NC")
-            elif mods == "HF":
-                return read_audio(f"{id}HF")
-            else:
-                return read_audio(id)
+            return read_audio(id, m)
 
-        return audioSpeed(mods, bsid, file_list)
+        return audioSpeed(m, bsid, file_list)
 
 def read_preview(id):
     #source_{bsid}.mp3 먼저 확인시키기 ㄴㄴ audio에서 가져오기
@@ -1298,7 +1322,7 @@ def read_preview(id):
             return f"{dataFolder}/preview/{setID}/noAudio_{id}"
         else:
             ck = check(setID, rq_type="preview")
-            if ck is not None:
+            if type(ck) is not list:
                 return ck
         
         if os.path.isfile(f"{dataFolder}/preview/{setID}/noAudio_{id}"):
@@ -1358,7 +1382,7 @@ def read_video(id):
     #video폴더 파일 체크
     if not os.path.isdir(f"{dataFolder}/video/{bsid}"):
         ck = check(bsid, rq_type="video")
-        if ck is not None:
+        if type(ck) is not list:
             return ck
 
     hasVideo = next((i["BeatmapVideo"] for i in osu_file_read(bsid, rq_type="video")["RedstarOSU"][2] if int(id) == i["BeatmapID"]), None)
@@ -1383,7 +1407,7 @@ def read_video(id):
                 except:
                     log.error(f"bid = {id} | video print(file_list[0]) 에러")
                     ck = check(bsid, rq_type="video")
-                    if ck is not None:
+                    if type(ck) is not list:
                         return ck
                     return read_video(id)
                 return f"{dataFolder}/video/{bsid}/{file_list[0]}"
@@ -1406,7 +1430,7 @@ def read_osz(id):
         return {"path": f"{dataFolder}/dl/{filename}", "filename": filename}
     else:
         ck = check(id, rq_type="osz")
-        if ck is not None:
+        if type(ck) is not list:
             return ck
         newFilename = get_osz_fullName(id)
         if os.path.isfile(f"{dataFolder}/dl/{newFilename}"):
@@ -1466,7 +1490,7 @@ def read_osu(id):
             return {"path": f"{dataFolder}/osu/{bsid}/{id}.osu", "filename": filename["filename"]}
         else:
             ck = check(bsid, rq_type=f"osu")
-            if ck is not None:
+            if type(ck) is not list:
                 return ck
             return read_osu(id)
 
@@ -1517,7 +1541,7 @@ def filename_to_GetCheesegullDB(filename):
 
     # filename에 / 가 들어가면 에러남 (http 요청시 / 가 사라짐)
     sql = '''
-        SELECT b.id, b.parent_set_id, b.diff_name
+        SELECT b.id, b.parent_set_id, b.file_md5, b.diff_name, s.ranked_status
         FROM beatmaps AS b
         JOIN sets AS s ON b.parent_set_id = s.id
         WHERE s.artist = %s AND s.title = %s AND s.creator = %s AND b.diff_name = %s
@@ -1525,7 +1549,7 @@ def filename_to_GetCheesegullDB(filename):
     result = dbC.fetch(sql, [artist, title, creator, version])
     if result is None:
         #특수문자 등등 조회 안되는거 짤라서 조회
-        log.warning("filename 조회 실패! | 단어별로 짤라서 찾아봄")
+        log.warning(f"filename 조회 실패! | 단어별로 짤라서 찾아봄 | {filename}")
 
         artist_sp = artist.split()
         title_sp = title.split()
@@ -1533,40 +1557,36 @@ def filename_to_GetCheesegullDB(filename):
         version_sp = version.split()
 
         sql_part = '''
-            SELECT b.id, b.parent_set_id, b.diff_name
-            FROM beatmaps AS b
-            JOIN sets AS s ON b.parent_set_id = s.id
-            WHERE
+            SELECT b.id, b.parent_set_id, b.file_md5, b.diff_name, s.ranked_status
+            FROM cheesegull.beatmaps AS b
+            JOIN cheesegull.sets AS s ON b.parent_set_id = s.id
+            WHERE TRUE
         '''
         param_part = []
         for i, v in enumerate(artist_sp):
-            if i == 0:
-                sql_part += " s.artist LIKE %s"
-                param_part.append(f"{v}%")
-            else:
-                sql_part += " AND s.artist LIKE %s"
-                param_part.append(f"%{v}%")
+            sql_part += " AND s.artist LIKE %s"
+            if len(artist_sp) == 1: param_part.append(v)
+            elif i == 0 and i != len(artist_sp) - 1: param_part.append(f"{v}%")
+            elif i == len(artist_sp) - 1: param_part.append(f"%{v}")
+            else: param_part.append(f"%{v}%")
         for i, v in enumerate(title_sp):
-            if i == 0:
-                sql_part += " AND s.title LIKE %s"
-                param_part.append(f"{v}%")
-            else:
-                sql_part += " AND s.title LIKE %s"
-                param_part.append(f"%{v}%")
+            sql_part += " AND s.title LIKE %s"
+            if len(title_sp) == 1: param_part.append(v)
+            elif i == 0 and i != len(title_sp) - 1: param_part.append(f"{v}%")
+            elif i == len(title_sp) - 1: param_part.append(f"%{v}")
+            else: param_part.append(f"%{v}%")
         for i, v in enumerate(creator_sp):
-            if i == 0:
-                sql_part += " AND s.creator LIKE %s"
-                param_part.append(f"{v}%")
-            else:
-                sql_part += " AND s.creator LIKE %s"
-                param_part.append(f"%{v}%")
+            sql_part += " AND s.creator LIKE %s"
+            if len(creator_sp) == 1: param_part.append(v)
+            elif i == 0 and i != len(creator_sp) - 1: param_part.append(f"{v}%")
+            elif i == len(creator_sp) - 1: param_part.append(f"%{v}")
+            else: param_part.append(f"%{v}%")
         for i, v in enumerate(version_sp):
-            if i == 0:
-                sql_part += " AND b.diff_name LIKE %s"
-                param_part.append(f"{v}%")
-            else:
-                sql_part += " AND b.diff_name LIKE %s"
-                param_part.append(f"%{v}%")
+            sql_part += " AND b.diff_name LIKE %s"
+            if len(version_sp) == 1: param_part.append(v)
+            elif i == 0: param_part.append(f"{v}%")
+            elif i == len(version_sp) - 1: param_part.append(f"%{v}")
+            else: param_part.append(f"%{v}%")
 
         result_part = dbC.fetch(sql_part, param_part)
         if result_part is None:
