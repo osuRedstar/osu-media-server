@@ -828,14 +828,14 @@ def check(setID, rq_type, checkRenewFile=False):
     url = [
         f"https://osu.ppy.sh/beatmapsets/{setID}/download",
         f'https://api.nerinyan.moe/d/{setID}',
-        f"https://chimu.moe/d/{setID}",
+        #f"https://chimu.moe/d/{setID}",
         f"https://catboy.best/d/{setID}",
         f"https://osu.direct/d/{setID}",
         f"https://beatconnect.io/b/{setID}",
         f"https://txy1.sayobot.cn/beatmaps/download/full/{setID}",
         f"https://storage.ripple.moe/d/{setID}"
     ]
-    urlName = ["Bancho", "Nerinyan", "chimu", "catboy", "osu.direct", "beatconnect", "sayobot", "Ripple"]
+    urlName = ["Bancho", "Nerinyan", "catboy", "osu.direct", "beatconnect", "sayobot", "Ripple"]
     dlHeader = {"User-Agent": requestHeaders["User-Agent"], "Referer": f"https://osu.ppy.sh/beatmapsets/{setID}", "Cookie": "XSRF-TOKEN=5xjVgPQSC8jhxq30XopWzJv2sqBTIjm9NAWDYWbd; osu_session=eyJpdiI6Ijlpbk1ROS84Y2FKR1FZWnYwL2lwM1E9PSIsInZhbHVlIjoiQ2VuZElFb2hrQ0dwV05ENUx6Z1NkVzNQTFVXVHE1b3U2bFV4dWhZblVZYmxrMnAwdk5rY3NjWWZTeEZUcDRoR0lUYUF5OGduSE1ieTNoUkZzWE9SUFJUVjAxRU9Bb0JCODhYeDJ0eU9QUllidGJuU0FsRTJINGd3NUlwTTVrVDY1RGhMUFNWWDlCbm81ZXc4d0lycFFBPT0iLCJtYWMiOiJiZjc5MjE5MTAxNDNiNDQ4NDgzNWRkNjQwM2UwM2RlZWRlN2ExODE1YWM0MGU5MzIyOGI2NGUxMzkxNDVkY2QzIiwidGFnIjoiIn0%3D"}
 
     if choData["unavailable"]:
