@@ -12,6 +12,8 @@ const web_maps_tag = document.getElementById("/web/maps/")
 const filesinfo_tag = document.getElementById("filesinfo")
 const filesinfo2_tag = document.getElementById("filesinfo2")
 const replayparser_tag = document.getElementById("replayparser")
+const readableMods_tag = document.getElementById("readableMods")
+const readableModsReverse_tag = document.getElementById("readableModsReverse")
 
 function bg(arg) {
     //arg.preventDefault();
@@ -34,7 +36,7 @@ function thumb_l(arg) {
         get_id = "";
         location.reload(true);
     }
-    else if (isNaN(get_id) === true) {
+    else if (isNaN(get_id)) {
         alert("숫자를 입력하세요! \nEnter Number!")
         location.reload(true);
     }
@@ -51,7 +53,7 @@ function thumb(arg) {
         get_id = "";
         location.reload(true);
     }
-    else if (isNaN(get_id) === true) {
+    else if (isNaN(get_id)) {
         alert("숫자를 입력하세요! \nEnter Number!")
         location.reload(true);
     }
@@ -87,7 +89,7 @@ function preview(arg) {
         get_id = "";
         location.reload(true);
     }
-    else if (isNaN(get_id) === true) {
+    else if (isNaN(get_id)) {
         alert("숫자를 입력하세요! \nEnter Number!")
         location.reload(true);
     }
@@ -104,7 +106,7 @@ function video(arg) {
         get_id = "";
         location.reload(true);
     }
-    else if (isNaN(get_id) === true) {
+    else if (isNaN(get_id)) {
         alert("숫자를 입력하세요! \nEnter Number!")
         location.reload(true);
     }
@@ -121,7 +123,7 @@ function b(arg) {
         get_id = "";
         location.reload(true);
     }
-    else if (isNaN(get_id) === true) {
+    else if (isNaN(get_id)) {
         alert("숫자를 입력하세요! \nEnter Number!")
         location.reload(true);
     }
@@ -138,7 +140,7 @@ function d(arg) {
         get_id = "";
         location.reload(true);
     }
-    else if (isNaN(get_id) === true) {
+    else if (isNaN(get_id)) {
         alert("숫자를 입력하세요! \nEnter Number!")
         location.reload(true);
     }
@@ -155,7 +157,7 @@ function osu(arg) {
         get_id = "";
         location.reload(true);
     }
-    else if (isNaN(get_id) === true) {
+    else if (isNaN(get_id)) {
         alert("숫자를 입력하세요! \nEnter Number!")
         location.reload(true);
     }
@@ -185,7 +187,7 @@ function web_maps(arg) {
         get_id = "";
         location.reload(true);
     }
-    else if (isNaN(get_id) === true) {
+    else if (isNaN(get_id)) {
         alert("숫자를 입력하세요! \nEnter Number!")
         location.reload(true);
     }
@@ -211,7 +213,7 @@ function filesinfo(arg) {
         get_id = "";
         location.reload(true);
     }
-    else if (isNaN(get_id) === true) {
+    else if (isNaN(get_id)) {
         alert("숫자를 입력하세요! \nEnter Number!")
         location.reload(true);
     }
@@ -228,7 +230,7 @@ function filesinfo2(arg) {
         get_id = "";
         location.reload(true);
     }
-    else if (isNaN(get_id) === true) {
+    else if (isNaN(get_id)) {
         alert("숫자를 입력하세요! \nEnter Number!")
         location.reload(true);
     }
@@ -239,7 +241,7 @@ function filesinfo2(arg) {
             get_id2 = "";
             location.reload(true);
         }
-        else if (isNaN(get_id2) === true) {
+        else if (isNaN(get_id2)) {
             alert("숫자를 입력하세요! \nEnter Number!")
             location.reload(true);
         }
@@ -265,6 +267,40 @@ function replayparser(arg) {
     }
 }
 
+function readableMods(arg) {
+    //arg.preventDefault();
+    const get_id = prompt("mods ID (Number)")
+    if (get_id === null | get_id === "") {
+        alert("정확하게 입력하세요! \nPlease enter it correctly!");
+        get_id = "";
+        location.reload(true);
+    }
+    else if (isNaN(get_id)) {
+        alert("숫자를 입력하세요! \nEnter Number!")
+        location.reload(true);
+    }
+    else {
+        readableMods_tag.href = `${document.location.href}readableMods?m=${get_id}`
+    }
+}
+
+function readableModsReverse(arg) {
+    //arg.preventDefault();
+    const get_id = prompt("mods String")
+    if (get_id === null | get_id === "") {
+        alert("정확하게 입력하세요! \nPlease enter it correctly!");
+        get_id = "";
+        location.reload(true);
+    }
+    else if (!isNaN(get_id)) {
+        alert("문자를 입력하세요! \nEnter String!")
+        location.reload(true);
+    }
+    else {
+        readableModsReverse_tag.href = `${document.location.href}readableModsReverse?m=${get_id}`
+    }
+}
+
 bg_tag.addEventListener("click", bg);
 thumb_l_tag.addEventListener("click", thumb_l);
 thumb_tag.addEventListener("click", thumb);
@@ -279,3 +315,5 @@ web_maps_tag.addEventListener("click", web_maps)
 filesinfo_tag.addEventListener("click", filesinfo)
 filesinfo2_tag.addEventListener("click", filesinfo2)
 replayparser_tag.addEventListener("click", replayparser)
+readableMods_tag.addEventListener("click", readableMods)
+readableModsReverse_tag.addEventListener("click", readableModsReverse)
