@@ -15,24 +15,27 @@ class db:
 
         try:
             self.pydb = pymysql.connect(host=self.DB_HOST, port=self.DB_PORT, user=self.DB_USERNAME, passwd=self.DB_PASSWORD, db=self.DB_DATABASE, charset='utf8')
+            self.cursor = self.pydb.cursor()
             log.chat(f"{DBType} DB로 연결함")
         except:
             log.error(f"{DBType} DB 연결 실패!")
             exit()
 
-    def fetch(self, sql, param=None, NoneMsg=True):
-        cursor = self.pydb.cursor()
-        if param is None or param == "":
-            cursor.execute(sql)
-        else:
-            cursor.execute(sql, param)
+    def mogrify(self, sql, param=None):
+        return self.cursor.mogrify(sql, param)
 
-        columns = [column[0] for column in cursor.description]
-        result = cursor.fetchall()
+    def fetch(self, sql, param=None, NoneMsg=True):
+        if param is None or param == "":
+            self.cursor.execute(sql)
+        else:
+            self.cursor.execute(sql, param)
+
+        columns = [column[0] for column in self.cursor.description]
+        result = self.cursor.fetchall()
 
         if not result:
             if NoneMsg:
-                log.error(f"None | SQL = {cursor.mogrify(sql, param)}")
+                log.error(f"None | SQL = {self.cursor.mogrify(sql, param)}")
             return None
         elif len(result) == 1:
             data = {}
@@ -49,13 +52,14 @@ class db:
             return d
 
     def execute(self, sql, param=None):
-        cursor = self.pydb.cursor()
         if param is None or param == "":
-            cursor.execute(sql)
+            self.cursor.execute(sql)
         else:
-            cursor.execute(sql, param)
+            self.cursor.execute(sql, param)
+
+    def commit(self):
         self.pydb.commit()
 
     def close(self):
-        log.info(f"{self.DB_DATABASE_NOW} db closed")
+        log.info(f"{self.DB_DATABASE} db closed")
         self.pydb.close()
