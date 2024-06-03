@@ -25,11 +25,7 @@ import mods
 def calculate_md5(filename):
     md5 = hashlib.md5()
     with open(filename, "rb") as file:
-        while True:
-            data = file.read(8192)
-            if not data:
-                break
-            md5.update(data)
+        md5.update(file.read())
     return md5.hexdigest()
 
 conf = config.config("config.ini")
@@ -890,6 +886,7 @@ def check(setID, rq_type, checkRenewFile=False):
                     os.replace(f"{dataFolder}/dl/{setID} .osz", f"{dataFolder}/dl/{newFilename}")
                 return statusCode
             else:
+                if "Referer" in dlHeader: del dlHeader["Referer"]
                 if i < len(url) - 1:
                     log.warning(f'{statusCode}. {mn} 에서 파일을 다운로드할 수 없습니다. {urlName[i + 1]} 로 재시도!')
                 else:
