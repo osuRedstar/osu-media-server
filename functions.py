@@ -21,15 +21,21 @@ import subprocess
 import geoip2.database
 import mods
 
-#beatmap_md5
-def calculate_md5(filename):
+class calculate_md5:
     md5 = hashlib.md5()
-    with open(filename, "rb") as file:
-        md5.update(file.read())
-    return md5.hexdigest()
+
+    @classmethod
+    def file(cls, fn) -> str:
+        with open(fn, "rb") as f:
+            cls.md5.update(f.read())
+        return cls.md5.hexdigest()
+
+    @classmethod
+    def text(cls, t) -> str:
+        cls.md5.update(t.encode("utf-8"))
+        return cls.md5.hexdigest()
 
 conf = config.config("config.ini")
-
 OSU_APIKEY = conf.config["osu"]["osuApikey"]
 #lets.py 형태의 사설서버를 소유중이면 lets\.data\beatmaps 에서만 .osu 파일을 가져옴
 IS_YOU_HAVE_OSU_PRIVATE_SERVER = conf.config["osu"]["IS_YOU_HAVE_OSU_PRIVATE_SERVER_WITH_lets.py"]
@@ -193,13 +199,13 @@ def send403(self, rm):
 
 def send404(self, inputType, input):
     self.set_status(404)
-    self.set_header("return-fileinfo", json.dumps({"filename": "404.html", "path": "templates/404.html", "fileMd5": calculate_md5("templates/404.html")}))
+    self.set_header("return-fileinfo", json.dumps({"filename": "404.html", "path": "templates/404.html", "fileMd5": calculate_md5.file("templates/404.html")}))
     self.render("templates/404.html", inputType=inputType, input=input)
     self.set_header("Ping", str(resPingMs(self)))
 
 def send500(self, inputType, input):
     self.set_status(500)
-    self.set_header("return-fileinfo", json.dumps({"filename": "500.html", "path": "templates/500.html", "fileMd5": calculate_md5("templates/500.html")}))
+    self.set_header("return-fileinfo", json.dumps({"filename": "500.html", "path": "templates/500.html", "fileMd5": calculate_md5.file("templates/500.html")}))
     self.render("templates/500.html", inputType=inputType, input=input)
     self.set_header("Ping", str(resPingMs(self)))
 
@@ -207,14 +213,14 @@ def send503(self, e, inputType, input):
     self.set_status(503)
     #Exception = json.dumps({"type": str(type(e)), "error": str(e)}, ensure_ascii=False)
     self.set_header("Exception", json.dumps({"type": str(type(e)), "error": str(e)}))
-    self.set_header("return-fileinfo", json.dumps({"filename": "503.html", "path": "templates/503.html", "fileMd5": calculate_md5("templates/503.html")}))
+    self.set_header("return-fileinfo", json.dumps({"filename": "503.html", "path": "templates/503.html", "fileMd5": calculate_md5.file("templates/503.html")}))
     self.render("templates/503.html", inputType=inputType, input=input, Exception=json.dumps({"type": str(type(e)), "error": str(e)}, ensure_ascii=False))
     self.set_header("Ping", str(resPingMs(self)))
 
 def send504(self, inputType, input):
     #cloudflare 504 페이지로 연결됨
     self.set_status(504)
-    self.set_header("return-fileinfo", json.dumps({"filename": "504.html", "path": "templates/504.html", "fileMd5": calculate_md5("templates/504.html")}))
+    self.set_header("return-fileinfo", json.dumps({"filename": "504.html", "path": "templates/504.html", "fileMd5": calculate_md5.file("templates/504.html")}))
     self.render("templates/504.html", inputType=inputType, input=input)
     self.set_header("Ping", str(resPingMs(self)))
 
@@ -495,7 +501,7 @@ def osu_file_read(setID, rq_type, moving=False, bID=None, cheesegull=False, file
     # readline_all.py
     for beatmapName in file_list_osu:
         log.info(beatmapName)
-        beatmap_md5 = calculate_md5(f"{dataFolder}/dl/{setID}/{beatmapName}")
+        beatmap_md5 = calculate_md5.file(f"{dataFolder}/dl/{setID}/{beatmapName}")
 
         sql = """
             SELECT file_name as beatmapName, BeatmapMD5, osu_file_format_v, AudioFilename,
@@ -952,7 +958,7 @@ def check(setID, rq_type, checkRenewFile=False):
                 rankStatus = dbC.fetch(f"SELECT ranked_status FROM sets WHERE id = %s", [setID])["ranked_status"]
                 log.info(f"파일 최신화 cheesegull DB 랭크상태 조회 완료 : {rankStatus}")
             if rankStatus <= 0:
-                oszHash = calculate_md5(f"{dataFolder}/dl/{fullSongName}")
+                oszHash = calculate_md5.file(f"{dataFolder}/dl/{fullSongName}")
                 log.debug(f"oszHash = {oszHash}")
                 for i in url:
                     newOszHash = requests.get(i, headers=dlHeader, timeout=5, stream=True)
@@ -963,7 +969,7 @@ def check(setID, rq_type, checkRenewFile=False):
                                 for data in newOszHash.iter_content(1024):
                                     file.write(data)
                                     pbar.update(len(data))
-                        newOszHash = calculate_md5(f"{dataFolder}/dl/t{setID} .osz")
+                        newOszHash = calculate_md5.file(f"{dataFolder}/dl/t{setID} .osz")
                         log.debug(f"oszHash = {oszHash} | newOszHash = {newOszHash}")
                         if oszHash != newOszHash:
                             log.warning(f"{setID} 가 최신이 아닙니다!")

@@ -37,7 +37,7 @@ class MainHandler(tornado.web.RequestHandler):
         if rm != 200:
             pass
 
-        self.set_header("return-fileinfo", json.dumps({"filename": "index.html", "path": "templates/index.html", "fileMd5": calculate_md5("templates/index.html")}))
+        self.set_header("return-fileinfo", json.dumps({"filename": "index.html", "path": "templates/index.html", "fileMd5": calculate_md5.file("templates/index.html")}))
         self.render("templates/index.html")
         self.set_header("Ping", str(resPingMs(self)))
 
@@ -47,7 +47,7 @@ class FaviconHandler(tornado.web.RequestHandler):
         if rm != 200:
             pass
 
-        self.set_header("return-fileinfo", json.dumps({"filename": "favicon.ico", "path": "static/img/favicon.ico", "fileMd5": calculate_md5("static/img/favicon.ico")}))
+        self.set_header("return-fileinfo", json.dumps({"filename": "favicon.ico", "path": "static/img/favicon.ico", "fileMd5": calculate_md5.file("static/img/favicon.ico")}))
         self.set_header('Content-Type', pathToContentType("static/img/favicon.ico")["Content-Type"])
         with open("static/img/favicon.ico", 'rb') as f:
             self.write(f.read())
@@ -59,7 +59,7 @@ class StaticHandler(tornado.web.RequestHandler):
         if rm != 200:
             pass
 
-        self.set_header("return-fileinfo", json.dumps({"filename": item, "path": f"static/{item}", "fileMd5": calculate_md5(f"static/{item}")}))
+        self.set_header("return-fileinfo", json.dumps({"filename": item, "path": f"static/{item}", "fileMd5": calculate_md5.file(f"static/{item}")}))
         self.set_header("Content-Type", pathToContentType(item)["Content-Type"])
         with open(f"static/{item}", 'rb') as f:
                 self.write(f.read())
@@ -71,7 +71,7 @@ class robots_txt(tornado.web.RequestHandler):
         if rm != 200:
             pass
 
-        self.set_header("return-fileinfo", json.dumps({"filename": "robots.txt", "path": "robots.txt", "fileMd5": calculate_md5("robots.txt")}))
+        self.set_header("return-fileinfo", json.dumps({"filename": "robots.txt", "path": "robots.txt", "fileMd5": calculate_md5.file("robots.txt")}))
         self.set_header("Content-Type", pathToContentType("robots.txt")["Content-Type"])
         with open("robots.txt", 'rb') as f:
             self.write(f.read())

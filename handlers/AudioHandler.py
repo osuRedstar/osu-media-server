@@ -16,7 +16,7 @@ class handler(tornado.web.RequestHandler):
         else:
             idType = "bid"
         try:
-            file = read_audio(id)
+            file = read_audio(id, self.get_argument("m", default=None))
             if file == 404:
                 return send404(self, idType, id)
             elif file == 500:
@@ -28,7 +28,7 @@ class handler(tornado.web.RequestHandler):
             else:
                 if file.endswith("noAudio.mp3"):
                     self.set_status(404)
-                self.set_header("return-fileinfo", json.dumps({"filename": id, "path": file, "fileMd5": calculate_md5(file)}))
+                self.set_header("return-fileinfo", json.dumps({"filename": id, "path": file, "fileMd5": calculate_md5.file(file)}))
                 self.set_header('Content-Type', pathToContentType(file)["Content-Type"])
                 IDM(self, file)
         except Exception as e:

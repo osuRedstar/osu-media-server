@@ -17,10 +17,10 @@ for i, j in zip(site, sn):
                 file.write(data)
                 pbar.update(len(data))
 
-oszHash = calculate_md5("919187 765 MILLION ALLSTARS - UNION!!.osz")
-redstarHash = calculate_md5(f"data2/redstar_{bsid}.osz")
-nerinyanHash = calculate_md5(f"data2/nerinyan_{bsid}.osz")
-catboyHash = calculate_md5(f"data2/catboy_{bsid}.osz")
+oszHash = calculate_md5.file("919187 765 MILLION ALLSTARS - UNION!!.osz")
+redstarHash = calculate_md5.file(f"data2/redstar_{bsid}.osz")
+nerinyanHash = calculate_md5.file(f"data2/nerinyan_{bsid}.osz")
+catboyHash = calculate_md5.file(f"data2/catboy_{bsid}.osz")
 
 log.info(f"osz = {oszHash}")
 log.info(f"Redstar = {redstarHash}")

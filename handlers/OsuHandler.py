@@ -22,7 +22,7 @@ class handler(tornado.web.RequestHandler):
             elif type(path) == FileNotFoundError:
                 raise path
             else:
-                self.set_header("return-fileinfo", json.dumps({"filename": path["filename"], "path": path["path"], "fileMd5": calculate_md5(path["path"])}))
+                self.set_header("return-fileinfo", json.dumps({"filename": path["filename"], "path": path["path"], "fileMd5": calculate_md5.file(path["path"])}))
                 self.set_header('Content-Type', pathToContentType(path["path"])["Content-Type"])
                 IDM(self, path["path"])
         except Exception as e:
