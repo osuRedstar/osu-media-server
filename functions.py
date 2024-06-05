@@ -389,13 +389,13 @@ def get_AudioLength(filesinfo, setID, AudioFilename):
             AudioLength = round(float(mediainfo(f"{dataFolder}/dl/{setID}/{AudioFilename}")["duration"]), 2)
             AudioLength = [AudioLength, culc_length(round(AudioLength))]
             AudioLength_DT = AudioLength_NC = [round(AudioLength[0] / 1.5, 2), culc_length(round(AudioLength[0] / 1.5))]
-            #HF = 1. (AudioLength / 0.75), 2. (AudioLength * 1.5)
-            AudioLength_HF = [round(AudioLength[0] / 0.75, 2), culc_length(round(AudioLength[0] / 0.75))]
+            #HT = 1. (AudioLength / 0.75), 2. (AudioLength * 1.5)
+            AudioLength_HT = [round(AudioLength[0] / 0.75, 2), culc_length(round(AudioLength[0] / 0.75))]
         else:
-            AudioLength = AudioLength_DT = AudioLength_NC = AudioLength_HF = None
+            AudioLength = AudioLength_DT = AudioLength_NC = AudioLength_HT = None
     except:
-        AudioLength = AudioLength_DT = AudioLength_NC = AudioLength_HF = None
-    return (AudioLength, AudioLength_DT, AudioLength_NC, AudioLength_HF)
+        AudioLength = AudioLength_DT = AudioLength_NC = AudioLength_HT = None
+    return (AudioLength, AudioLength_DT, AudioLength_NC, AudioLength_HT)
 
 def get_dir_size(path='.'):
     total = 0
@@ -507,7 +507,7 @@ def osu_file_read(setID, rq_type, moving=False, bID=None, cheesegull=False, file
         if not temp: temp = {}
 
         if temp:
-            temp["AudioLength"], temp["AudioLength-DT"], temp["AudioLength-NC"], temp["AudioLength-HF"] = get_AudioLength(filesinfo, setID, temp["AudioFilename"])
+            temp["AudioLength"], temp["AudioLength-DT"], temp["AudioLength-NC"], temp["AudioLength-HT"] = get_AudioLength(filesinfo, setID, temp["AudioFilename"])
             log.debug((temp, omsDB, oszUpdateCheck))
         else:
             with open(f"{dataFolder}/dl/{setID}/{beatmapName}", 'r', encoding="utf-8") as f:
@@ -586,7 +586,7 @@ def osu_file_read(setID, rq_type, moving=False, bID=None, cheesegull=False, file
                 temp["audio_unavailable"] = audio_unavailable
                 temp["download_unavailable"] = download_unavailable
                 temp["storyboard"] = storyboard
-                temp["AudioLength"], temp["AudioLength-DT"], temp["AudioLength-NC"], temp["AudioLength-HF"] = get_AudioLength(filesinfo, setID, AudioFilename)
+                temp["AudioLength"], temp["AudioLength-DT"], temp["AudioLength-NC"], temp["AudioLength-HT"] = get_AudioLength(filesinfo, setID, AudioFilename)
         beatmap_info.append(temp)
 
     bidsList = [i["BeatmapID"] for i in beatmap_info]
@@ -1197,14 +1197,14 @@ def read_audio(id, m=None):
                 return NCFilename
         elif m == "HT" and not "noAudio" in file_list[0]:
             log.chat("HT 감지")
-            HFFilename = f"{dataFolder}/audio/{setID}/{file_list[0][:-4]}-HT.mp3" if not file_list[0].endswith("-HT.mp3") else f"{dataFolder}/audio/{setID}/{file_list[0]}"
-            if os.path.isfile(HFFilename):
-                return HFFilename
+            HTFilename = f"{dataFolder}/audio/{setID}/{file_list[0][:-4]}-HT.mp3" if not file_list[0].endswith("-HT.mp3") else f"{dataFolder}/audio/{setID}/{file_list[0]}"
+            if os.path.isfile(HTFilename):
+                return HTFilename
             else:
-                ffmpeg_msg = f'ffmpeg -i "{dataFolder}/audio/{setID}/{file_list[0]}" -af atempo=0.75 -acodec libmp3lame -q:a 0 -y "{HFFilename}"'
-                log.chat(f"HF ffmpeg_msg = {ffmpeg_msg}")
+                ffmpeg_msg = f'ffmpeg -i "{dataFolder}/audio/{setID}/{file_list[0]}" -af atempo=0.75 -acodec libmp3lame -q:a 0 -y "{HTFilename}"'
+                log.chat(f"HT ffmpeg_msg = {ffmpeg_msg}")
                 os.system(ffmpeg_msg)
-                return HFFilename
+                return HTFilename
         elif m == "PREVIEW" and not "noAudio" in file_list[0]:
             log.chat("preview 감지")
             PreviewFilename = f"{dataFolder}/audio/{setID}/{file_list[0][:-4]}-preview.mp3" if not file_list[0].endswith("-preview.mp3") else f"{dataFolder}/audio/{setID}/{file_list[0]}"
