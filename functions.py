@@ -36,7 +36,10 @@ class calculate_md5:
         return cls.md5.hexdigest()
 
 conf = config.config("config.ini")
-OSU_APIKEY = conf.config["osu"]["osuApikey"]
+OSU_APIKEY = conf.config["osu"]["Bancho_Apikey"]
+Bancho_u = conf.config["osu"]["Bancho_username"]
+Bancho_p = conf.config["osu"]["Bancho_password"]
+Bancho_p_hashed = calculate_md5.text(Bancho_p)
 #lets.py 형태의 사설서버를 소유중이면 lets\.data\beatmaps 에서만 .osu 파일을 가져옴
 IS_YOU_HAVE_OSU_PRIVATE_SERVER = conf.config["osu"]["IS_YOU_HAVE_OSU_PRIVATE_SERVER_WITH_lets.py"]
 IS_YOU_HAVE_OSU_PRIVATE_SERVER = False if IS_YOU_HAVE_OSU_PRIVATE_SERVER.lower() == "false" or IS_YOU_HAVE_OSU_PRIVATE_SERVER == "0" else True
@@ -828,7 +831,7 @@ def check(setID, rq_type, checkRenewFile=False):
     choData = choUnavailable(setID)
 
     url = [
-        f"https://osu.ppy.sh/beatmapsets/{setID}/download",
+        f"https://osu.ppy.sh/d/{setID}?u={Bancho_u}&h={Bancho_p_hashed}",
         f'https://api.nerinyan.moe/d/{setID}',
         #f"https://chimu.moe/d/{setID}",
         f"https://catboy.best/d/{setID}",
@@ -838,10 +841,8 @@ def check(setID, rq_type, checkRenewFile=False):
         f"https://storage.ripple.moe/d/{setID}"
     ]
     urlName = ["Bancho", "Nerinyan", "catboy", "osu.direct", "beatconnect", "sayobot", "Ripple"]
-    dlHeader = {"User-Agent": requestHeaders["User-Agent"], "Referer": f"https://osu.ppy.sh/beatmapsets/{setID}", "Cookie": "XSRF-TOKEN=5xjVgPQSC8jhxq30XopWzJv2sqBTIjm9NAWDYWbd; osu_session=eyJpdiI6Ijlpbk1ROS84Y2FKR1FZWnYwL2lwM1E9PSIsInZhbHVlIjoiQ2VuZElFb2hrQ0dwV05ENUx6Z1NkVzNQTFVXVHE1b3U2bFV4dWhZblVZYmxrMnAwdk5rY3NjWWZTeEZUcDRoR0lUYUF5OGduSE1ieTNoUkZzWE9SUFJUVjAxRU9Bb0JCODhYeDJ0eU9QUllidGJuU0FsRTJINGd3NUlwTTVrVDY1RGhMUFNWWDlCbm81ZXc4d0lycFFBPT0iLCJtYWMiOiJiZjc5MjE5MTAxNDNiNDQ4NDgzNWRkNjQwM2UwM2RlZWRlN2ExODE1YWM0MGU5MzIyOGI2NGUxMzkxNDVkY2QzIiwidGFnIjoiIn0%3D"}
 
-    if choData["unavailable"]:
-        del url[0], urlName[0]
+    if choData["unavailable"]: del url[0], urlName[0]
 
     def dl():
         #우선 setID .osz로 다운받고 나중에 파일 이름 변경
@@ -851,7 +852,7 @@ def check(setID, rq_type, checkRenewFile=False):
         for i, (link, mn) in enumerate(zip(url, urlName)):
             # 파일 다운로드 요청
             try:
-                res = requests.get(link, headers=dlHeader, timeout=5, stream=True)
+                res = requests.get(link, headers=requestHeaders, timeout=5, stream=True)
                 statusCode = res.status_code
             except requests.exceptions.ReadTimeout as e:
                 log.warning(f"{link} Timeout! | e = {e}")

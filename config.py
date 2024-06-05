@@ -53,7 +53,9 @@ class config:
 			noneCheck.append(self.config.get("server","osuServerDomain"))
 			noneCheck.append(self.config.get("server","ContectEmail"))
 
-			noneCheck.append(self.config.get("osu","osuApikey"))
+			noneCheck.append(self.config.get("osu","Bancho_Apikey"))
+			noneCheck.append(self.config.get("osu","Bancho_username"))
+			noneCheck.append(self.config.get("osu","Bancho_password"))
 			noneCheck.append(self.config.get("osu","IS_YOU_HAVE_OSU_PRIVATE_SERVER_WITH_lets.py"))
 			noneCheck.append(self.config.get("osu","lets.py_beatmaps_Folder_Path"))
 
@@ -89,7 +91,9 @@ class config:
 		self.config.set("server", "ContectEmail", "support@redstar.moe")
 
 		self.config.add_section("osu")
-		self.config.set("osu", "osuApikey", "Go https://old.ppy.sh/p/api and Get Your Key")
+		self.config.set("osu", "Bancho_Apikey", "Go https://old.ppy.sh/p/api and Get Your Key")
+		self.config.set("osu", "Bancho_username", "")
+		self.config.set("osu", "Bancho_password", "")
 		self.config.set("osu", "IS_YOU_HAVE_OSU_PRIVATE_SERVER_WITH_lets.py", "False")
 		if os.name == "nt":
 			self.config.set("osu", "lets.py_beatmaps_Folder_Path", "B:/redstar/lets/.data/beatmaps")
