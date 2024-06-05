@@ -852,14 +852,15 @@ def check(setID, rq_type, checkRenewFile=False):
         for i, (link, mn) in enumerate(zip(url, urlName)):
             # 파일 다운로드 요청
             try:
-                res = requests.get(link, headers=requestHeaders, timeout=5, stream=True)
+                res = requests.get(link, headers=requestHeaders, timeout=3, stream=True)
                 statusCode = res.status_code
+                header_filename = res.headers['content-disposition']
             except requests.exceptions.ReadTimeout as e:
                 log.warning(f"{link} Timeout! | e = {e}")
                 statusCode = 504
-            except:
-                statusCode = res.status_code
-                log.error(f"{statusCode} | 파일다운 기본 예외처리 | url = {link}")
+            except Exception as e:
+                statusCode = res.status_code if res.status_code != 200 else 500
+                log.error(f"{statusCode} | {e} | 파일다운 기본 예외처리 | url = {link}")
 
             if statusCode == 200:
                 # 파일 크기를 얻습니다.
@@ -872,7 +873,6 @@ def check(setID, rq_type, checkRenewFile=False):
                             file.write(data)
                             pbar.update(len(data))
 
-                header_filename = res.headers['content-disposition']
                 newFilename = header_filename[header_filename.find('filename='):].replace("filename=", "").replace('"', "")
                 if urlName[i] == "chimu" and  "%20" in newFilename:
                     newFilename = newFilename.replace("%20", " ")
@@ -893,7 +893,6 @@ def check(setID, rq_type, checkRenewFile=False):
                     os.replace(f"{dataFolder}/dl/{setID} .osz", f"{dataFolder}/dl/{newFilename}")
                 return statusCode
             else:
-                if "Referer" in dlHeader: del dlHeader["Referer"]
                 if i < len(url) - 1:
                     log.warning(f'{statusCode}. {mn} 에서 파일을 다운로드할 수 없습니다. {urlName[i + 1]} 로 재시도!')
                 else:
@@ -962,7 +961,7 @@ def check(setID, rq_type, checkRenewFile=False):
                 oszHash = calculate_md5.file(f"{dataFolder}/dl/{fullSongName}")
                 log.debug(f"oszHash = {oszHash}")
                 for i in url:
-                    newOszHash = requests.get(i, headers=dlHeader, timeout=5, stream=True)
+                    newOszHash = requests.get(i, headers=requestHeaders, timeout=5, stream=True)
                     if newOszHash.status_code == 200:
                         # tqdm을 사용하여 진행률 표시
                         with open(f"{dataFolder}/dl/t{setID} .osz", 'wb') as file:
