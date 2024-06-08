@@ -10,8 +10,6 @@ from PIL import Image
 import hashlib
 import re
 from pydub.utils import mediainfo
-from pydub import AudioSegment
-from pydub.playback import play as PlaySound
 import threading
 import time
 from datetime import datetime
@@ -882,7 +880,7 @@ def check(setID, rq_type, checkRenewFile=False):
 
                 # WAV 파일 재생을 별도의 스레드에서 수행
                 def play_finished_dl():
-                    PlaySound(AudioSegment.from_file("static/audio/match-confirm.mp3"))
+                    os.system(f"ffplay -nodisp -autoexit static/audio/match-confirm.mp3 > {'nul' if os.name == 'nt' else '/dev/null'} 2>&1")
                 play_thread = threading.Thread(target=play_finished_dl)
                 play_thread.start()
 
