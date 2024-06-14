@@ -255,50 +255,51 @@ def IDM(self, path):
     return idm
 
 def pathToContentType(path, isInclude=False):
-    if isInclude and ".aac" in path or not isInclude and path.endswith(".aac"): return {"Content-Type": "audio/aac", "exetension": ".aac", "type": "audio", "path": path}
-    if isInclude and ".apng" in path or not isInclude and path.endswith(".apng"): return {"Content-Type": "image/apng", "exetension": ".apng", "type": "image", "path": path}
-    if isInclude and ".avif" in path or not isInclude and path.endswith(".avif"): return {"Content-Type": "image/avif", "exetension": ".avif", "type": "image", "path": path}
-    if isInclude and ".avi" in path or not isInclude and path.endswith(".avi"): return {"Content-Type": "video/x-msvideo", "exetension": ".avi", "type": "video", "path": path}
-    if isInclude and ".bin" in path or not isInclude and path.endswith(".bin"): return {"Content-Type": "application/octet-stream", "exetension": ".bin", "type": "file", "path": path}
-    if isInclude and ".css" in path or not isInclude and path.endswith(".css"): return {"Content-Type": "text/css", "exetension": ".css", "type": "file", "path": path}
-    if isInclude and ".gif" in path or not isInclude and path.endswith(".gif"): return {"Content-Type": "image/gif", "exetension": ".gif", "type": "image", "path": path}
-    if isInclude and ".html" in path or not isInclude and path.endswith(".html"): return {"Content-Type": "text/html", "exetension": ".html", "type": "file", "path": path}
-    if isInclude and ".ico" in path or not isInclude and path.endswith(".ico"): return {"Content-Type": "image/x-icon", "exetension": ".ico", "type": "image", "path": path}
-    if isInclude and ".jfif" in path or not isInclude and path.endswith(".jfif"): return {"Content-Type": "image/jpeg", "exetension": ".jfif", "type": "image", "path": path}
-    if isInclude and ".jpeg" in path or not isInclude and path.endswith(".jpeg"): return {"Content-Type": "image/jpeg", "exetension": ".jpeg", "type": "image", "path": path}
-    if isInclude and ".jpg" in path or not isInclude and path.endswith(".jpg"): return {"Content-Type": "image/jpeg", "exetension": ".jpg", "type": "image", "path": path}
-    if isInclude and ".js" in path or not isInclude and path.endswith(".js"): return {"Content-Type": "text/javascript", "exetension": ".js", "type": "file", "path": path}
-    if isInclude and ".json" in path or not isInclude and path.endswith(".json"): return {"Content-Type": "application/json", "exetension": ".json", "type": "file", "path": path}
-    if isInclude and ".mp3" in path or not isInclude and path.endswith(".mp3"): return {"Content-Type": "audio/mpeg", "exetension": ".mp3", "type": "audio", "path": path}
-    if isInclude and ".mp4" in path or not isInclude and path.endswith(".mp4"): return {"Content-Type": "video/mp4", "exetension": ".mp4", "type": "video", "path": path}
-    if isInclude and ".mpeg" in path or not isInclude and path.endswith(".mpeg"): return {"Content-Type": "audio/mpeg", "exetension": ".mpeg", "type": "audio", "path": path}
-    if isInclude and ".oga" in path or not isInclude and path.endswith(".oga"): return {"Content-Type": "audio/ogg", "exetension": ".oga", "type": "audio", "path": path}
-    if isInclude and ".ogg" in path or not isInclude and path.endswith(".ogg"): return {"Content-Type": "application/ogg", "exetension": ".ogg", "type": "audio", "path": path}
-    if isInclude and ".ogv" in path or not isInclude and path.endswith(".ogv"): return {"Content-Type": "video/ogg", "exetension": ".ogv", "type": "video", "path": path}
-    if isInclude and ".ogx" in path or not isInclude and path.endswith(".ogx"): return {"Content-Type": "application/ogg", "exetension": ".ogx", "type": "audio", "path": path}
-    if isInclude and ".opus" in path or not isInclude and path.endswith(".opus"): return {"Content-Type": "audio/opus", "exetension": ".opus", "type": "audio", "path": path}
-    if isInclude and ".png" in path or not isInclude and path.endswith(".png"): return {"Content-Type": "image/png", "exetension": ".png", "type": "image", "path": path}
-    if isInclude and ".svg" in path or not isInclude and path.endswith(".svg"): return {"Content-Type": "image/svg+xml", "exetension": ".svg", "type": "image", "path": path}
-    if isInclude and ".tif" in path or not isInclude and path.endswith(".tif"): return {"Content-Type": "image/tiff", "exetension": ".tif", "type": "image", "path": path}
-    if isInclude and ".tiff" in path or not isInclude and path.endswith(".tiff"): return {"Content-Type": "image/tiff", "exetension": ".tiff", "type": "image", "path": path}
-    if isInclude and ".ts" in path or not isInclude and path.endswith(".ts"): return {"Content-Type": "video/mp2t", "exetension": ".ts", "type": "video", "path": path}
-    if isInclude and ".txt" in path or not isInclude and path.endswith(".txt"): return {"Content-Type": "text/plain", "exetension": ".txt", "type": "file", "path": path}
-    if isInclude and ".wav" in path or not isInclude and path.endswith(".wav"): return {"Content-Type": "audio/wav", "exetension": ".wav", "type": "audio", "path": path}
-    if isInclude and ".weba" in path or not isInclude and path.endswith(".weba"): return {"Content-Type": "audio/webm", "exetension": ".weba", "type": "audio", "path": path}
-    if isInclude and ".webm" in path or not isInclude and path.endswith(".webm"): return {"Content-Type": "video/webm", "exetension": ".webm", "type": "video", "path": path}
-    if isInclude and ".webp" in path or not isInclude and path.endswith(".webp"): return {"Content-Type": "image/webp", "exetension": ".webp", "type": "image", "path": path}
-    if isInclude and ".zip" in path or not isInclude and path.endswith(".zip"): return {"Content-Type": "application/zip", "exetension": ".zip", "type": "file", "path": path}
-    if isInclude and ".flv" in path or not isInclude and path.endswith(".flv"): return {"Content-Type": "video/x-flv", "exetension": ".flv", "type": "video", "path": path}
-    if isInclude and ".wmv" in path or not isInclude and path.endswith(".wmv"): return {"Content-Type": "video/x-ms-wmv", "exetension": ".wmv", "type": "video", "path": path}
-    if isInclude and ".mkv" in path or not isInclude and path.endswith(".mkv"): return {"Content-Type": "video/x-matroska", "exetension": ".mkv", "type": "video", "path": path}
+    fn, fe = os.path.splitext(os.path.basename(path))
+    if isInclude and ".aac" in path or not isInclude and path.endswith(".aac"): return {"Content-Type": "audio/aac", "filename": fn, "extension": fe, "type": "audio", "path": path}
+    if isInclude and ".apng" in path or not isInclude and path.endswith(".apng"): return {"Content-Type": "image/apng", "filename": fn, "extension": fe, "type": "image", "path": path}
+    if isInclude and ".avif" in path or not isInclude and path.endswith(".avif"): return {"Content-Type": "image/avif", "filename": fn, "extension": fe, "type": "image", "path": path}
+    if isInclude and ".avi" in path or not isInclude and path.endswith(".avi"): return {"Content-Type": "video/x-msvideo", "filename": fn, "extension": fe, "type": "video", "path": path}
+    if isInclude and ".bin" in path or not isInclude and path.endswith(".bin"): return {"Content-Type": "application/octet-stream", "filename": fn, "extension": fe, "type": "file", "path": path}
+    if isInclude and ".css" in path or not isInclude and path.endswith(".css"): return {"Content-Type": "text/css", "filename": fn, "extension": fe, "type": "file", "path": path}
+    if isInclude and ".gif" in path or not isInclude and path.endswith(".gif"): return {"Content-Type": "image/gif", "filename": fn, "extension": fe, "type": "image", "path": path}
+    if isInclude and ".html" in path or not isInclude and path.endswith(".html"): return {"Content-Type": "text/html", "filename": fn, "extension": fe, "type": "file", "path": path}
+    if isInclude and ".ico" in path or not isInclude and path.endswith(".ico"): return {"Content-Type": "image/x-icon", "filename": fn, "extension": fe, "type": "image", "path": path}
+    if isInclude and ".jfif" in path or not isInclude and path.endswith(".jfif"): return {"Content-Type": "image/jpeg", "filename": fn, "extension": fe, "type": "image", "path": path}
+    if isInclude and ".jpeg" in path or not isInclude and path.endswith(".jpeg"): return {"Content-Type": "image/jpeg", "filename": fn, "extension": fe, "type": "image", "path": path}
+    if isInclude and ".jpg" in path or not isInclude and path.endswith(".jpg"): return {"Content-Type": "image/jpeg", "filename": fn, "extension": fe, "type": "image", "path": path}
+    if isInclude and ".js" in path or not isInclude and path.endswith(".js"): return {"Content-Type": "text/javascript", "filename": fn, "extension": fe, "type": "file", "path": path}
+    if isInclude and ".json" in path or not isInclude and path.endswith(".json"): return {"Content-Type": "application/json", "filename": fn, "extension": fe, "type": "file", "path": path}
+    if isInclude and ".mp3" in path or not isInclude and path.endswith(".mp3"): return {"Content-Type": "audio/mpeg", "filename": fn, "extension": fe, "type": "audio", "path": path}
+    if isInclude and ".mp4" in path or not isInclude and path.endswith(".mp4"): return {"Content-Type": "video/mp4", "filename": fn, "extension": fe, "type": "video", "path": path}
+    if isInclude and ".mpeg" in path or not isInclude and path.endswith(".mpeg"): return {"Content-Type": "audio/mpeg", "filename": fn, "extension": fe, "type": "audio", "path": path}
+    if isInclude and ".oga" in path or not isInclude and path.endswith(".oga"): return {"Content-Type": "audio/ogg", "filename": fn, "extension": fe, "type": "audio", "path": path}
+    if isInclude and ".ogg" in path or not isInclude and path.endswith(".ogg"): return {"Content-Type": "application/ogg", "filename": fn, "extension": fe, "type": "audio", "path": path}
+    if isInclude and ".ogv" in path or not isInclude and path.endswith(".ogv"): return {"Content-Type": "video/ogg", "filename": fn, "extension": fe, "type": "video", "path": path}
+    if isInclude and ".ogx" in path or not isInclude and path.endswith(".ogx"): return {"Content-Type": "application/ogg", "filename": fn, "extension": fe, "type": "audio", "path": path}
+    if isInclude and ".opus" in path or not isInclude and path.endswith(".opus"): return {"Content-Type": "audio/opus", "filename": fn, "extension": fe, "type": "audio", "path": path}
+    if isInclude and ".png" in path or not isInclude and path.endswith(".png"): return {"Content-Type": "image/png", "filename": fn, "extension": fe, "type": "image", "path": path}
+    if isInclude and ".svg" in path or not isInclude and path.endswith(".svg"): return {"Content-Type": "image/svg+xml", "filename": fn, "extension": fe, "type": "image", "path": path}
+    if isInclude and ".tif" in path or not isInclude and path.endswith(".tif"): return {"Content-Type": "image/tiff", "filename": fn, "extension": fe, "type": "image", "path": path}
+    if isInclude and ".tiff" in path or not isInclude and path.endswith(".tiff"): return {"Content-Type": "image/tiff", "filename": fn, "extension": fe, "type": "image", "path": path}
+    if isInclude and ".ts" in path or not isInclude and path.endswith(".ts"): return {"Content-Type": "video/mp2t", "filename": fn, "extension": fe, "type": "video", "path": path}
+    if isInclude and ".txt" in path or not isInclude and path.endswith(".txt"): return {"Content-Type": "text/plain", "filename": fn, "extension": fe, "type": "file", "path": path}
+    if isInclude and ".wav" in path or not isInclude and path.endswith(".wav"): return {"Content-Type": "audio/wav", "filename": fn, "extension": fe, "type": "audio", "path": path}
+    if isInclude and ".weba" in path or not isInclude and path.endswith(".weba"): return {"Content-Type": "audio/webm", "filename": fn, "extension": fe, "type": "audio", "path": path}
+    if isInclude and ".webm" in path or not isInclude and path.endswith(".webm"): return {"Content-Type": "video/webm", "filename": fn, "extension": fe, "type": "video", "path": path}
+    if isInclude and ".webp" in path or not isInclude and path.endswith(".webp"): return {"Content-Type": "image/webp", "filename": fn, "extension": fe, "type": "image", "path": path}
+    if isInclude and ".zip" in path or not isInclude and path.endswith(".zip"): return {"Content-Type": "application/zip", "filename": fn, "extension": fe, "type": "file", "path": path}
+    if isInclude and ".flv" in path or not isInclude and path.endswith(".flv"): return {"Content-Type": "video/x-flv", "filename": fn, "extension": fe, "type": "video", "path": path}
+    if isInclude and ".wmv" in path or not isInclude and path.endswith(".wmv"): return {"Content-Type": "video/x-ms-wmv", "filename": fn, "extension": fe, "type": "video", "path": path}
+    if isInclude and ".mkv" in path or not isInclude and path.endswith(".mkv"): return {"Content-Type": "video/x-matroska", "filename": fn, "extension": fe, "type": "video", "path": path}
 
-    if isInclude and ".osz" in path or not isInclude and path.endswith(".osz"): return {"Content-Type": "application/x-osu-beatmap-archive", "exetension": ".osz", "type": "file", "path": path}
-    if isInclude and ".osr" in path or not isInclude and path.endswith(".osr"): return {"Content-Type": "application/x-osu-replay", "exetension": ".osr", "type": "file", "path": path}
-    if isInclude and ".osu" in path or not isInclude and path.endswith(".osu"): return {"Content-Type": "application/x-osu-beatmap", "exetension": ".osu", "type": "file", "path": path}
-    if isInclude and ".osb" in path or not isInclude and path.endswith(".osb"): return {"Content-Type": "application/x-osu-storyboard", "exetension": ".osb", "type": "file", "path": path}
-    if isInclude and ".osk" in path or not isInclude and path.endswith(".osk"): return {"Content-Type": "application/x-osu-skin", "exetension": ".osk", "type": "file", "path": path}
+    if isInclude and ".osz" in path or not isInclude and path.endswith(".osz"): return {"Content-Type": "application/x-osu-beatmap-archive", "filename": fn, "extension": fe, "type": "file", "path": path}
+    if isInclude and ".osr" in path or not isInclude and path.endswith(".osr"): return {"Content-Type": "application/x-osu-replay", "filename": fn, "extension": fe, "type": "file", "path": path}
+    if isInclude and ".osu" in path or not isInclude and path.endswith(".osu"): return {"Content-Type": "application/x-osu-beatmap", "filename": fn, "extension": fe, "type": "file", "path": path}
+    if isInclude and ".osb" in path or not isInclude and path.endswith(".osb"): return {"Content-Type": "application/x-osu-storyboard", "filename": fn, "extension": fe, "type": "file", "path": path}
+    if isInclude and ".osk" in path or not isInclude and path.endswith(".osk"): return {"Content-Type": "application/x-osu-skin", "filename": fn, "extension": fe, "type": "file", "path": path}
 
-    else: return {"Content-Type": "application/octet-stream", "exetension": "?", "type": "?", "path": path}
+    else: return {"Content-Type": "application/octet-stream", "filename": fn, "extension": fe, "type": "?", "path": path}
     
     
 
@@ -480,6 +481,7 @@ def osu_file_read(setID, rq_type, moving=False, bID=None, cheesegull=False, file
         except zipfile.BadZipFile as e:
             log.error(f"압축파일 오류: {e}")
 
+    oszHash = calculate_md5.file(f"{dataFolder}/dl/{get_osz_fullName(setID)}")
     file_list = os.listdir(f"{dataFolder}/dl/{setID}")
     file_list_osu = [file for file in file_list if file.endswith(".osu")]
 
@@ -581,6 +583,7 @@ def osu_file_read(setID, rq_type, moving=False, bID=None, cheesegull=False, file
                 except:
                     BeatmapBG = BeatmapVideo = None
 
+                temp["oszHash"] = oszHash
                 temp["beatmapName"] = beatmapName if beatmapName != "" else None
                 temp["BeatmapMD5"] = beatmap_md5
                 temp["osu_file_format_v"] = osu_file_format_version if osu_file_format_version != "" else None
@@ -840,7 +843,9 @@ def check(setID, rq_type, checkRenewFile=False):
     ]
     urlName = ["Bancho", "Nerinyan", "catboy", "osu.direct", "beatconnect", "sayobot", "Ripple"]
 
-    if choData["unavailable"]: del url[0], urlName[0]
+    if choData["unavailable"]:
+        log.warning(f"{url[0]} | {urlName[0]} 링크 삭제함!")
+        del url[0], urlName[0]
 
     def dl():
         #우선 setID .osz로 다운받고 나중에 파일 이름 변경
@@ -852,7 +857,7 @@ def check(setID, rq_type, checkRenewFile=False):
             try:
                 res = requests.get(link, headers=requestHeaders, timeout=3, stream=True)
                 statusCode = res.status_code
-                header_filename = res.headers['content-disposition']
+                header_filename = res.headers.get('Content-Disposition')
             except requests.exceptions.ReadTimeout as e:
                 log.warning(f"{link} Timeout! | e = {e}")
                 statusCode = 504
@@ -862,7 +867,7 @@ def check(setID, rq_type, checkRenewFile=False):
 
             if statusCode == 200:
                 # 파일 크기를 얻습니다.
-                file_size = int(res.headers.get('content-length', 0))
+                file_size = int(res.headers.get('Content-Length', 0))
 
                 # tqdm을 사용하여 진행률 표시
                 with open(save_path + file_name, 'wb') as file:
@@ -871,8 +876,8 @@ def check(setID, rq_type, checkRenewFile=False):
                             file.write(data)
                             pbar.update(len(data))
 
-                newFilename = header_filename[header_filename.find('filename='):].replace("filename=", "").replace('"', "")
-                if urlName[i] == "chimu" and  "%20" in newFilename:
+                newFilename = re.findall('filename="([^"]+)"', header_filename)[0]
+                if (urlName[i] == "chimu" or urlName[i] == "sayobot") and "%20" in newFilename:
                     newFilename = newFilename.replace("%20", " ")
                 newFilename = re.sub(r'[<>:"/\\|?*]', '_', newFilename)
 
@@ -887,7 +892,9 @@ def check(setID, rq_type, checkRenewFile=False):
                 try:
                     os.rename(f"{dataFolder}/dl/{setID} .osz", f"{dataFolder}/dl/{newFilename}")
                 except FileExistsError:
-                    os.replace(f"{dataFolder}/dl/{newFilename}", f"{dataFolder}/dl/{newFilename}-old")
+                    ct = int(os.stat(f"{dataFolder}/dl/{newFilename}").st_ctime)
+                    shutil.copy2(f"{dataFolder}/dl/{newFilename}", f"{dataFolder}/dl-old/{newFilename[:-4]}-{ct}~{int(time.time())}.osz")
+                    os.remove(f"{dataFolder}/dl/{newFilename}")
                     os.replace(f"{dataFolder}/dl/{setID} .osz", f"{dataFolder}/dl/{newFilename}")
                 return statusCode
             else:
@@ -963,7 +970,7 @@ def check(setID, rq_type, checkRenewFile=False):
                     if newOszHash.status_code == 200:
                         # tqdm을 사용하여 진행률 표시
                         with open(f"{dataFolder}/dl/t{setID} .osz", 'wb') as file:
-                            with tqdm(total=int(newOszHash.headers.get('content-length', 0)), unit='B', unit_scale=True, unit_divisor=1024, ncols=60) as pbar:
+                            with tqdm(total=int(newOszHash.headers.get('Content-Length', 0)), unit='B', unit_scale=True, unit_divisor=1024, ncols=60) as pbar:
                                 for data in newOszHash.iter_content(1024):
                                     file.write(data)
                                     pbar.update(len(data))
@@ -972,7 +979,8 @@ def check(setID, rq_type, checkRenewFile=False):
                         if oszHash != newOszHash:
                             log.warning(f"{setID} 가 최신이 아닙니다!")
                             try:
-                                shutil.copy2(f"{dataFolder}/dl/{fullSongName}", f"{dataFolder}/dl-old/{fullSongName[:-4]}-{time.time()}.osz")
+                                ct = int(os.stat(f"{dataFolder}/dl/{fullSongName}").st_ctime)
+                                shutil.copy2(f"{dataFolder}/dl/{fullSongName}", f"{dataFolder}/dl-old/{fullSongName[:-4]}-{ct}~{int(time.time())}.osz")
                             except IOError as e:
                                 log.error(f"파일 복사 중 오류 발생: {e}")
                             log.info(f"{removeAllFiles(setID)}\n")
