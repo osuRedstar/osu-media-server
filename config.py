@@ -91,7 +91,7 @@ class config:
 		self.config.set("server", "ContectEmail", "support@redstar.moe")
 
 		self.config.add_section("osu")
-		self.config.set("osu", "Bancho_Apikey", "Go https://old.ppy.sh/p/api and Get Your Key")
+		self.config.set("osu", "Bancho_Apikey", "Your_Bancho_APIKKEY")
 		self.config.set("osu", "Bancho_username", "")
 		self.config.set("osu", "Bancho_password", "")
 		self.config.set("osu", "IS_YOU_HAVE_OSU_PRIVATE_SERVER_WITH_lets.py", "False")
