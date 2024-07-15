@@ -46,12 +46,19 @@ def DiscordRichPresence():
         try:
             try: letsStatus = requests.get(f"https://old.{osuServerDomain}/letsapi/v1/status", headers=requestHeaders, timeout=1).json()["status"]
             except requests.exceptions.ReadTimeout: letsStatus = "Timeout"
+            except Exception as e: letsStatus = e
+
             try: pepStatus = requests.get(f"https://c.{osuServerDomain}/api/v1/serverStatus", headers=requestHeaders, timeout=1).json()["status"]
             except requests.exceptions.ReadTimeout: pepStatus = "Timeout"
+            except Exception as e: pepStatus = e
+
             try: apiStatus = requests.get(f"https://{osuServerDomain}/api/v1/ping", headers=requestHeaders, timeout=1).json()["code"]
             except requests.exceptions.ReadTimeout: apiStatus = "Timeout"
+            except Exception as e: apiStatus = e
+
             try: RPanelStatus = requests.get(f"https://admin.{osuServerDomain}/ping", headers=requestHeaders, timeout=3).json()["code"]
             except requests.exceptions.ReadTimeout: RPanelStatus = "Timeout"
+            except Exception as e: RPanelStatus = e
 
             details = f"lets = {letsStatus} | pep = {pepStatus} | api = {apiStatus} | Realistik Panel = {RPanelStatus}"
             rpcUpdate(details=details)
