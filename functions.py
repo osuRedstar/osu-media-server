@@ -34,6 +34,7 @@ class calculate_md5:
         return md5.hexdigest()
 
 conf = config.config("config.ini")
+isLog = conf.config["server"]["isLog"]
 OSU_APIKEY = conf.config["osu"]["Bancho_Apikey"]
 Bancho_u = conf.config["osu"]["Bancho_username"]
 Bancho_p = conf.config["osu"]["Bancho_password"]
@@ -88,15 +89,12 @@ else:
     log.warning("봇 접근 거부")
 
 def getRequestInfo(self):
-    IsCloudflare = False
-    IsNginx = False
-    IsHttp = False
+    IsCloudflare = IsNginx = IsHttp = False
     try:
         real_ip = self.request.headers["Cf-Connecting-Ip"]
         request_url = self.request.headers["X-Forwarded-Proto"] + "://" + self.request.host + self.request.uri
         country_code = self.request.headers["Cf-Ipcountry"]
-        IsCloudflare = True
-        IsNginx = True
+        IsCloudflare = IsNginx = True
         Server = "Cloudflare"
     except Exception as e:
         log.warning(f"cloudflare를 거치지 않음, real_ip는 nginx header에서 가져옴 | e = {e}")
@@ -145,41 +143,53 @@ def request_msg(self, botpass=False):
     
     real_ip, request_url, country_code, client_ip, User_Agent, Referer, IsCloudflare, IsNginx, IsHttp, Server = getRequestInfo(self)
 
-    def logmsg(msg):
-        if botpass:
-            log.warning(msg)
-        else:
-            log.error(msg)
+    rMsg = f"Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_url} | From: {User_Agent} | Referer: {Referer}"
+    rt = 200
+    def logmsg(rtc, msg):
+        nonlocal rMsg, rt; rMsg, rt = (msg, rtc)
+        if botpass: log.warning(msg)
+        else: log.error(msg)
 
     #필?터?링
     if allowedconnentedbot:
-        log.info(f"Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_url} | From: {User_Agent} | Referer: {Referer}")
-        return 200
+        log.info(rMsg)
     else:
         with open("botList.json", "r") as f:
             botList = json.load(f)
             if any(i in User_Agent.lower() for i in botList["no"]) and not any(i in User_Agent.lower() for i in botList["ok"]):
-                logmsg(f"bot 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_url} | From: {User_Agent} | Referer: {Referer}")
-                return "bot"
+                logmsg("bot", f"bot 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_url} | From: {User_Agent} | Referer: {Referer}")
             elif "python-requests" in User_Agent.lower():
-                logmsg(f"python-requests 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_url} | From: {User_Agent} | Referer: {Referer}")
-                return "python-requests"
+                logmsg("python-requests", f"python-requests 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_url} | From: {User_Agent} | Referer: {Referer}")
             elif "python-urllib" in User_Agent.lower():
-                logmsg(f"Python-urllib 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_url} | From: {User_Agent} | Referer: {Referer}")
-                return "Python-urllib"
+                logmsg("Python-urllib", f"Python-urllib 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_url} | From: {User_Agent} | Referer: {Referer}")
 
             elif any(i in User_Agent.lower() for i in botList["ok"]):
-                log.info(f"bot 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_url} | From: {User_Agent} | Referer: {Referer}")
-                return 200
+                rMsg = f"bot 감지! | {rMsg}"; log.info(rMsg)
             elif "postmanruntime" in User_Agent.lower():
-                log.debug(f"PostmanRuntime 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_url} | From: {User_Agent} | Referer: {Referer}")
-                return 200
+                rMsg = f"PostmanRuntime 감지! | {rMsg}"; log.debug(rMsg)
             elif User_Agent == "osu!":
-                log.info(f"osu! 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_url} | From: {User_Agent} | Referer: {Referer}")
-                return 200
+                rMsg = f"osu! 감지! | {rMsg}"; log.info(rMsg)
             else:
-                log.info(f"Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_url} | From: {User_Agent} | Referer: {Referer}")
-                return 200
+                log.info(rMsg)
+
+    if not allowedconnentedbot and rt != 200:
+        if not os.path.isfile("IPs.json"):
+            with open("IPs.json", "w") as f: f.write("[\n\n]")
+        with open("IPs.json", "r+") as f:
+            file = json.load(f)
+            if file:
+                isIPExist = False
+                for i, d in enumerate(file):
+                    if d["IP"] == real_ip:
+                        isIPExist = True
+                        file[i] = {"IP": real_ip, "Country": country_code, "URL": request_url, "User-Agent": User_Agent, "Referer": Referer, "Type": rt, "Count": file[i]['Count'] + 1, "Last_seen": int(time.time())}
+                if not isIPExist:
+                    file.append({"IP": real_ip, "Country": country_code, "URL": request_url, "User-Agent": User_Agent, "Referer": Referer, "Type": rt, "Count": 1, "Last_seen": int(time.time())})
+            else: file.append({"IP": real_ip, "Country": country_code, "URL": request_url, "User-Agent": User_Agent, "Referer": Referer, "Type": rt, "Count": 1, "Last_seen": int(time.time())})
+
+            f.seek(0)
+            f.write(json.dumps(file, indent=4))
+    return rt
 
 def resPingMs(self):
     pingMs = (time.time() - self.request._start_time) * 1000
@@ -865,7 +875,7 @@ def check(setID, rq_type, checkRenewFile=False):
                 statusCode = res.status_code if res.status_code != 200 else 500
                 log.error(f"{statusCode} | {e} | 파일다운 기본 예외처리 | url = {link}")
 
-            if statusCode == 200:
+            if statusCode == 200 and header_filename:
                 # 파일 크기를 얻습니다.
                 file_size = int(res.headers.get('Content-Length', 0))
 
@@ -1505,6 +1515,18 @@ def read_osu(id):
 
 def filename_to_GetCheesegullDB(filename):
     try:
+        pattern = r'^(?P<artist>.+) - (?P<title>.+) \((?P<creator>.+)\) \[(?P<version>.+)\]\.osu$'
+        match = re.match(pattern, filename)
+        artist = match.group('artist')
+        title = match.group('title')
+        creator = match.group('creator')
+        version = match.group('version')
+    except:
+        artist, title, creator, version = None
+        log.error("osu filename에서 artist, title, creator, version 추출중 에러")
+    
+    #위에 코드로 대채 테스트
+    """ try:
         parentheses = filename.count(" (")
         if parentheses == 1:
             # 정규식 패턴, 일반적인 경우
@@ -1538,7 +1560,7 @@ def filename_to_GetCheesegullDB(filename):
         title = None
         creator = None
         version = None
-        log.error("osu filename에서 artist, title, creator, version 추출중 에러")
+        log.error("osu filename에서 artist, title, creator, version 추출중 에러") """
 
     """ try:
         artist = filename[:filename.find(" - ")]
