@@ -50,8 +50,10 @@ def DiscordRichPresence():
             except requests.exceptions.ReadTimeout: pepStatus = "Timeout"
             try: apiStatus = requests.get(f"https://{osuServerDomain}/api/v1/ping", headers=requestHeaders, timeout=1).json()["code"]
             except requests.exceptions.ReadTimeout: apiStatus = "Timeout"
+            try: RPanelStatus = requests.get(f"https://admin.{osuServerDomain}/ping", headers=requestHeaders, timeout=3).json()["code"]
+            except requests.exceptions.ReadTimeout: RPanelStatus = "Timeout"
 
-            details = f"lets = {letsStatus} | pep = {pepStatus} | api = {apiStatus}"
+            details = f"lets = {letsStatus} | pep = {pepStatus} | api = {apiStatus} | Realistik Panel = {RPanelStatus}"
             rpcUpdate(details=details)
         except exceptions.InvalidID: rcpConn()
         except exceptions.ServerError: rpcUpdate(details="Error!")
