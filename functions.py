@@ -187,7 +187,7 @@ def request_msg(self, botpass=False):
                     file.append({"IP": real_ip, "Country": country_code, "URL": request_url, "User-Agent": User_Agent, "Referer": Referer, "Type": rt, "Count": 1, "Last_seen": int(time.time())})
             else: file.append({"IP": real_ip, "Country": country_code, "URL": request_url, "User-Agent": User_Agent, "Referer": Referer, "Type": rt, "Count": 1, "Last_seen": int(time.time())})
 
-            f.seek(0)
+            f.seek(0); f.truncate()
             f.write(json.dumps(file, indent=4))
     return rt
 
