@@ -251,15 +251,16 @@ def IDM(self, path):
         log.info({"Content-Range": f"bytes={start}-{end}/{fileSize}", "Content-Length": contentLength})
 
         with open(path, "rb") as f:
-            f.seek(start) if start != 0 or (start == 0 and Range[1]) else ""
+            f.seek(start) #f.seek(start) if start != 0 or (start == 0 and Range[1]) else None
             file = f.read(contentLength) if start != 0 or (start == 0 and Range[1]) else f.read()
             self.write(file)
     else:
         idm = False
-        with open(path, 'rb') as f:
-            self.write(f.read())
+        with open(path, 'rb') as f: self.write(f.read())
 
-    filename = path.split("/")[len(path.split("/")) - 1]
+    filename = path.split("/")[-1]
+    self.set_header("return-fileinfo", json.dumps({"filename": filename, "path": path, "fileMd5": calculate_md5.file(path)}))
+    self.set_header('Content-Type', pathToContentType(path)["Content-Type"])
     self.set_header('Content-Disposition', f'inline; filename="{filename}"')
     self.set_header("Accept-Ranges", "bytes")
     return idm
@@ -792,7 +793,7 @@ def move_files(setID, rq_type):
                     log.info(f"{item['BeatmapID']} 비트맵은 video가 존재함!")
                 except:
                     pass
-            
+
             if not IS_YOU_HAVE_OSU_PRIVATE_SERVER and rq_type == "osu":
                 shutil.copy(f"{dataFolder}/dl/{setID}/{item['beatmapName']}", f"{dataFolder}/osu/{setID}/{item['BeatmapID']}.osu")
                 log.info(f"{item['BeatmapID']} 비트맵 | osu 처리함")
@@ -1446,14 +1447,14 @@ def read_osz(id):
 
     filename = get_osz_fullName(id)
     if filename != f"{id} .osz" and os.path.isfile(f"{dataFolder}/dl/{filename}"):
-        return {"path": f"{dataFolder}/dl/{filename}", "filename": filename}
+        return f"{dataFolder}/dl/{filename}"
     else:
         ck = check(id, rq_type="osz")
         if type(ck) is not list:
             return ck
         newFilename = get_osz_fullName(id)
         if os.path.isfile(f"{dataFolder}/dl/{newFilename}"):
-            return {"path": f"{dataFolder}/dl/{newFilename}", "filename": newFilename}
+            return f"{dataFolder}/dl/{newFilename}"
         else:
             return 0
 
@@ -1492,7 +1493,6 @@ def read_osu(id):
         WHERE b.id = %s
     '''
     filename = dbC.fetch(sql, [id])
-    log.debug(filename)
 
     #B:\redstar\lets\.data\beatmaps 우선시함
     if IS_YOU_HAVE_OSU_PRIVATE_SERVER and os.path.isfile(f"{lets_beatmaps_Folder}/{id}.osu"):
@@ -1500,13 +1500,13 @@ def read_osu(id):
         if filename is None:
             log.error(f"filename is None | sql = {sql}")
             return None
-        return {"path": f"{lets_beatmaps_Folder}/{id}.osu", "filename": filename["filename"]}
+        return f"{lets_beatmaps_Folder}/{id}.osu"
     else:
         if os.path.isfile(f"{dataFolder}/osu/{bsid}/{id}.osu"):
             if filename is None:
                 log.error(f"filename is None | sql = {sql}")
                 return None
-            return {"path": f"{dataFolder}/osu/{bsid}/{id}.osu", "filename": filename["filename"]}
+            return f"{dataFolder}/osu/{bsid}/{id}.osu"
         else:
             ck = check(bsid, rq_type=f"osu")
             if type(ck) is not list:
