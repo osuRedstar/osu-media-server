@@ -18,7 +18,7 @@ class handler(tornado.web.RequestHandler):
         u = self.get_argument("u", None)
         h = self.get_argument("h", None)
         vv = self.get_argument("vv", None)
-        log.info(f"username : {u} | pwhash? : {h} | vv : {vv}")
+        log.info(f"username : {u} | pwhash : {h} | vv : {vv}")
         self.set_header("user-info", json.dumps({"u": u, "h": h, "vv": vv}))
 
         try:
