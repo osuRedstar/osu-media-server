@@ -1,0 +1,29 @@
+import config
+import threading
+import requests
+import tarfile
+import os
+from datetime import datetime
+import time
+
+conf = config.config("config.ini")
+mmdbID = conf.config["mmdb"]["id"]
+mmdbKey = conf.config["mmdb"]["key"]
+
+def wk():
+    while True:
+        now = datetime.now()
+        if now.weekday() == 0 and now.hour == 0:
+            r = requests.get("https://download.maxmind.com/geoip/databases/GeoLite2-Country/download?suffix=tar.gz", auth=(mmdbID, mmdbKey)).content
+            with open("mmdb.tar.gz", "wb") as f: f.write(r)
+            with tarfile.open("mmdb.tar.gz", 'r:gz') as tar: tar.extractall("mmdb")
+
+            mmdbDir = os.listdir('mmdb')[0]
+            mmdbFile = [file for file in os.listdir(f"mmdb/{mmdbDir}") if file.endswith(".mmdb")][0]
+            os.replace(f"mmdb/{mmdbDir}/{mmdbFile}", "GeoLite2-Country.mmdb")
+            os.system("rd /s /q mmdb && del /f /q mmdb.tar.gz")
+        time.sleep(1800)
+
+def dl():
+    thread = threading.Thread(target=wk)
+    thread.start()

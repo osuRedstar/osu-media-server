@@ -6,6 +6,7 @@ from functions import *
 import lets_common_log.logUtils as log
 import json
 import drpc
+import getmmdb
 
 #from handlers import MainHandler
 from handlers import ListHandler
@@ -147,6 +148,7 @@ def make_app():
     ]) """
 
 if __name__ == "__main__":
+    getmmdb.dl()
     drpc.drpcStart()
     folder_check()
     if conf.config["server"]["flaskdebug"] == "0":

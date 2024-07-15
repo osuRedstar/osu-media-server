@@ -51,6 +51,9 @@ dbR = db(conf.config["db"]["database"])
 dbC = db("cheesegull")
 dbO = db("osu_media_server")
 
+mmdbID = conf.config["mmdb"]["id"]
+mmdbKey = conf.config["mmdb"]["key"]
+
 requestHeaders = {"User-Agent": f"RedstarOSU's MediaServer (python requests) | https://b.{osuServerDomain}"}
 
 #API 키 테스트
