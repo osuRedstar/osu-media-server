@@ -22,11 +22,10 @@ class handler(tornado.web.RequestHandler):
                 return send504(self, "bid", id)
             elif type(readed_read_video) == FileNotFoundError:
                 raise readed_read_video
-            elif readed_read_video.startswith("data/video/"):
+            elif readed_read_video.startswith(f"{dataFolder}/files/"):
                 IDM(self, readed_read_video)
             else:
                 self.set_status(404)
-                self.set_header("return-fileinfo", json.dumps({"filename": id, "path": readed_read_video, "fileMd5": calculate_md5.file(readed_read_video)}))
                 self.set_header("Content-Type", pathToContentType(".json")["Content-Type"])
                 self.write(json.dumps({"code": 404, "message": "Sorry Beatmap has no videos", "funcmsg": readed_read_video}, indent=2, ensure_ascii=False))
         except Exception as e:
