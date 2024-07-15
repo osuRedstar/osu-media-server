@@ -314,15 +314,14 @@ def pathToContentType(path, isInclude=False):
     if isInclude and ".osk" in path or not isInclude and path.endswith(".osk"): return {"Content-Type": "application/x-osu-skin", "filename": fn, "extension": fe, "type": "file", "path": path}
 
     else: return {"Content-Type": "application/octet-stream", "filename": fn, "extension": fe, "type": "?", "path": path}
-    
-    
 
 ####################################################################################################
+
 def readableMods(__mods: int):
     """
-	:param __mods: mods bitwise number
-	:return: readable mods string, eg HDDT
-	"""
+    :param __mods: mods bitwise number
+    :return: readable mods string, eg HDDT
+    """
     r = ""
     if __mods == mods.NOMOD: return ""
     if __mods & mods.NOFAIL: r += "NF"
@@ -640,7 +639,7 @@ def osu_file_read(setID, rq_type, bID=None, cheesegull=False, filesinfo=False):
                 for bi, b, m in zip(beatmap_info, bidsList, md5sList):
                     if bi["BeatmapMD5"] == m:
                         bi["BeatmapID"] = b
-        
+
         #[log.debug(i) for i in beatmap_info]
 
     if int(setID) > 0:
@@ -908,7 +907,7 @@ def read_bg(id):
         ck = check(bsid, rq_type="bg")
         for d in ck[2]:
             if d["BeatmapID"] == int(id): return f"{dataFolder}/files/{bsid}/{d['BeatmapBG']}"
-    
+
 def read_thumb(id):
     if "l.jpg" in id:
         bsid = id.replace("l.jpg", "")
@@ -1152,7 +1151,7 @@ def filename_to_GetCheesegullDB(filename):
     except:
         artist, title, creator, version = None
         log.error("osu filename에서 artist, title, creator, version 추출중 에러")
-    
+
     #위에 코드로 대채 테스트
     """ try:
         parentheses = filename.count(" (")
