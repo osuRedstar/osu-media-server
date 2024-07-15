@@ -13,7 +13,7 @@ import io
 MODULE_NAME = "replayParserHandler"
 class handler(tornado.web.RequestHandler):
     """
-    Handler for /web/replayparser
+    Handler for /replayparser
 
     """
     def get(self):
