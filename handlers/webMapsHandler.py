@@ -12,22 +12,20 @@ class handler(tornado.web.RequestHandler):
             return send403(self, rm)
 
         try:
-            path = read_osu_filename(filename)
-            if path == 404:
+            file = read_osu_filename(filename)
+            if file == 404:
                 return send404(self, "filename", id)
-            elif path == 500:
+            elif file == 500:
                 return send500(self, "filename", id)
-            elif path == 504:
+            elif file == 504:
                 return send504(self, "filename", id)
-            elif type(path) == FileNotFoundError:
-                raise path
-            elif path is None:
+            elif type(file) == FileNotFoundError:
+                raise file
+            elif file is None:
                 self.set_status(204)
                 return None
             else:
-                self.set_header("return-fileinfo", json.dumps({"filename": path["filename"], "path": path["path"], "fileMd5": calculate_md5.file(path["path"])}))
-                self.set_header('Content-Type', pathToContentType(path["path"])["Content-Type"])
-                IDM(self, path["path"])
+                IDM(self, file)
         except Exception as e:
             log.warning(e)
             log.error(f"\n{traceback.format_exc()}")
