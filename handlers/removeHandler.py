@@ -4,6 +4,10 @@ import lets_common_log.logUtils as log
 from functions import *
 import json
 import traceback
+import config
+
+conf = config.config("config.ini")
+key1 = conf.config["server"]["removekey"]
 
 class handler(tornado.web.RequestHandler):
     def get(self, bsid):
@@ -19,7 +23,7 @@ class handler(tornado.web.RequestHandler):
 
         if key is None:
             send401(self, "Not Found key")
-        elif key != "Debian":
+        elif key != key1:
             send401(self, f"{key} is Wrong key")
         elif key2 is None:
             send401(self, "Not Found key2")

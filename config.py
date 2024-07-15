@@ -51,6 +51,7 @@ class config:
 			noneCheck.append(self.config.get("server","AllowedConnentedBot"))
 			noneCheck.append(self.config.get("server","dataFolder"))
 			noneCheck.append(self.config.get("server","oszRenewTime"))
+			noneCheck.append(self.config.get("server","removekey"))
 			noneCheck.append(self.config.get("server","osuServerDomain"))
 			noneCheck.append(self.config.get("server","ContectEmail"))
 
@@ -92,6 +93,7 @@ class config:
 		self.config.set("server", "AllowedConnentedBot", "False")
 		self.config.set("server", "dataFolder", "data")
 		self.config.set("server", "oszRenewTime", "604800")
+		self.config.set("server", "removekey", "")
 		self.config.set("server", "osuServerDomain", "redstar.moe")
 		self.config.set("server", "ContectEmail", "support@redstar.moe")
 
