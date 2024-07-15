@@ -12,6 +12,13 @@ class handler(tornado.web.RequestHandler):
             return send403(self, rm)
 
         try:
+            bsid = int(bsid)
+        except:
+            if bsid.endswith(".osu"): #비트맵 파일이름 감지시 반환
+                data = filename_to_GetCheesegullDB(bsid)
+                return self.redirect(f"/filesinfo/{data['parent_set_id']}/{data['id']}")
+
+        try:
             info = osu_file_read(bsid, rq_type="all", cheesegull=True, filesinfo=True)
             if info == 404:
                 return send404(self, "bsid", bsid)
