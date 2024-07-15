@@ -47,6 +47,7 @@ class config:
 			# Try to get all the required keys
 			noneCheck.append(self.config.get("server","port"))
 			noneCheck.append(self.config.get("server","flaskdebug"))
+			noneCheck.append(self.config.get("server","islog"))
 			noneCheck.append(self.config.get("server","AllowedConnentedBot"))
 			noneCheck.append(self.config.get("server","dataFolder"))
 			noneCheck.append(self.config.get("server","oszRenewTime"))
@@ -84,7 +85,8 @@ class config:
 		self.config.add_section("server")
 		self.config.set("server", "port", "6200")
 		self.config.set("server", "flaskdebug", "0")
-		self.config.set("server", "AllowedConnentedBot", "True")
+		self.config.set("server", "islog", "True")
+		self.config.set("server", "AllowedConnentedBot", "False")
 		self.config.set("server", "dataFolder", "data")
 		self.config.set("server", "oszRenewTime", "604800")
 		self.config.set("server", "osuServerDomain", "redstar.moe")
