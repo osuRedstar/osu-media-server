@@ -202,11 +202,21 @@
     {
         "IP": "34.64.82.71",
         "Country": "KR",
-        "URL": "https://b.redstar.moe/d/534107",
+        "URL": "https://b.redstar.moe/d/1254404",
+        "User-Agent": "Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.6422.175 Mobile Safari/537.36 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+        "Referer": "",
+        "Type": "bot",
+        "Count": 3,
+        "Last_seen": 1721019815
+    },
+    {
+        "IP": "34.64.82.68",
+        "Country": "KR",
+        "URL": "https://b.redstar.moe/d/1470072",
         "User-Agent": "Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.6422.175 Mobile Safari/537.36 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
         "Referer": "",
         "Type": "bot",
         "Count": 1,
-        "Last_seen": 1721018200
+        "Last_seen": 1721020202
     }
 ]
