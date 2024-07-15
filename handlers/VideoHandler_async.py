@@ -25,7 +25,7 @@ class handler(tornado.web.RequestHandler):
                 return send504(self, "bid", id)
             elif type(readed_read_video) == FileNotFoundError:
                 raise readed_read_video
-            elif readed_read_video.startswith("data/video/"):
+            elif readed_read_video.startswith(f"{dataFolder}/video/"):
                 IDM(self, readed_read_video)
             else:
                 self.set_status(404)
