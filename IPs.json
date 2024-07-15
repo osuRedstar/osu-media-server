@@ -6,8 +6,8 @@
         "User-Agent": "python-requests/2.20.0",
         "Referer": "",
         "Type": "python-requests",
-        "Count": 65,
-        "Last_seen": 1721015475
+        "Count": 66,
+        "Last_seen": 1721018624
     },
     {
         "IP": "175.120.229.31",
@@ -32,12 +32,12 @@
     {
         "IP": "34.64.82.64",
         "Country": "KR",
-        "URL": "https://b.redstar.moe/d/1015287",
+        "URL": "https://b.redstar.moe/d/679239",
         "User-Agent": "Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.6422.175 Mobile Safari/537.36 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
         "Referer": "",
         "Type": "bot",
-        "Count": 2,
-        "Last_seen": 1721015377
+        "Count": 4,
+        "Last_seen": 1721019365
     },
     {
         "IP": "34.64.82.69",
@@ -62,12 +62,12 @@
     {
         "IP": "34.64.82.79",
         "Country": "KR",
-        "URL": "https://b.redstar.moe/d/62852",
+        "URL": "https://b.redstar.moe/d/357361",
         "User-Agent": "Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.6422.175 Mobile Safari/537.36 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
         "Referer": "",
         "Type": "bot",
-        "Count": 1,
-        "Last_seen": 1721013126
+        "Count": 2,
+        "Last_seen": 1721018517
     },
     {
         "IP": "3.224.220.101",
@@ -102,12 +102,12 @@
     {
         "IP": "114.119.136.245",
         "Country": "SG",
-        "URL": "https://b.redstar.moe/d/922004",
+        "URL": "https://b.redstar.moe/d/1317379",
         "User-Agent": "Mozilla/5.0 (Linux; Android 7.0;) AppleWebKit/537.36 (KHTML, like Gecko) Mobile Safari/537.36 (compatible; PetalBot;+https://webmaster.petalsearch.com/site/petalbot)",
-        "Referer": "https://redstar.moe/b/1925409?mode=3",
+        "Referer": "https://redstar.moe/b/2729553?mode=1",
         "Type": "bot",
-        "Count": 1,
-        "Last_seen": 1721014533
+        "Count": 2,
+        "Last_seen": 1721018226
     },
     {
         "IP": "34.64.82.78",
@@ -142,12 +142,12 @@
     {
         "IP": "34.64.82.76",
         "Country": "KR",
-        "URL": "https://b.redstar.moe/d/624607",
+        "URL": "https://b.redstar.moe/d/226207",
         "User-Agent": "Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.6422.175 Mobile Safari/537.36 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
         "Referer": "",
         "Type": "bot",
-        "Count": 2,
-        "Last_seen": 1721017116
+        "Count": 3,
+        "Last_seen": 1721018941
     },
     {
         "IP": "34.64.82.65",
@@ -188,5 +188,25 @@
         "Type": "bot",
         "Count": 1,
         "Last_seen": 1721017300
+    },
+    {
+        "IP": "34.64.82.70",
+        "Country": "KR",
+        "URL": "https://b.redstar.moe/d/2025917",
+        "User-Agent": "Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.6422.175 Mobile Safari/537.36 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+        "Referer": "",
+        "Type": "bot",
+        "Count": 1,
+        "Last_seen": 1721018015
+    },
+    {
+        "IP": "34.64.82.71",
+        "Country": "KR",
+        "URL": "https://b.redstar.moe/d/534107",
+        "User-Agent": "Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.6422.175 Mobile Safari/537.36 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+        "Referer": "",
+        "Type": "bot",
+        "Count": 1,
+        "Last_seen": 1721018200
     }
 ]
