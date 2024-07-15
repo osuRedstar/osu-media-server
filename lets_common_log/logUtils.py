@@ -1,3 +1,5 @@
+from time import localtime, strftime
+
 #bcolors
 """Console colors"""
 PINK 		= '\033[95m'
@@ -9,11 +11,6 @@ ENDC 		= '\033[0m'
 BOLD 		= '\033[1m'
 UNDERLINE 	= '\033[4m'
 
-import time
-
-
-
-from time import localtime, strftime
 def getTimestamp():
 	"""
 	Return current time in YYYY-MM-DD HH:MM:SS format.
@@ -22,8 +19,6 @@ def getTimestamp():
 	:return: readable timestamp
 	"""
 	return strftime("%Y-%m-%d %H:%M:%S", localtime())
-
-
 
 def logMessage(message, alertType = "INFO", messageColor = ENDC, discord = None, alertDev = False, of = None, stdout = True):
 	"""
@@ -65,11 +60,14 @@ def logMessage(message, alertType = "INFO", messageColor = ENDC, discord = None,
 
 		typeColor=typeColor,
 		messageColor=messageColor,
-		endc=ENDC)
+		endc=ENDC
+	)
 
 	# Log to console
-	if stdout:
-		print(finalMessageConsole)
+	if stdout: print(finalMessageConsole)
+
+	if isLog:
+		with open("logs.txt", "a", encoding="utf-8") as f: f.write(f"{finalMessageConsole}\n")
 
 def warning(message, discord = None, alertDev = False):
 	"""
@@ -133,3 +131,9 @@ def chat(message):
 	:return:
 	"""
 	logMessage(message, "CHAT", BLUE, of="chatlog_public.txt")
+
+with open("config.ini", "r") as f: #isLog
+	isLog = f.read()
+	isLog = True if isLog[isLog.find("islog"):].split("\n")[0].replace("islog = ", "") == "True" else False
+	if isLog: chat("logs.txt 활성화")
+	else: warning("logs.txt 비활성화")
