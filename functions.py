@@ -695,7 +695,7 @@ def choUnavailable(setID):
         elif audio_unavailable and download_unavailable:
             break
     return {"Bancho_data": Bancho_data, "unavailable": unavailable, "audio_unavailable": audio_unavailable, "download_unavailable": download_unavailable, "storyboard": storyboard, "pylist_unavailable": [audio_unavailable, download_unavailable, storyboard]}
-def check(setID, rq_type, checkRenewFile=False):
+def check(setID, rq_type, checkRenewFile=False, bu = None, bh = None, bvv = None):
     #.osz는 무조건 새로 받되, Bancho, Redstar**전용** 맵에서 ranked, loved 등등 은 새로 안받아도 댐. (Redstar에서의 랭크상태 여부는 고민중)
     #근데 생각해보니 파일 있으면 걍 이걸 안오는데?
     folder_check()
@@ -714,6 +714,10 @@ def check(setID, rq_type, checkRenewFile=False):
         f"https://storage.ripple.moe/d/{setID}"
     ]
     urlName = ["Bancho", "Nerinyan", "catboy", "osu.direct", "beatconnect", "sayobot", "Ripple"]
+
+    if bu and bh and bvv:
+        url.insert(0, f"https://osu.ppy.sh/d/{setID}?u={bu}&h={bh}&vv={bvv}")
+        urlName.insert(0, f"{bu}'s Bancho")
 
     if choData["unavailable"]:
         log.warning(f"{url[0]} | {urlName[0]} 링크 삭제함!")
@@ -738,8 +742,7 @@ def check(setID, rq_type, checkRenewFile=False):
                 log.error(f"{statusCode} | {e} | 파일다운 기본 예외처리 | url = {link}")
 
             if statusCode == 200 and header_filename:
-                # 파일 크기를 얻습니다.
-                file_size = int(res.headers.get('Content-Length', 0))
+                file_size = int(res.headers.get('Content-Length', 0)) #파일 크기를 얻습니다.
 
                 # tqdm을 사용하여 진행률 표시
                 with open(save_path + file_name, 'wb') as file:
@@ -755,8 +758,7 @@ def check(setID, rq_type, checkRenewFile=False):
 
                 log.info(f'{file_name} --> {newFilename} 다운로드 완료')
 
-                # WAV 파일 재생을 별도의 스레드에서 수행
-                def play_finished_dl():
+                def play_finished_dl(): #WAV 파일 재생을 별도의 스레드에서 수행
                     os.system(f"ffplay -nodisp -autoexit static/audio/match-confirm.mp3 > {'nul' if os.name == 'nt' else '/dev/null'} 2>&1")
                 play_thread = threading.Thread(target=play_finished_dl)
                 play_thread.start()
@@ -837,9 +839,10 @@ def check(setID, rq_type, checkRenewFile=False):
             if rankStatus <= 0:
                 oszHash = calculate_md5.file(f"{dataFolder}/dl/{fullSongName}")
                 log.debug(f"oszHash = {oszHash}")
-                for i in url:
-                    newOszHash = requests.get(i, headers=requestHeaders, timeout=5, stream=True)
-                    if newOszHash.status_code == 200:
+                for i, (link, mn) in enumerate(zip(url, urlName)):
+                    newOszHash = requests.get(link, headers=requestHeaders, timeout=5, stream=True)
+                    header_filename = newOszHash.headers.get('Content-Disposition')
+                    if newOszHash.status_code == 200 and header_filename:
                         # tqdm을 사용하여 진행률 표시
                         with open(f"{dataFolder}/dl/t{setID} .osz", 'wb') as file:
                             with tqdm(total=int(newOszHash.headers.get('Content-Length', 0)), unit='B', unit_scale=True, unit_divisor=1024, ncols=60) as pbar:
@@ -861,6 +864,11 @@ def check(setID, rq_type, checkRenewFile=False):
                             os.remove(f"{dataFolder}/dl/t{setID} .osz")
                             os.utime(f"{dataFolder}/dl/{fullSongName}", (time.time(), time.time()))
                         break
+                    else:
+                        if i < len(url) - 1:
+                            log.warning(f'{newOszHash.status_code}. {mn} 에서 파일을 다운로드할 수 없습니다. {urlName[i + 1]} 로 재시도!')
+                        else:
+                            log.warning(f'{newOszHash.status_code}. {mn} 에서 파일을 다운로드할 수 없습니다!')
 
     if checkRenewFile:
         return []
@@ -918,38 +926,48 @@ def read_thumb(id):
 
     ck = check(bsid, rq_type="thumb")
     for d in ck[2]:
-        if d["BeatmapID"] == ck[1]: ck = d
+        if d["BeatmapID"] == ck[1]: ck = d; break
 
     if os.path.isfile(f"{dataFolder}/files/{bsid}/{id}"):
         return f"{dataFolder}/files/{bsid}/{id}"
     elif os.path.isfile(f"{dataFolder}/files/{bsid}/noImage_{id}"):
         return f"{dataFolder}/files/{bsid}/noImage_{id}"
     else:
-        img = Image.open(f"{dataFolder}/files/{bsid}/{ck['BeatmapBG']}")
-        # 이미지 모드를 RGBA에서 RGB로 변환
-        img = img.convert("RGB")
+        with Image.open(f"{dataFolder}/files/{bsid}/{ck['BeatmapBG']}") as img:
+            img.convert("RGB")
+            width, height = img.size
+            if img.size == img_size:
+                log.info(f"원본 파일이랑 같은 {img_size} 여서 안짜름")
+                shutil.copy2(f"{dataFolder}/files/{bsid}/{ck['BeatmapBG']}", f"{dataFolder}/files/{bsid}/{id}")
+            elif img.size < img_size:
+                log.warning(f"원본 이미지가 더 작음 {img.size}")
+                left = round((img_size[0] - width) / 2)
+                top = round((img_size[1] - height) / 2)
+                right = round(img_size[0] - left)
+                bottom = round(img_size[1] - top)
 
-        width, height = img.size
-        if width / height == 4 / 3:
-            log.info(f"이미 4:3 비율이라서 {img_size} 로만 자름")
-            img.resize(img_size, Image.LANCZOS).save(f"{dataFolder}/files/{bsid}/{id}", quality=100)
-        else:
-            if width / height > 4 / 3:
-                croped_width = height * (4 / 3) #원본기준 4:3 비율 (width)
-                left = (width - croped_width) / 2
-                top = 0
-                right = width - left
-                bottom = height
+                canvas = Image.new("RGB", img_size, (255, 255, 255))
+                canvas.paste(img, (left,top,right,bottom))
+                canvas.save(f"{dataFolder}/files/{bsid}/{id}", quality=100)
+            elif width / height == 4 / 3:
+                log.info(f"이미 4:3 비율이라서 {img_size} 로만 자름")
+                img.resize(img_size, Image.LANCZOS).save(f"{dataFolder}/files/{bsid}/{id}", quality=100)
             else:
-                croped_height = width / (4 / 3) #원본기준 4:3 비율 (height)
-                left = 0
-                top = (height - croped_height) / 2 # = 160.5
-                right = width
-                bottom = height - top
+                if width / height > 4 / 3:
+                    croped_width = height * (4 / 3) #원본기준 4:3 비율 (width)
+                    left = (width - croped_width) / 2
+                    top = 0
+                    right = width - left
+                    bottom = height
+                else:
+                    croped_height = width / (4 / 3) #원본기준 4:3 비율 (height)
+                    left = 0
+                    top = (height - croped_height) / 2 # = 160.5
+                    right = width
+                    bottom = height - top
 
-            img_cropped = img.crop((left,top,right,bottom))
-            img_resize = img_cropped.resize(img_size, Image.LANCZOS)
-            img_resize.save(f"{dataFolder}/files/{bsid}/{id}", quality=100)
+                img_cropped = img.crop((left,top,right,bottom))
+                img_cropped.resize(img_size, Image.LANCZOS).save(f"{dataFolder}/files/{bsid}/{id}", quality=100)
         return f"{dataFolder}/files/{bsid}/{id}"
 
 #osu_file_read() 역할 분할하기 (각각 따로 두기)
@@ -1022,7 +1040,7 @@ def read_audio(id, m=None):
 
         ck = check(id, rq_type="audio")
         for d in ck[2]:
-            if d["BeatmapID"] == ck[1]: ck = d
+            if d["BeatmapID"] == ck[1]: ck = d; break
 
         if not os.path.isfile(f"{dataFolder}/files/{id}/{ck['AudioFilename']}") and os.path.isfile(f"{dataFolder}/files/{id}/noAudio.mp3"):
             log.error(f"{id} bid 실제론 음악파일 없어보이며, noAudio.mp3가 폴더내에 존재함")
@@ -1039,7 +1057,7 @@ def read_audio(id, m=None):
 
         ck = check(bsid, rq_type="audio")
         for d in ck[2]:
-            if d["BeatmapID"] == int(id): ck = d
+            if d["BeatmapID"] == int(id): ck = d; break
 
         if not os.path.isfile(f"{dataFolder}/files/{bsid}/{ck['AudioFilename']}") and os.path.isfile(f"{dataFolder}/files/{bsid}/noAudio.mp3"):
             log.error(f"{id} bid 실제론 음악파일 없어보이며, noAudio.mp3가 폴더내에 존재함")
@@ -1052,7 +1070,7 @@ def read_preview(id):
 
     ck = check(setID, rq_type="preview")
     for d in ck[2]:
-        if d["BeatmapID"] == ck[1]: ck = d
+        if d["BeatmapID"] == ck[1]: ck = d; break
 
     if os.path.isfile(f"{dataFolder}/files/{setID}/{id}"): return f"{dataFolder}/files/{setID}/{id}"
     elif os.path.isfile(f"{dataFolder}/files/{setID}/noAudio_{id}"):
@@ -1092,7 +1110,7 @@ def read_video(id):
 
     ck = check(bsid, rq_type="video")
     for d in ck[2]:
-        if d["BeatmapID"] == int(id): ck = d
+        if d["BeatmapID"] == int(id): ck = d; break
 
     hasVideo = ck["BeatmapVideo"]
     if hasVideo is None:
@@ -1109,8 +1127,8 @@ def read_video(id):
         #임시로 try 박아둠, 나중에 반초라던지 비디오 있나 요청하는거로 바꾸기
         if os.path.isfile(f"{dataFolder}/files/{bsid}/{hasVideo}"): return f"{dataFolder}/files/{bsid}/{hasVideo}"
 
-def read_osz(id):
-    check(id, rq_type="osz")
+def read_osz(id, u = None, h = None, vv = None):
+    check(id, rq_type="osz", checkRenewFile=True, bu=u, bh=h, bvv=vv)
     filename = get_osz_fullName(id)
     if filename != f"{id} .osz" and os.path.isfile(f"{dataFolder}/dl/{filename}"): return f"{dataFolder}/dl/{filename}"
     else: return 0
@@ -1136,7 +1154,7 @@ def read_osu(id):
 
     ck = check(bsid, rq_type=f"read_osu_{id}")
     for d in ck[2]:
-        if d["BeatmapID"] == int(id): ck = d
+        if d["BeatmapID"] == int(id): ck = d; break
 
     return f"{dataFolder}/files/{bsid}/{ck['beatmapName']}"
 
