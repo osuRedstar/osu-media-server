@@ -22,7 +22,7 @@ class handler(tornado.web.RequestHandler):
         self.set_header("user-info", json.dumps({"u": u, "h": h, "vv": vv}))
 
         try:
-            file = yield executor.submit(read_osz, id)
+            file = yield executor.submit(read_osz, id, u, h, vv)
             if file == 404:
                 return send404(self, "bsid", id)
             elif file == 500:
