@@ -60,7 +60,7 @@ def DiscordRichPresence():
             except requests.exceptions.ReadTimeout: RPanelStatus = "Timeout"
             except Exception as e: RPanelStatus = e
 
-            details = f"lets = {letsStatus} | pep = {pepStatus} | api = {apiStatus} | Realistik Panel = {RPanelStatus}"
+            details = f"lets = {letsStatus} | pep = {pepStatus} | api = {apiStatus} | admin Panel = {RPanelStatus}"
             rpcUpdate(details=details)
         except exceptions.InvalidID: rcpConn()
         except exceptions.ServerError: rpcUpdate(details="Error!")
