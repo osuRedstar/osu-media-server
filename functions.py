@@ -934,7 +934,7 @@ def read_thumb(id):
         return f"{dataFolder}/files/{bsid}/noImage_{id}"
     else:
         with Image.open(f"{dataFolder}/files/{bsid}/{ck['BeatmapBG']}") as img:
-            img.convert("RGB")
+            img = img.convert("RGB")
             width, height = img.size
             if img.size == img_size:
                 log.info(f"원본 파일이랑 같은 {img_size} 여서 안짜름")
