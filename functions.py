@@ -463,6 +463,7 @@ def osu_file_read(setID, rq_type, bID=None, cheesegull=False, filesinfo=False):
     #/filesinfo 조회시 osz 없을때 오류 방지
     if fullSongName == 0 and rq_type == "all":
         ck = check(setID, rq_type)
+        if type(ck) is int: return ck
         if type(ck) is not list:
             return ck
 
@@ -471,6 +472,7 @@ def osu_file_read(setID, rq_type, bID=None, cheesegull=False, filesinfo=False):
         zipfile.ZipFile(f'{dataFolder}/dl/{fullSongName}').extractall(f'{dataFolder}/files/{ptct["filename"]}')
     except zipfile.BadZipFile as e:
         ck = check(setID, rq_type)
+        if type(ck) is int: return ck
         if type(ck) is not list:
             return ck
         try:
@@ -889,6 +891,7 @@ def read_bg(id):
     if "+" in id:
         bsid = int(str(id).replace("+", ""))
         ck = check(bsid, rq_type="bg")
+        if type(ck) is int: return ck
         bid = ck[1]
     else:
         bid = int(id)
@@ -900,6 +903,7 @@ def read_bg(id):
             except: raise KeyError("Not Found bsid!")
         log.info(f"{bid} bid cheesegull db 조회로 {bsid} bsid 얻음")
         ck = check(bsid, rq_type="bg")
+        if type(ck) is int: return ck
 
     fullSongName = get_osz_fullName(bsid)
     ptct = pathToContentType(fullSongName)
@@ -915,6 +919,7 @@ def read_thumb(id):
         img_size = (80, 60)
 
     ck = check(bsid, rq_type="thumb")
+    if type(ck) is int: return ck
     fullSongName = get_osz_fullName(bsid)
     ptct = pathToContentType(fullSongName)
     for d in ck[2]:
@@ -1025,6 +1030,7 @@ def read_audio(id, m=None):
     if "+" in id:
         bsid = int(str(id).replace("+", ""))
         ck = check(bsid, rq_type="audio")
+        if type(ck) is int: return ck
         bid = ck[1]
         for d in ck[2]:
             if d["BeatmapID"] == bid: ck = d; break
@@ -1038,6 +1044,7 @@ def read_audio(id, m=None):
             except: raise KeyError("Not Found bsid!")
         log.info(f"{id} bid cheesegull db 조회로 {bsid} bsid 얻음")
         ck = check(bsid, rq_type="audio")
+        if type(ck) is int: return ck
         for d in ck[2]:
             if d["BeatmapID"] == bid: ck = d; break
 
@@ -1052,6 +1059,7 @@ def read_preview(id):
     #source_{bsid}.mp3 먼저 확인시키기 ㄴㄴ audio에서 가져오기
     bsid = int(id.replace(".mp3", ""))
     ck = check(bsid, rq_type="preview")
+    if type(ck) is int: return ck
     bid = ck[1]
     for d in ck[2]:
         if d["BeatmapID"] == bid: ck = d; break
@@ -1095,6 +1103,7 @@ def read_video(id):
             log.info("RedstarOSU DB에서 bsid 찾음")
         except:  raise KeyError("Not Found bsid!")
     ck = check(bsid, rq_type="video")
+    if type(ck) is int: return ck
     for d in ck[2]:
         if d["BeatmapID"] == bid: ck = d; break
     fullSongName = get_osz_fullName(bsid)
@@ -1142,6 +1151,7 @@ def read_osu(id):
     log.info(f"{bid} bid cheesegull db 조회로 {bsid} bsid 얻음")
 
     ck = check(bsid, rq_type=f"read_osu_{bid}")
+    if type(ck) is int: return ck
     for d in ck[2]:
         if d["BeatmapID"] == bid: ck = d; break
     fullSongName = get_osz_fullName(bsid)
@@ -1272,6 +1282,7 @@ def read_osu_filename(filename):
             try:
                 bsid = int(pathToContentType(root)["filename"].split(" ")[0])
                 #ck = check(bsid, rq_type="all") #업데이트 확인용
+                #if type(ck) is int: return ck
             except: bsid = None
             return os.path.join(root, filename)
 
