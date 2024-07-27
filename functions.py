@@ -1294,6 +1294,13 @@ def read_osu_filename(filename):
     bid = result["id"]
     return read_osu(bid)
 
+def read_raw(folder, file):
+    if os.path.isfile(f"{dataFolder}/Songs/{folder}/{file}"): return f"{dataFolder}/Songs/{folder}/{file}"
+    else:
+        bsid = int(folder.split(" ")[0])
+        ck = check(bsid, rq_type="all")
+        if os.path.isfile(f"{dataFolder}/Songs/{folder}/{file}"): return f"{dataFolder}/Songs/{folder}/{file}"
+
 def read_covers(id, cover_type):
     if not os.path.isfile(f"{dataFolder}/covers/{id}/{cover_type}"):
         try:

@@ -20,6 +20,7 @@ from handlers import OszBHandler, OszBHandler_async
 from handlers import OsuHandler, OsuHandler_async
 from handlers import replayParserHandler
 from handlers import readableModsHandler, readableModsReverseHandler
+from handlers import rawHandler
 #from handlers import FaviconHandler
 #from handlers import StaticHandler
 #from handlers import robots_txt
@@ -103,6 +104,7 @@ def make_app():
         (r"/replayparser", replayParserHandler.handler),
         (r"/readableMods", readableModsHandler.handler),
         (r"/readableModsReverse", readableModsReverseHandler.handler),
+        (r"/raw/([^/]+)/([^/]+)", rawHandler.handler),
 
         (r"/favicon.ico", FaviconHandler),
         (r"/static/(.*)", StaticHandler),
