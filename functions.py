@@ -445,9 +445,9 @@ def folder_check():
     if not os.path.isdir(f"{dataFolder}/dl-old"):
         os.mkdir(f"{dataFolder}/dl-old")
         log.info(f"{dataFolder}/dl-old 폴더 생성")
-    if not os.path.isdir(f"{dataFolder}/files"):
-        os.mkdir(f"{dataFolder}/files")
-        log.info(f"{dataFolder}/files 폴더 생성")
+    if not os.path.isdir(f"{dataFolder}/Songs"):
+        os.mkdir(f"{dataFolder}/Songs")
+        log.info(f"{dataFolder}/Songs 폴더 생성")
     if not os.path.isdir(f"{dataFolder}/covers"):
         os.mkdir(f"{dataFolder}/covers")
         log.info(f"{dataFolder}/covers 폴더 생성")
@@ -469,19 +469,19 @@ def osu_file_read(setID, rq_type, bID=None, cheesegull=False, filesinfo=False):
 
     #압축파일에 문제생겼을때 재 다운로드
     try:
-        zipfile.ZipFile(f'{dataFolder}/dl/{fullSongName}').extractall(f'{dataFolder}/files/{ptct["filename"]}')
+        zipfile.ZipFile(f'{dataFolder}/dl/{fullSongName}').extractall(f'{dataFolder}/Songs/{ptct["filename"]}')
     except zipfile.BadZipFile as e:
         ck = check(setID, rq_type)
         if type(ck) is int: return ck
         if type(ck) is not list:
             return ck
         try:
-            zipfile.ZipFile(f'{dataFolder}/dl/{fullSongName}').extractall(f'{dataFolder}/files/{ptct["filename"]}')
+            zipfile.ZipFile(f'{dataFolder}/dl/{fullSongName}').extractall(f'{dataFolder}/Songs/{ptct["filename"]}')
         except zipfile.BadZipFile as e:
             log.error(f"압축파일 오류: {e}")
 
     oszHash = calculate_md5.file(f"{dataFolder}/dl/{fullSongName}")
-    file_list = os.listdir(f"{dataFolder}/files/{ptct['filename']}")
+    file_list = os.listdir(f"{dataFolder}/Songs/{ptct['filename']}")
     file_list_osu = [file for file in file_list if file.endswith(".osu")]
 
     beatmap_info = []
@@ -503,7 +503,7 @@ def osu_file_read(setID, rq_type, bID=None, cheesegull=False, filesinfo=False):
     # readline_all.py
     for beatmapName in file_list_osu:
         log.info(beatmapName)
-        beatmap_md5 = calculate_md5.file(f"{dataFolder}/files/{ptct['filename']}/{beatmapName}")
+        beatmap_md5 = calculate_md5.file(f"{dataFolder}/Songs/{ptct['filename']}/{beatmapName}")
 
         sql = """
             SELECT file_name as beatmapName, BeatmapMD5, osu_file_format_v, AudioFilename,
@@ -518,7 +518,7 @@ def osu_file_read(setID, rq_type, bID=None, cheesegull=False, filesinfo=False):
             temp["AudioLength"], temp["AudioLength-DT"], temp["AudioLength-NC"], temp["AudioLength-HT"] = get_AudioLength(filesinfo, setID, temp["AudioFilename"])
             log.debug((temp, omsDB, oszUpdateCheck))
         else:
-            with open(f"{dataFolder}/files/{ptct['filename']}/{beatmapName}", 'r', encoding="utf-8") as f:
+            with open(f"{dataFolder}/Songs/{ptct['filename']}/{beatmapName}", 'r', encoding="utf-8") as f:
                 line = f.read()
 
                 line = line[line.find("osu file format v"):]
@@ -876,12 +876,12 @@ def read_list(bsid=""):
     result = {}
     if not bsid:
         osz_file_list = [file for file in os.listdir(f"{dataFolder}/dl/") if file.endswith(".osz")]
-        files_list = [file for file in os.listdir(f"{dataFolder}/files/")]
+        files_list = [file for file in os.listdir(f"{dataFolder}/Songs/")]
     else:
         fullSongName = get_osz_fullName(bsid)
         ptct = pathToContentType(fullSongName)
         osz_file_list = [fullSongName]
-        files_list = [file for file in os.listdir(f"{dataFolder}/files/{ptct['filename']}")]
+        files_list = [file for file in os.listdir(f"{dataFolder}/Songs/{ptct['filename']}")]
 
     result["osz"] = {"count": len(osz_file_list), "list": osz_file_list}
     result["files"] = {"count": len(files_list), "list": files_list}
@@ -908,7 +908,7 @@ def read_bg(id):
     fullSongName = get_osz_fullName(bsid)
     ptct = pathToContentType(fullSongName)
     for d in ck[2]:
-        if d["BeatmapID"] == bid: return f"{dataFolder}/files/{ptct['filename']}/{d['BeatmapBG']}"
+        if d["BeatmapID"] == bid: return f"{dataFolder}/Songs/{ptct['filename']}/{d['BeatmapBG']}"
 
 def read_thumb(id):
     if "l.jpg" in id:
@@ -925,17 +925,17 @@ def read_thumb(id):
     for d in ck[2]:
         if d["BeatmapID"] == ck[1]: ck = d; break
 
-    if os.path.isfile(f"{dataFolder}/files/{ptct['filename']}/{id}"):
-        return f"{dataFolder}/files/{ptct['filename']}/{id}"
-    elif os.path.isfile(f"{dataFolder}/files/{ptct['filename']}/noImage_{id}"):
-        return f"{dataFolder}/files/{ptct['filename']}/noImage_{id}"
+    if os.path.isfile(f"{dataFolder}/Songs/{ptct['filename']}/{id}"):
+        return f"{dataFolder}/Songs/{ptct['filename']}/{id}"
+    elif os.path.isfile(f"{dataFolder}/Songs/{ptct['filename']}/noImage_{id}"):
+        return f"{dataFolder}/Songs/{ptct['filename']}/noImage_{id}"
     else:
-        with Image.open(f"{dataFolder}/files/{ptct['filename']}/{ck['BeatmapBG']}") as img:
+        with Image.open(f"{dataFolder}/Songs/{ptct['filename']}/{ck['BeatmapBG']}") as img:
             img = img.convert("RGB")
             width, height = img.size
             if img.size == img_size:
                 log.info(f"원본 파일이랑 같은 {img_size} 여서 안짜름")
-                shutil.copy2(f"{dataFolder}/files/{ptct['filename']}/{ck['BeatmapBG']}", f"{dataFolder}/files/{ptct['filename']}/{id}")
+                shutil.copy2(f"{dataFolder}/Songs/{ptct['filename']}/{ck['BeatmapBG']}", f"{dataFolder}/Songs/{ptct['filename']}/{id}")
             elif img.size < img_size:
                 log.warning(f"원본 이미지가 더 작음 {img.size}")
                 left = round((img_size[0] - width) / 2)
@@ -945,10 +945,10 @@ def read_thumb(id):
 
                 canvas = Image.new("RGB", img_size, (255, 255, 255))
                 canvas.paste(img, (left,top,right,bottom))
-                canvas.save(f"{dataFolder}/files/{ptct['filename']}/{id}", quality=100)
+                canvas.save(f"{dataFolder}/Songs/{ptct['filename']}/{id}", quality=100)
             elif width / height == 4 / 3:
                 log.info(f"이미 4:3 비율이라서 {img_size} 로만 자름")
-                img.resize(img_size, Image.LANCZOS).save(f"{dataFolder}/files/{ptct['filename']}/{id}", quality=100)
+                img.resize(img_size, Image.LANCZOS).save(f"{dataFolder}/Songs/{ptct['filename']}/{id}", quality=100)
             else:
                 if width / height > 4 / 3:
                     croped_width = height * (4 / 3) #원본기준 4:3 비율 (width)
@@ -964,15 +964,15 @@ def read_thumb(id):
                     bottom = height - top
 
                 img_cropped = img.crop((left,top,right,bottom))
-                img_cropped.resize(img_size, Image.LANCZOS).save(f"{dataFolder}/files/{ptct['filename']}/{id}", quality=100)
-        return f"{dataFolder}/files/{ptct['filename']}/{id}"
+                img_cropped.resize(img_size, Image.LANCZOS).save(f"{dataFolder}/Songs/{ptct['filename']}/{id}", quality=100)
+        return f"{dataFolder}/Songs/{ptct['filename']}/{id}"
 
 #osu_file_read() 역할 분할하기 (각각 따로 두기)
 def read_audio(id, m=None):
     #ffmpeg -i "audio.ogg" -acodec libmp3lame -q:a 0 -y "audio.mp3"
     def audioSpeed(m, setID, ptct, ck):
         #변환 시작 + 에러시 코덱 확인후 재 변환
-        file = f"{dataFolder}/files/{ptct['filename']}/{ck['AudioFilename']}"
+        file = f"{dataFolder}/Songs/{ptct['filename']}/{ck['AudioFilename']}"
         Codec = mediainfo(file)["codec_name"]
         if Codec != "mp3": log.error(f"{ck['AudioFilename']} 코텍은 mp3가 아님 | {Codec}")
 
@@ -1050,7 +1050,7 @@ def read_audio(id, m=None):
 
     fullSongName = get_osz_fullName(bsid)
     ptct = pathToContentType(fullSongName)
-    if not os.path.isfile(f"{dataFolder}/files/{ptct['filename']}/{ck['AudioFilename']}") and os.path.isfile(f"{dataFolder}/files/{ptct['filename']}/noAudio.mp3"):
+    if not os.path.isfile(f"{dataFolder}/Songs/{ptct['filename']}/{ck['AudioFilename']}") and os.path.isfile(f"{dataFolder}/Songs/{ptct['filename']}/noAudio.mp3"):
         log.error(f"{bid} bid 실제론 음악파일 없어보이며, noAudio.mp3가 폴더내에 존재함")
         ck = ["noAudio.mp3"]
     return audioSpeed(m, bsid, ptct, ck)
@@ -1066,14 +1066,14 @@ def read_preview(id):
     fullSongName = get_osz_fullName(bsid)
     ptct = pathToContentType(fullSongName)
 
-    if os.path.isfile(f"{dataFolder}/files/{ptct['filename']}/{id}"): return f"{dataFolder}/files/{ptct['filename']}/{id}"
-    elif os.path.isfile(f"{dataFolder}/files/{ptct['filename']}/noAudio_{id}"):
+    if os.path.isfile(f"{dataFolder}/Songs/{ptct['filename']}/{id}"): return f"{dataFolder}/Songs/{ptct['filename']}/{id}"
+    elif os.path.isfile(f"{dataFolder}/Songs/{ptct['filename']}/noAudio_{id}"):
         #위에서 오디오 없어서 이미 처리댐 (noAudio_{setID}.mp3)
         log.warning(f"noAudio_{id}")
-        return f"{dataFolder}/files/{ptct['filename']}/noAudio_{id}"
+        return f"{dataFolder}/Songs/{ptct['filename']}/noAudio_{id}"
     else:
         #음원 하이라이트 가져오기, 밀리초라서 / 1000 함
-        file = f"{dataFolder}/files/{ptct['filename']}/{ck['AudioFilename']}"
+        file = f"{dataFolder}/Songs/{ptct['filename']}/{ck['AudioFilename']}"
         Codec = mediainfo(f"{file}")["codec_name"]
         if Codec != "mp3": log.error(f"{ck['AudioFilename']} 코텍은 mp3가 아님 | {Codec}")
 
@@ -1083,14 +1083,14 @@ def read_preview(id):
             log.warning(f"{bsid}.mp3 ({ck['AudioFilename']}) 의 PreviewTime 값이 {ck['PreviewTime']} 이므로 TotalLength ({audio}) / 2.5 == {PreviewTime} 로 세팅함")
         else:  PreviewTime = ck["PreviewTime"] / 1000
 
-        if Codec == "mp3": ffmpeg_msg = f'ffmpeg -i "{file}" -ss {PreviewTime} -t 30.821 -acodec copy -y "{dataFolder}/files/{ptct["filename"]}/{id}"'
+        if Codec == "mp3": ffmpeg_msg = f'ffmpeg -i "{file}" -ss {PreviewTime} -t 30.821 -acodec copy -y "{dataFolder}/Songs/{ptct["filename"]}/{id}"'
         else:
-            ffmpeg_msg = f'ffmpeg -i "{file}" -ss {PreviewTime} -t 30.821 -acodec libmp3lame -q:a 0 -y "{dataFolder}/files/{ptct["filename"]}/{id}"'
+            ffmpeg_msg = f'ffmpeg -i "{file}" -ss {PreviewTime} -t 30.821 -acodec libmp3lame -q:a 0 -y "{dataFolder}/Songs/{ptct["filename"]}/{id}"'
             log.warning(f"ffmpeg_msg = {ffmpeg_msg}")
 
         log.chat(f"ffmpeg_msg = {ffmpeg_msg}")
         os.system(ffmpeg_msg)
-        return f"{dataFolder}/files/{ptct['filename']}/{id}"
+        return f"{dataFolder}/Songs/{ptct['filename']}/{id}"
 
 def read_video(id):
     bid = int(id)
@@ -1117,12 +1117,12 @@ def read_video(id):
             #반초로 조회함
             hasVideo = int(requests.get(f"https://osu.ppy.sh/api/get_beatmaps?k={OSU_APIKEY}&b={id}", headers=requestHeaders).json()[0]["video"])
 
-            if hasVideo != 0: return f"{dataFolder}/files/{ptct['filename']}/{ck['BeatmapVideo']}"
+            if hasVideo != 0: return f"{dataFolder}/Songs/{ptct['filename']}/{ck['BeatmapVideo']}"
             else: raise
         except: return f"{id} Beatmap has no video!"
     else:
         #임시로 try 박아둠, 나중에 반초라던지 비디오 있나 요청하는거로 바꾸기
-        if os.path.isfile(f"{dataFolder}/files/{ptct['filename']}/{hasVideo}"): return f"{dataFolder}/files/{ptct['filename']}/{hasVideo}"
+        if os.path.isfile(f"{dataFolder}/Songs/{ptct['filename']}/{hasVideo}"): return f"{dataFolder}/Songs/{ptct['filename']}/{hasVideo}"
 
 def read_osz(id, u = None, h = None, vv = None):
     check(id, rq_type="osz", checkRenewFile=True, bu=u, bh=h, bvv=vv)
@@ -1157,7 +1157,7 @@ def read_osu(id):
     fullSongName = get_osz_fullName(bsid)
     ptct = pathToContentType(fullSongName)
 
-    return f"{dataFolder}/files/{ptct['filename']}/{ck['beatmapName']}"
+    return f"{dataFolder}/Songs/{ptct['filename']}/{ck['beatmapName']}"
 
 def filename_to_GetCheesegullDB(filename):
     try:
@@ -1277,7 +1277,7 @@ def filename_to_GetCheesegullDB(filename):
         return result
 
 def read_osu_filename(filename):
-    for root, dirs, files in os.walk(f"{dataFolder}/files"): #파일 찾기 실행
+    for root, dirs, files in os.walk(f"{dataFolder}/Songs"): #파일 찾기 실행
         if filename in files:
             try:
                 bsid = int(pathToContentType(root)["filename"].split(" ")[0])
@@ -1330,8 +1330,8 @@ def removeAllFiles(bsid):
 
     #files
     try:
-        shutil.rmtree(f"{dataFolder}/files/{ptct['filename']}")
-        log.info(f"폴더 {dataFolder}/files/{ptct['filename']} 가 삭제되었습니다.")
+        shutil.rmtree(f"{dataFolder}/Songs/{ptct['filename']}")
+        log.info(f"폴더 {dataFolder}/Songs/{ptct['filename']} 가 삭제되었습니다.")
         isdelfiles = 1
     except: pass
 
