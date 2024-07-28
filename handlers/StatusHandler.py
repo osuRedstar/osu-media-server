@@ -16,7 +16,7 @@ class handler(tornado.web.RequestHandler):
             "code": 200,
             "oszCount": read_list()["osz"]["count"],
             "oszSize": get_dir_size(f"{dataFolder}/dl"),
-            "filesSize": get_dir_size(f"{dataFolder}/files"),
+            "filesSize": get_dir_size(f"{dataFolder}/Songs"),
             "requestTime": round(time.time()),
             "request": {
                 "IP": real_ip,
