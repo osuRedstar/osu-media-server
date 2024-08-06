@@ -15,12 +15,13 @@ from handlers import ThumbHandler, ThumbHandler_async
 from handlers import PreviewHandler, PreviewHandler_async
 from handlers import AudioHandler, AudioHandler_async
 from handlers import VideoHandler, VideoHandler_async
+from handlers import beatmapPageHandler, beatmapPageHandler_async
 from handlers import OszHandler, OszHandler_async
 from handlers import OszBHandler, OszBHandler_async
 from handlers import OsuHandler, OsuHandler_async
 from handlers import replayParserHandler
 from handlers import readableModsHandler, readableModsReverseHandler
-from handlers import rawHandler
+from handlers import rawHandler, rawHandler_async
 #from handlers import FaviconHandler
 #from handlers import StaticHandler
 #from handlers import robots_txt
@@ -94,6 +95,7 @@ def make_app():
         (r"/preview/([^/]+)", PreviewHandler.handler),
         (r"/audio/([^/]+)", AudioHandler.handler),
         (r"/video/([^/]+)", VideoHandler.handler),
+        (r"/s/([^/]+)", beatmapPageHandler.handler),
         (r"/d/([^/]+)", OszHandler.handler),
         (r"/b/([^/]+)", OszBHandler.handler),
         (r"/osu/([^/]+)", OsuHandler.handler),
@@ -126,6 +128,7 @@ def make_app():
         (r"/preview/([^/]+)", PreviewHandler_async.handler),
         (r"/audio/([^/]+)", AudioHandler_async.handler),
         (r"/video/([^/]+)", VideoHandler_async.handler),
+        (r"/s/([^/]+)", beatmapPageHandler.handler),
         (r"/d/([^/]+)", OszHandler_async.handler),
         (r"/b/([^/]+)", OszBHandler_async.handler),
         (r"/osu/([^/]+)", OsuHandler_async.handler),
@@ -138,6 +141,7 @@ def make_app():
         (r"/replayparser", replayParserHandler.handler),
         (r"/readableMods", readableModsHandler.handler),
         (r"/readableModsReverse", readableModsReverseHandler.handler),
+        (r"/raw/([^/]+)/([^/]+)", rawHandler.handler),
 
         (r"/favicon.ico", FaviconHandler),
         (r"/static/(.*)", StaticHandler),
