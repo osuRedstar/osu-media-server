@@ -138,4 +138,4 @@ try:
 		isLog = True if isLog[isLog.find("islog"):].split("\n")[0].replace("islog = ", "") == "True" else False
 		if isLog: chat("logs.txt 활성화")
 		else: warning("logs.txt 비활성화")
-except Exception as e: print(e)
+except: isLog = False
