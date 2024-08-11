@@ -132,8 +132,10 @@ def chat(message):
 	"""
 	logMessage(message, "CHAT", BLUE, of="chatlog_public.txt")
 
-with open("config.ini", "r") as f: #isLog
-	isLog = f.read()
-	isLog = True if isLog[isLog.find("islog"):].split("\n")[0].replace("islog = ", "") == "True" else False
-	if isLog: chat("logs.txt 활성화")
-	else: warning("logs.txt 비활성화")
+try:
+	with open("config.ini", "r") as f: #isLog
+		isLog = f.read()
+		isLog = True if isLog[isLog.find("islog"):].split("\n")[0].replace("islog = ", "") == "True" else False
+		if isLog: chat("logs.txt 활성화")
+		else: warning("logs.txt 비활성화")
+except Exception as e: print(e)

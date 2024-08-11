@@ -102,7 +102,7 @@ def getRequestInfo(self):
     except Exception as e:
         log.warning(f"cloudflare를 거치지 않음, real_ip는 nginx header에서 가져옴 | e = {e}")
         try:
-            real_ip = self.request.headers["X-Real-Ip"]
+            real_ip = self.request.headers["X-Real-IP"]
             request_url = self.request.headers["X-Forwarded-Proto"] + "://" + self.request.host + self.request.uri
             IsNginx = True
             Server = subprocess.check_output(["nginx.exe", "-v"], stderr=subprocess.STDOUT).decode().strip().split(":")[1].strip()
