@@ -15,7 +15,6 @@ import time
 from datetime import datetime
 import json
 from collections import Counter
-import subprocess
 import geoip2.database
 import mods
 
@@ -91,6 +90,18 @@ else:
     allowedconnentedbot = False
     log.warning("봇 접근 거부")
 
+def getCountryCode(IP):
+    #2자리 국가코드
+    reader = geoip2.database.Reader("GeoLite2-Country.mmdb")
+    try: country_code = reader.country(IP).country.iso_code
+    except geoip2.errors.AddressNotFoundError:
+        country_code = "XX"
+        log.error(f"주어진 IP 주소 : {IP} 를 찾을 수 없습니다.")
+    except Exception as e:
+        country_code = "XX"
+        log.error("국가코드 오류 발생:", e)
+    return country_code
+
 def getRequestInfo(self):
     IsCloudflare = IsNginx = IsHttp = False
     try:
@@ -102,32 +113,26 @@ def getRequestInfo(self):
     except Exception as e:
         log.warning(f"cloudflare를 거치지 않음, real_ip는 nginx header에서 가져옴 | e = {e}")
         try:
-            real_ip = self.request.headers["X-Real-IP"]
+            real_ip = self.request.headers["X-Real-IP"] if "X-Real-IP" in self.request.headers else self.request.headers["X-Forwarded-For"].split(",")[0]
             request_url = self.request.headers["X-Forwarded-Proto"] + "://" + self.request.host + self.request.uri
             IsNginx = True
-            Server = subprocess.check_output(["nginx.exe", "-v"], stderr=subprocess.STDOUT).decode().strip().split(":")[1].strip()
+            Server = os.popen("nginx.exe -v 2>&1").read().strip().split(":")[1].strip()
         except Exception as e:
             log.warning(f"http로 접속시도함 | cloudflare를 거치지 않음, real_ip는 http요청이라서 바로 뜸 | e = {e}")
             real_ip = self.request.remote_ip
             request_url = self.request.protocol + "://" + self.request.host + self.request.uri
             IsHttp = True
             Server = self._headers.get("Server")
-
-        #2자리 국가코드
-        reader = geoip2.database.Reader("GeoLite2-Country.mmdb")
-        try:
-            country_code = reader.country(real_ip).country.iso_code
-        except geoip2.errors.AddressNotFoundError:
-            country_code = "XX"
-            log.error(f"주어진 IP 주소 : {real_ip} 를 찾을 수 없습니다.")
-        except Exception as e:
-            country_code = "XX"
-            log.error("국가코드 오류 발생:", e)
-
+        country_code = getCountryCode(real_ip)
     client_ip = self.request.remote_ip
 
     try:
-        User_Agent = self.request.headers["User-Agent"]
+        request_ip = self.request.headers["X-Request-IP"]
+        request_CC = getCountryCode(request_ip)
+        log.info(f"{request_ip} ({request_CC}) | IP조회 들어옴")
+    except: request_ip = request_CC = None
+
+    try: User_Agent = self.request.headers["User-Agent"]
     except:
         User_Agent = ""
         log.error("User-Agent 값이 존재하지 않음!")
@@ -135,16 +140,15 @@ def getRequestInfo(self):
     try:
         Referer = self.request.headers["Referer"]
         log.info("Referer 값이 존재함!")
-    except:
-        Referer = ""
+    except: Referer = ""
 
-    return real_ip, request_url, country_code, client_ip, User_Agent, Referer, IsCloudflare, IsNginx, IsHttp, Server
+    return real_ip, request_url, country_code, client_ip, request_ip, request_CC, User_Agent, Referer, IsCloudflare, IsNginx, IsHttp, Server
 
 def request_msg(self, botpass=False):
     # Logging the request IP address
     print("")
     
-    real_ip, request_url, country_code, client_ip, User_Agent, Referer, IsCloudflare, IsNginx, IsHttp, Server = getRequestInfo(self)
+    real_ip, request_url, country_code, client_ip, request_ip, request_CC, User_Agent, Referer, IsCloudflare, IsNginx, IsHttp, Server = getRequestInfo(self)
 
     rMsg = f"Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_url} | From: {User_Agent} | Referer: {Referer}"
     rt = 200
