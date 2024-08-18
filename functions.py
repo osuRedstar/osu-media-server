@@ -17,6 +17,9 @@ import json
 from collections import Counter
 import geoip2.database
 import mods
+import traceback
+
+def exceptionE(msg=""): e = traceback.format_exc(); log.error(f"{msg} \n{e}"); return e
 
 class calculate_md5:
     @classmethod
@@ -90,16 +93,16 @@ else:
     allowedconnentedbot = False
     log.warning("봇 접근 거부")
 
-def getCountryCode(IP):
+def IPtoCountryCode(IP):
     #2자리 국가코드
     reader = geoip2.database.Reader("GeoLite2-Country.mmdb")
     try: country_code = reader.country(IP).country.iso_code
     except geoip2.errors.AddressNotFoundError:
         country_code = "XX"
         log.error(f"주어진 IP 주소 : {IP} 를 찾을 수 없습니다.")
-    except Exception as e:
+    except:
         country_code = "XX"
-        log.error("국가코드 오류 발생:", e)
+        exceptionE("국가코드 오류 발생")
     return country_code
 
 def getRequestInfo(self):
@@ -116,19 +119,19 @@ def getRequestInfo(self):
             real_ip = self.request.headers["X-Real-IP"] if "X-Real-IP" in self.request.headers else self.request.headers["X-Forwarded-For"].split(",")[0]
             request_url = self.request.headers["X-Forwarded-Proto"] + "://" + self.request.host + self.request.uri
             IsNginx = True
-            Server = os.popen("nginx.exe -v 2>&1").read().strip().split(":")[1].strip()
+            Server = os.popen("nginx.exe -v 2>&1").read().split(":")[1].strip()
         except Exception as e:
             log.warning(f"http로 접속시도함 | cloudflare를 거치지 않음, real_ip는 http요청이라서 바로 뜸 | e = {e}")
             real_ip = self.request.remote_ip
             request_url = self.request.protocol + "://" + self.request.host + self.request.uri
             IsHttp = True
             Server = self._headers.get("Server")
-        country_code = getCountryCode(real_ip)
+        country_code = IPtoCountryCode(real_ip)
     client_ip = self.request.remote_ip
 
     try:
         request_ip = self.request.headers["X-Request-IP"]
-        request_CC = getCountryCode(request_ip)
+        request_CC = IPtoCountryCode(request_ip)
         log.info(f"{request_ip} ({request_CC}) | IP조회 들어옴")
     except: request_ip = request_CC = None
 
@@ -258,7 +261,7 @@ def IDM(self, path):
         log.info({"Content-Range": f"bytes={start}-{end}/{fileSize}", "Content-Length": contentLength})
 
         with open(path, "rb") as f:
-            f.seek(start) #f.seek(start) if start != 0 or (start == 0 and Range[1]) else None
+            f.seek(start)
             file = f.read(contentLength) if start != 0 or (start == 0 and Range[1]) else f.read()
             self.write(file)
     else:
@@ -274,7 +277,11 @@ def IDM(self, path):
 
 def pathToContentType(path, isInclude=False):
     if path == 0: return None
-    fn, fe = os.path.splitext(os.path.basename(path))
+    fn, fe = os.path.splitext(os.path.basename(path));
+    ffln = path.replace(f"/{path.split('/')[-1]}", "")
+    fln = os.path.splitext(os.path.basename(ffln.split('/')[-1]))[0]
+    while fln.endswith("."): fln = fln[:-1]
+
     if isInclude and ".aac" in path or not isInclude and path.endswith(".aac"): ct, tp = ("audio/aac", "audio")
     elif isInclude and ".apng" in path or not isInclude and path.endswith(".apng"): ct, tp = ("image/apng", "image")
     elif isInclude and ".avif" in path or not isInclude and path.endswith(".avif"): ct, tp = ("image/avif", "image")
@@ -319,7 +326,7 @@ def pathToContentType(path, isInclude=False):
     elif isInclude and ".osk" in path or not isInclude and path.endswith(".osk"): ct, tp = ("application/x-osu-skin", "file")
 
     else: ct, tp = ("application/octet-stream", "?")
-    return {"Content-Type": ct, "filename": fn, "extension": fe, "fullFilename": fn + fe, "type": tp, "path": path}
+    return {"Content-Type": ct, "foldername": fln, "fullFoldername": ffln, "filename": fn, "extension": fe, "fullFilename": fn + fe, "type": tp, "path": path}
 
 ####################################################################################################
 
@@ -473,23 +480,24 @@ def osu_file_read(setID, rq_type, bID=None, cheesegull=False, filesinfo=False):
 
     #압축파일에 문제생겼을때 재 다운로드
     try:
-        zipfile.ZipFile(f'{dataFolder}/dl/{fullSongName}').extractall(f'{dataFolder}/Songs/{ptct["filename"]}')
+        zipfile.ZipFile(f'{dataFolder}/dl/{fullSongName}').extractall(f'{dataFolder}/Songs/{ptct["foldername"]}')
     except zipfile.BadZipFile as e:
         ck = check(setID, rq_type)
         if type(ck) is int: return ck
         if type(ck) is not list:
             return ck
         try:
-            zipfile.ZipFile(f'{dataFolder}/dl/{fullSongName}').extractall(f'{dataFolder}/Songs/{ptct["filename"]}')
+            zipfile.ZipFile(f'{dataFolder}/dl/{fullSongName}').extractall(f'{dataFolder}/Songs/{ptct["foldername"]}')
         except zipfile.BadZipFile as e:
             log.error(f"압축파일 오류: {e}")
+    except: exceptionE("")
 
     oszHash = calculate_md5.file(f"{dataFolder}/dl/{fullSongName}")
-    file_list = os.listdir(f"{dataFolder}/Songs/{ptct['filename']}")
+    file_list = os.listdir(f"{dataFolder}/Songs/{ptct['foldername']}")
     file_list_osu = [file for file in file_list if file.endswith(".osu")]
 
-    beatmap_info = []
     underV10 = False
+    beatmap_info = []
 
     #.osu 파일명 기준으로 이름순으로 정렬함
     gullDB = dbC.fetch("""
@@ -507,7 +515,7 @@ def osu_file_read(setID, rq_type, bID=None, cheesegull=False, filesinfo=False):
     # readline_all.py
     for beatmapName in file_list_osu:
         log.info(beatmapName)
-        beatmap_md5 = calculate_md5.file(f"{dataFolder}/Songs/{ptct['filename']}/{beatmapName}")
+        beatmap_md5 = calculate_md5.file(f"{dataFolder}/Songs/{ptct['foldername']}/{beatmapName}")
 
         sql = """
             SELECT file_name as beatmapName, BeatmapMD5, osu_file_format_v, AudioFilename,
@@ -522,7 +530,7 @@ def osu_file_read(setID, rq_type, bID=None, cheesegull=False, filesinfo=False):
             temp["AudioLength"], temp["AudioLength-DT"], temp["AudioLength-NC"], temp["AudioLength-HT"] = get_AudioLength(filesinfo, setID, temp["AudioFilename"])
             log.debug((temp, omsDB, oszUpdateCheck))
         else:
-            with open(f"{dataFolder}/Songs/{ptct['filename']}/{beatmapName}", 'r', encoding="utf-8") as f:
+            with open(f"{dataFolder}/Songs/{ptct['foldername']}/{beatmapName}", 'r', encoding="utf-8") as f:
                 line = f.read()
 
                 line = line[line.find("osu file format v"):]
@@ -709,7 +717,7 @@ def check(setID, rq_type, checkRenewFile=False, bu = None, bh = None, bvv = None
     ]
     urlName = ["Bancho", "Nerinyan", "catboy", "osu.direct", "beatconnect", "sayobot", "Ripple"]
 
-    if bu and bh and bvv:
+    if bu and bh and not choData["unavailable"]:
         url.insert(0, f"https://osu.ppy.sh/d/{setID}?u={bu}&h={bh}&vv={bvv}")
         urlName.insert(0, f"{bu}'s Bancho")
 
@@ -731,9 +739,9 @@ def check(setID, rq_type, checkRenewFile=False, bu = None, bh = None, bvv = None
             except requests.exceptions.ReadTimeout as e:
                 log.warning(f"{link} Timeout! | e = {e}")
                 statusCode = 504
-            except Exception as e:
+            except:
                 statusCode = res.status_code if res.status_code != 200 else 500
-                log.error(f"{statusCode} | {e} | 파일다운 기본 예외처리 | url = {link}")
+                exceptionE(f"{statusCode} | 파일다운 기본 예외처리 | url = {link}")
 
             if statusCode == 200 and header_filename:
                 file_size = int(res.headers.get('Content-Length', 0)) #파일 크기를 얻습니다.
@@ -885,7 +893,7 @@ def read_list(bsid=""):
         fullSongName = get_osz_fullName(bsid)
         ptct = pathToContentType(fullSongName)
         osz_file_list = [fullSongName]
-        files_list = [file for file in os.listdir(f"{dataFolder}/Songs/{ptct['filename']}")]
+        files_list = [file for file in os.listdir(f"{dataFolder}/Songs/{ptct['foldername']}")]
 
     result["osz"] = {"count": len(osz_file_list), "list": osz_file_list}
     result["files"] = {"count": len(files_list), "list": files_list}
@@ -912,7 +920,7 @@ def read_bg(id):
     fullSongName = get_osz_fullName(bsid)
     ptct = pathToContentType(fullSongName)
     for d in ck[2]:
-        if d["BeatmapID"] == bid: return f"{dataFolder}/Songs/{ptct['filename']}/{d['BeatmapBG']}"
+        if d["BeatmapID"] == bid: return f"{dataFolder}/Songs/{ptct['foldername']}/{d['BeatmapBG']}"
 
 def read_thumb(id):
     if "l.jpg" in id:
@@ -929,17 +937,17 @@ def read_thumb(id):
     for d in ck[2]:
         if d["BeatmapID"] == ck[1]: ck = d; break
 
-    if os.path.isfile(f"{dataFolder}/Songs/{ptct['filename']}/{id}"):
-        return f"{dataFolder}/Songs/{ptct['filename']}/{id}"
-    elif os.path.isfile(f"{dataFolder}/Songs/{ptct['filename']}/noImage_{id}"):
-        return f"{dataFolder}/Songs/{ptct['filename']}/noImage_{id}"
+    if os.path.isfile(f"{dataFolder}/Songs/{ptct['foldername']}/{id}"):
+        return f"{dataFolder}/Songs/{ptct['foldername']}/{id}"
+    elif os.path.isfile(f"{dataFolder}/Songs/{ptct['foldername']}/noImage_{id}"):
+        return f"{dataFolder}/Songs/{ptct['foldername']}/noImage_{id}"
     else:
-        with Image.open(f"{dataFolder}/Songs/{ptct['filename']}/{ck['BeatmapBG']}") as img:
+        with Image.open(f"{dataFolder}/Songs/{ptct['foldername']}/{ck['BeatmapBG']}") as img:
             img = img.convert("RGB")
             width, height = img.size
             if img.size == img_size:
                 log.info(f"원본 파일이랑 같은 {img_size} 여서 안짜름")
-                shutil.copy2(f"{dataFolder}/Songs/{ptct['filename']}/{ck['BeatmapBG']}", f"{dataFolder}/Songs/{ptct['filename']}/{id}")
+                shutil.copy2(f"{dataFolder}/Songs/{ptct['foldername']}/{ck['BeatmapBG']}", f"{dataFolder}/Songs/{ptct['foldername']}/{id}")
             elif img.size < img_size:
                 log.warning(f"원본 이미지가 더 작음 {img.size}")
                 left = round((img_size[0] - width) / 2)
@@ -949,10 +957,10 @@ def read_thumb(id):
 
                 canvas = Image.new("RGB", img_size, (255, 255, 255))
                 canvas.paste(img, (left,top,right,bottom))
-                canvas.save(f"{dataFolder}/Songs/{ptct['filename']}/{id}", quality=100)
+                canvas.save(f"{dataFolder}/Songs/{ptct['foldername']}/{id}", quality=100)
             elif width / height == 4 / 3:
                 log.info(f"이미 4:3 비율이라서 {img_size} 로만 자름")
-                img.resize(img_size, Image.LANCZOS).save(f"{dataFolder}/Songs/{ptct['filename']}/{id}", quality=100)
+                img.resize(img_size, Image.LANCZOS).save(f"{dataFolder}/Songs/{ptct['foldername']}/{id}", quality=100)
             else:
                 if width / height > 4 / 3:
                     croped_width = height * (4 / 3) #원본기준 4:3 비율 (width)
@@ -968,15 +976,15 @@ def read_thumb(id):
                     bottom = height - top
 
                 img_cropped = img.crop((left,top,right,bottom))
-                img_cropped.resize(img_size, Image.LANCZOS).save(f"{dataFolder}/Songs/{ptct['filename']}/{id}", quality=100)
-        return f"{dataFolder}/Songs/{ptct['filename']}/{id}"
+                img_cropped.resize(img_size, Image.LANCZOS).save(f"{dataFolder}/Songs/{ptct['foldername']}/{id}", quality=100)
+        return f"{dataFolder}/Songs/{ptct['foldername']}/{id}"
 
 #osu_file_read() 역할 분할하기 (각각 따로 두기)
 def read_audio(id, m=None):
     #ffmpeg -i "audio.ogg" -acodec libmp3lame -q:a 0 -y "audio.mp3"
     def audioSpeed(m, setID, ptct, ck):
         #변환 시작 + 에러시 코덱 확인후 재 변환
-        file = f"{dataFolder}/Songs/{ptct['filename']}/{ck['AudioFilename']}"
+        file = f"{dataFolder}/Songs/{ptct['foldername']}/{ck['AudioFilename']}"
         Codec = mediainfo(file)["codec_name"]
         if Codec != "mp3": log.error(f"{ck['AudioFilename']} 코텍은 mp3가 아님 | {Codec}")
 
@@ -1054,7 +1062,7 @@ def read_audio(id, m=None):
 
     fullSongName = get_osz_fullName(bsid)
     ptct = pathToContentType(fullSongName)
-    if not os.path.isfile(f"{dataFolder}/Songs/{ptct['filename']}/{ck['AudioFilename']}") and os.path.isfile(f"{dataFolder}/Songs/{ptct['filename']}/noAudio.mp3"):
+    if not os.path.isfile(f"{dataFolder}/Songs/{ptct['foldername']}/{ck['AudioFilename']}") and os.path.isfile(f"{dataFolder}/Songs/{ptct['foldername']}/noAudio.mp3"):
         log.error(f"{bid} bid 실제론 음악파일 없어보이며, noAudio.mp3가 폴더내에 존재함")
         ck = ["noAudio.mp3"]
     return audioSpeed(m, bsid, ptct, ck)
@@ -1070,14 +1078,14 @@ def read_preview(id):
     fullSongName = get_osz_fullName(bsid)
     ptct = pathToContentType(fullSongName)
 
-    if os.path.isfile(f"{dataFolder}/Songs/{ptct['filename']}/{id}"): return f"{dataFolder}/Songs/{ptct['filename']}/{id}"
-    elif os.path.isfile(f"{dataFolder}/Songs/{ptct['filename']}/noAudio_{id}"):
+    if os.path.isfile(f"{dataFolder}/Songs/{ptct['foldername']}/{id}"): return f"{dataFolder}/Songs/{ptct['foldername']}/{id}"
+    elif os.path.isfile(f"{dataFolder}/Songs/{ptct['foldername']}/noAudio_{id}"):
         #위에서 오디오 없어서 이미 처리댐 (noAudio_{setID}.mp3)
         log.warning(f"noAudio_{id}")
-        return f"{dataFolder}/Songs/{ptct['filename']}/noAudio_{id}"
+        return f"{dataFolder}/Songs/{ptct['foldername']}/noAudio_{id}"
     else:
         #음원 하이라이트 가져오기, 밀리초라서 / 1000 함
-        file = f"{dataFolder}/Songs/{ptct['filename']}/{ck['AudioFilename']}"
+        file = f"{dataFolder}/Songs/{ptct['foldername']}/{ck['AudioFilename']}"
         Codec = mediainfo(f"{file}")["codec_name"]
         if Codec != "mp3": log.error(f"{ck['AudioFilename']} 코텍은 mp3가 아님 | {Codec}")
 
@@ -1087,14 +1095,14 @@ def read_preview(id):
             log.warning(f"{bsid}.mp3 ({ck['AudioFilename']}) 의 PreviewTime 값이 {ck['PreviewTime']} 이므로 TotalLength ({audio}) / 2.5 == {PreviewTime} 로 세팅함")
         else:  PreviewTime = ck["PreviewTime"] / 1000
 
-        if Codec == "mp3": ffmpeg_msg = f'ffmpeg -i "{file}" -ss {PreviewTime} -t 30.821 -acodec copy -y "{dataFolder}/Songs/{ptct["filename"]}/{id}"'
+        if Codec == "mp3": ffmpeg_msg = f'ffmpeg -i "{file}" -ss {PreviewTime} -t 30.821 -acodec copy -y "{dataFolder}/Songs/{ptct["foldername"]}/{id}"'
         else:
-            ffmpeg_msg = f'ffmpeg -i "{file}" -ss {PreviewTime} -t 30.821 -acodec libmp3lame -q:a 0 -y "{dataFolder}/Songs/{ptct["filename"]}/{id}"'
+            ffmpeg_msg = f'ffmpeg -i "{file}" -ss {PreviewTime} -t 30.821 -acodec libmp3lame -q:a 0 -y "{dataFolder}/Songs/{ptct["foldername"]}/{id}"'
             log.warning(f"ffmpeg_msg = {ffmpeg_msg}")
 
         log.chat(f"ffmpeg_msg = {ffmpeg_msg}")
         os.system(ffmpeg_msg)
-        return f"{dataFolder}/Songs/{ptct['filename']}/{id}"
+        return f"{dataFolder}/Songs/{ptct['foldername']}/{id}"
 
 def read_video(id):
     bid = int(id)
@@ -1121,12 +1129,12 @@ def read_video(id):
             #반초로 조회함
             hasVideo = int(requests.get(f"https://osu.ppy.sh/api/get_beatmaps?k={OSU_APIKEY}&b={id}", headers=requestHeaders).json()[0]["video"])
 
-            if hasVideo != 0: return f"{dataFolder}/Songs/{ptct['filename']}/{ck['BeatmapVideo']}"
+            if hasVideo != 0: return f"{dataFolder}/Songs/{ptct['foldername']}/{ck['BeatmapVideo']}"
             else: raise
         except: return f"{id} Beatmap has no video!"
     else:
         #임시로 try 박아둠, 나중에 반초라던지 비디오 있나 요청하는거로 바꾸기
-        if os.path.isfile(f"{dataFolder}/Songs/{ptct['filename']}/{hasVideo}"): return f"{dataFolder}/Songs/{ptct['filename']}/{hasVideo}"
+        if os.path.isfile(f"{dataFolder}/Songs/{ptct['foldername']}/{hasVideo}"): return f"{dataFolder}/Songs/{ptct['foldername']}/{hasVideo}"
 
 def read_osz(id, u = None, h = None, vv = None):
     check(id, rq_type="osz", checkRenewFile=True, bu=u, bh=h, bvv=vv)
@@ -1161,7 +1169,7 @@ def read_osu(id):
     fullSongName = get_osz_fullName(bsid)
     ptct = pathToContentType(fullSongName)
 
-    return f"{dataFolder}/Songs/{ptct['filename']}/{ck['beatmapName']}"
+    return f"{dataFolder}/Songs/{ptct['foldername']}/{ck['beatmapName']}"
 
 def filename_to_GetCheesegullDB(filename):
     try:
@@ -1316,14 +1324,16 @@ def read_covers(id, cover_type):
                 return f"{dataFolder}/covers/{id}/{cover_type}"
             else:
                 return result.status_code
-        except Exception as e:
+        except:
             log.error(f"{id}, {cover_type} | covers 처리중 에러발생!")
-            log.error(e)
+            exceptionE("")
             return 503
     else:
         return f"{dataFolder}/covers/{id}/{cover_type}"
 
 def removeAllFiles(bsid):
+    #osu-media-server DB 테이블에서 확인후 존재하면 삭제하기
+
     osz = get_osz_fullName(bsid)
     ptct = pathToContentType(osz)
 
@@ -1341,8 +1351,8 @@ def removeAllFiles(bsid):
 
     #files
     try:
-        shutil.rmtree(f"{dataFolder}/Songs/{ptct['filename']}")
-        log.info(f"폴더 {dataFolder}/Songs/{ptct['filename']} 가 삭제되었습니다.")
+        shutil.rmtree(f"{dataFolder}/Songs/{ptct['foldername']}")
+        log.info(f"폴더 {dataFolder}/Songs/{ptct['foldername']} 가 삭제되었습니다.")
         isdelfiles = 1
     except: pass
 
