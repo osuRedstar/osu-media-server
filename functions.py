@@ -37,7 +37,7 @@ class calculate_md5:
 
 conf = config.config("config.ini")
 isLog = conf.config["server"]["isLog"]
-OSU_APIKEY = conf.config["osu"]["Bancho_Apikey"]
+OSU_APIKEYS = eval(conf.config["osu"]["Bancho_Apikeys"])
 Bancho_u = conf.config["osu"]["Bancho_username"]
 Bancho_p = conf.config["osu"]["Bancho_password"]
 Bancho_p_hashed = calculate_md5.text(Bancho_p)
@@ -58,14 +58,31 @@ mmdbKey = conf.config["mmdb"]["key"]
 
 requestHeaders = {"User-Agent": f"RedstarOSU's MediaServer (python requests) | https://b.{osuServerDomain}"}
 
-#API 키 테스트
-log.info("Bancho apikeyStatus check...")
-apikeyStatus = requests.get(f"https://osu.ppy.sh/api/get_beatmaps?k={OSU_APIKEY}&b=-1", headers=requestHeaders)
-if apikeyStatus.status_code != 200:
-    log.warning("[!] Bancho apikey does not work.")
-    log.warning("[!] Please edit your config.ini and run the server again.")
-    exit()
-log.info("Done!")
+def BanchoApiRequest(url: str, params: dict, apsc: bool=False):
+    """
+    url: str - https://osu.ppy.sh 를 제외한 url을 입력하세요
+                Enter any URL except https://osu.ppy.sh
+    params: dict - apikey 파라미터인 "k" 는 생략해도 됩니다. (어짜피 함수 내부에서 수정됩니다.)
+                    The apikey parameter, “k”, can be omitted. (it will be modified inside the function anyway.)
+    """
+    rt = []; url = f"https://osu.ppy.sh{url}"
+    for i, k in enumerate(OSU_APIKEYS):
+        params["k"] = k
+        if apsc: rt.append(requests.get(url, params=params, headers=requestHeaders).status_code)
+        else:
+            rq = requests.get(url, params=params, headers=requestHeaders)
+            if rq.status_code != 200: log.warning(f"apikey {i + 1} | status_code = {rq.status_code}"); continue
+            else: rt = rq; break
+    return rt
+
+log.info("Bancho apikeyStatus check...") #API 키 테스트
+apikeyStatus = False
+for i, sc in enumerate(BanchoApiRequest("/api/get_beatmaps", params={'b': -1}, apsc=True)):
+    if sc != 200:
+        log.warning(f"[!] Bancho apikey {i + 1} does not work.")
+        log.warning("[!] Please edit your config.ini and run the server again.")
+    else: log.info(f"apikey {i + 1} Done!"); apikeyStatus = True
+if not apikeyStatus: exit(); del apikeyStatus
 
 #ffmpeg 설치확인
 if os.system(f"ffmpeg -version > {'nul' if os.name == 'nt' else '/dev/null'} 2>&1") != 0:
@@ -280,7 +297,8 @@ def pathToContentType(path, isInclude=False):
     fn, fe = os.path.splitext(os.path.basename(path));
     ffln = path.replace(f"/{path.split('/')[-1]}", "")
     fln = os.path.splitext(os.path.basename(ffln.split('/')[-1]))[0]
-    while fln.endswith("."): fln = fln[:-1]
+    if os.name == "nt":
+        while fln.endswith("."): fln = fln[:-1]
 
     if isInclude and ".aac" in path or not isInclude and path.endswith(".aac"): ct, tp = ("audio/aac", "audio")
     elif isInclude and ".apng" in path or not isInclude and path.endswith(".apng"): ct, tp = ("image/apng", "image")
@@ -467,6 +485,122 @@ def get_osz_fullName(setID):
     try: return [file for file in os.listdir(f"{dataFolder}/dl/") if file.startswith(f"{setID} ")][0]
     except: return 0
 
+def saveDB(data):
+    dbRR = db("redstar"); dbOO = db("osu_media_server")
+    try:
+        def queryMaker():
+            ranked = dbRR.fetch("SELECT beatmap_id, ranked, latest_update FROM beatmaps WHERE beatmapset_id = %s ORDER BY beatmap_id", [data["RedstarOSU"][0]])
+            log.warning(ranked)
+            if type(ranked) is dict: ranked = [ranked]
+            elif ranked is None: ranked = []
+            if len(data["RedstarOSU"][2]) != len(ranked) and len(data["Bancho"]) != len(ranked):
+                missing_bids = list(set(d['BeatmapID'] for d in data["RedstarOSU"][2]) - set(d['beatmap_id'] for d in ranked))
+                for bid in missing_bids:
+                    log.info(f"{bid} pp 요청중..."); requests.get(f"https://old.{osuServerDomain}/letsapi/v1/pp?b={bid}", headers=requestHeaders)
+                ranked2 = dbRR.fetch("SELECT beatmap_id, ranked, latest_update FROM beatmaps WHERE beatmapset_id = %s ORDER BY beatmap_id", [data["RedstarOSU"][0]])
+                log.chat(ranked2)
+            edata = []
+            for item1 in data["RedstarOSU"][2]:
+                item2 = {int(item['beatmap_id']): item for item in data["Bancho"]}.get(item1['BeatmapID'], {})
+                item3 = {int(item['beatmap_id']): item for item in ranked}.get(item1['BeatmapID'], {})
+                edata.append({**item1, **item2, **item3})
+
+            querys = []
+            for e in edata:
+                if e["update_lock"] or e['update_lock']: log.warning(f"bid = {e['BeatmapID']} | update_lock 걸림")
+                temp = [None]
+                temp.append(e['osu_file_format_v'])
+                temp.append(data["RedstarOSU"][0]) #BeatmapSetID
+                temp.append(data["RedstarOSU"][1]) #first_bid
+                temp.append(e['BeatmapID'])
+                temp.append(e['BeatmapMD5'])
+                temp.append(e['beatmapName'])
+
+                temp.append(e['artist']) #커스텀 비트맵이면 여기서 에러뜸
+                temp.append(e['artist_unicode'])
+                temp.append(e['title'])
+                temp.append(e['title_unicode'])
+                temp.append(e['creator'])
+                temp.append(e['creator_id'])
+
+                temp.append(e['Version'])
+                temp.append(e['AudioFilename'])
+                temp.append(e['PreviewTime'])
+                temp.append(e['BeatmapBG'])
+                temp.append(e['BeatmapVideo'])
+
+                temp.append(e['diff_size'])
+                temp.append(e['diff_overall'])
+                temp.append(e['diff_approach'])
+                temp.append(e['diff_drain'])
+                temp.append(e['total_length'])
+                temp.append(e['hit_length'])
+                temp.append(e['max_combo'])
+                temp.append(e['count_normal'])
+                temp.append(e['count_slider'])
+                temp.append(e['count_spinner'])
+                temp.append(e['bpm'])
+                temp.append(e['source'])
+                temp.append(e['tags'])
+                temp.append(e['packs'])
+
+                temp.append(e['ranked'])
+
+                temp.append(e['approved'])
+                temp.append(e['mode'])
+                temp.append(e['genre_id'])
+                temp.append(e['language_id'])
+                temp.append(e['storyboard'])
+                temp.append(e['download_unavailable'])
+                temp.append(e['audio_unavailable'])
+                temp.append(e['diff_aim'])
+                temp.append(e['diff_speed'])
+                temp.append(e['difficultyrating'])
+                temp.append(e['rating'])
+                temp.append(e['favourite_count'])
+                temp.append(e['playcount'])
+                temp.append(e['passcount'])
+                temp.append(e['submit_date'])
+                temp.append(e['approved_date'])
+                temp.append(e['last_update'])
+
+                temp.append(e['latest_update'])
+
+                temp.append(e['update_lock'])
+                
+                temp.append(time.time()) #LastChecked
+
+                querys.append(temp)
+            return querys
+        isExist = dbOO.fetch("SELECT * from beatmapsinfo_copy WHERE BeatmapSetID = %s and update_lock = 0 ORDER BY id", [data["RedstarOSU"][0]])
+        querys = queryMaker()
+        if querys[0][51] or (isExist and data["Bancho"][0]["last_update"] == querys[0][49]): pass
+        elif isExist:
+            try:
+                dbOO.execute("DELETE FROM beatmapsinfo_copy WHERE BeatmapSetID = %s and update_lock = 0", [data["RedstarOSU"][0]])
+                dbOO.commit()
+                log.warning(f"{data['RedstarOSU'][0]} | 기존 DB 삭제")
+            except Exception as e: log.error(f"DELETE | {e}")
+        else:
+            for q in querys:
+                try:
+                    sql = """
+                        INSERT INTO beatmapsInfo_copy
+                            VALUES (
+                                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                                %s, %s, %s
+                            )
+                    """
+                    dbOO.execute(sql, q)
+                    dbOO.commit()
+                except Exception as e: log.error(f"INSERT | {e}")
+    except: exceptionE("saveDB | ")
+    finally: dbRR.close(); dbOO.close()
+
 def osu_file_read(setID, rq_type, bID=None, cheesegull=False, filesinfo=False):
     fullSongName = get_osz_fullName(setID)
     ptct = pathToContentType(fullSongName)
@@ -526,7 +660,12 @@ def osu_file_read(setID, rq_type, bID=None, cheesegull=False, filesinfo=False):
         temp = omsDB = dbO.fetch(sql, [beatmap_md5], NoneMsg=False)
         if not temp: temp = {}
 
-        if temp:
+        with open("exceptOszList.json", "r") as file:
+            exceptOszList = json.load(file)
+            exceptOszList = exceptOszList["exceptOszList"] + exceptOszList["exceptOszList2"]
+            update_lock = int(setID in exceptOszList)
+
+        if temp and False: #DB 활성화 패치 진행중으로 인한 코드 정지
             temp["AudioLength"], temp["AudioLength-DT"], temp["AudioLength-NC"], temp["AudioLength-HT"] = get_AudioLength(filesinfo, setID, temp["AudioFilename"])
             log.debug((temp, omsDB, oszUpdateCheck))
         else:
@@ -534,12 +673,9 @@ def osu_file_read(setID, rq_type, bID=None, cheesegull=False, filesinfo=False):
                 line = f.read()
 
                 line = line[line.find("osu file format v"):]
-                try:
-                    osu_file_format_version = int(line.split("\n")[:4][0].replace("osu file format v", "").replace(" ", ""))
-                except:
-                    osu_file_format_version = 0
-                if osu_file_format_version == 0:
-                    log.error("osu file format v0")
+                try: osu_file_format_version = int(line.split("\n")[:4][0].replace("osu file format v", "").replace(" ", ""))
+                except: osu_file_format_version = 0
+                if osu_file_format_version == 0: log.error("osu file format v0")
                 elif osu_file_format_version < 10:
                     underV10 = True
                     log.error(f"{setID} 비트맵셋의 어떤 비트맵은 시이이이이발 osu file format 이 10이하 ({osu_file_format_version}) 이네요? 시발련들아?")
@@ -549,39 +685,32 @@ def osu_file_read(setID, rq_type, bID=None, cheesegull=False, filesinfo=False):
                 try:
                     AudioFilename = line.split("\n")[:4][0].replace("AudioFilename:", "")
                     AudioFilename = AudioFilename.replace(" ", "", 1) if AudioFilename.startswith(" ") else AudioFilename
-                except:
-                    AudioFilename = None
+                except: AudioFilename = None
 
                 line = line[line.find("PreviewTime:"):]
                 try:
                     PreviewTime = line.split("\n")[:4][0].replace("PreviewTime:", "")
                     PreviewTime = int(PreviewTime.replace(" ", "", 1) if PreviewTime.startswith(" ") else PreviewTime)
-                except:
-                    PreviewTime = None
+                except: PreviewTime = None
                 
                 line = line[line.find("Version:"):]
                 try:
                     Version = line.split("\n")[:4][0].replace("Version:", "")
                     Version = Version.replace(" ", "", 1) if Version.startswith(" ") else Version
-                except:
-                    Version = None
+                except: Version = None
 
                 if osu_file_format_version >= 10:
                     line = line[line.find("BeatmapID:"):]
                     try:
                         BeatmapID = line.split("\n")[:4][0].replace("BeatmapID:", "")
                         BeatmapID = int(BeatmapID.replace(" ", "", 1) if BeatmapID.startswith(" ") else BeatmapID)
-
-                        #.osu 파일에서 실제로 존재하지 않거나, 맞지않는 bid 가 있어서 점검함
-                        for i in gullDB if type(gullDB) == list else [gullDB]:
-                            if i["file_md5"] == beatmap_md5 and BeatmapID != i["id"]:
-                                log.error(f"비트맵ID 정보 서로 일치하지 않음 | [{i['diff_name']}] | BeatmapID = {BeatmapID} <-- i['id'] = {i['id']}")
-                                BeatmapID = i["id"]
-                    except:
-                        BeatmapID = 0
-                else:
-                    log.warning(f"osu file format v{osu_file_format_version} | files bid = 0")
-                    BeatmapID = 0
+                    except: BeatmapID = 0
+                else: BeatmapID = None
+                #.osu 파일에서 실제로 존재하지 않거나, 맞지않는 bid 가 있어서 점검함
+                for i in gullDB if type(gullDB) == list else [gullDB]:
+                    if i["file_md5"] == beatmap_md5 and BeatmapID != i["id"]:
+                        log.error(f"비트맵ID 정보 서로 일치하지 않음 | [{i['diff_name']}] | BeatmapID = {BeatmapID} <-- i['id'] = {i['id']}")
+                        BeatmapID = i["id"]
 
                 line = line[line.find("//Background and Video events"):]
                 try:
@@ -591,8 +720,7 @@ def osu_file_read(setID, rq_type, bID=None, cheesegull=False, filesinfo=False):
                         t = pathToContentType(p, isInclude=True)
                         if t["type"] == "video": BeatmapVideo = p[p.find('"') + 1 : p.find('"', p.find('"') + 1)]
                         elif t["type"] == "image": BeatmapBG = p[p.find('"') + 1 : p.find('"', p.find('"') + 1)]
-                except:
-                    BeatmapBG = BeatmapVideo = None
+                except: BeatmapBG = BeatmapVideo = None
 
                 temp["oszHash"] = oszHash
                 temp["beatmapName"] = beatmapName if beatmapName != "" else None
@@ -606,82 +734,32 @@ def osu_file_read(setID, rq_type, bID=None, cheesegull=False, filesinfo=False):
                 temp["BeatmapVideo"] = BeatmapVideo if BeatmapVideo != "" else None
                 temp["audio_unavailable"] = audio_unavailable
                 temp["download_unavailable"] = download_unavailable
+                temp["update_lock"] = 1 if update_lock or BeatmapID < 0 or int(setID) < 0 else 0
                 temp["storyboard"] = storyboard
                 temp["AudioLength"], temp["AudioLength-DT"], temp["AudioLength-NC"], temp["AudioLength-HT"] = get_AudioLength(filesinfo, setID, AudioFilename)
         beatmap_info.append(temp)
+    beatmap_info = sorted(beatmap_info, key=lambda x: x['BeatmapID'])
 
     bidsList = [i["BeatmapID"] for i in beatmap_info]
-    md5sList = [i["BeatmapMD5"] for i in beatmap_info]
-    verList = [i["Version"] for i in beatmap_info]
-
-    #이미 위에서 감지해서 알아서 바꿈, 그래도 혹시 몰라서 소스코드는 남겨둠
-    #bid 0 변경
-    for zero in [y for y, x in enumerate(bidsList) if x == 0]:
-        log.warning(f"bid 0 발견! | {md5sList[zero]}")
-        try:
-            bidsList[zero] = dbR.fetch("SELECT beatmap_id FROM beatmaps WHERE beatmap_md5 = %s", [md5sList[zero]])["beatmap_id"]
-        except:
-            try:
-                bidsList[zero] = dbR.fetch("SELECT id FROM beatmaps WHERE parent_set_id = %s AND diff_name = %s", [setID, verList[zero]])["id"]
-            except:
-                log.warning("0 | RealBid가 redstarDB + cheesegull에서 조회되지 않음! 스킵함")
-                bidsList[zero] = 0
-        for bi, b, m in zip(beatmap_info, bidsList, md5sList):
-            if bi["BeatmapMD5"] == m:
-                bi["BeatmapID"] = b
-
-    #중복 bid 찾기
-    dup = [item for item, cnt in Counter(bidsList).items() if cnt > 1]
-    if len(dup) != 0:
-        log.warning("bid 중복 있음!")
-        for i in dup:
-            #중복 bid list index위치 찾기
-            for idx in [y for y, x in enumerate(bidsList) if x == i]:
-                #중복 bid 수정
-                try:
-                    bidsList[idx] = dbR.fetch("SELECT beatmap_id FROM beatmaps WHERE beatmap_md5 = %s", [md5sList[idx]])["beatmap_id"]
-                except:
-                    try:
-                        bidsList[idx] = dbC.fetch("SELECT id FROM beatmaps WHERE parent_set_id = %s AND diff_name = %s", [setID, verList[idx]])["id"]
-                    except:
-                        log.warning("0 | RealBid가 cheesegull에서 조회되지 않음! 스킵함")
-                        bidsList[idx] = 0
-                for bi, b, m in zip(beatmap_info, bidsList, md5sList):
-                    if bi["BeatmapMD5"] == m:
-                        bi["BeatmapID"] = b
-
-        #[log.debug(i) for i in beatmap_info]
-
     if int(setID) > 0: first_bid = min([x for x in bidsList if x > 0])
     else: first_bid = min([x for x in bidsList]) #커스텀 비트맵셋일 경우
 
+    try: cheesegull = requests.get(f"https://cheesegull.{osuServerDomain}/api/s/{setID}", headers=requestHeaders).json()
+    except: cheesegull = None
+    return_result = {"RedstarOSU": [int(setID), first_bid, beatmap_info], "cheesegull": cheesegull, "Bancho": Bancho}
+    threading.Thread(target=saveDB, args=(return_result,)).start()
     if bID is not None:
-        try: redstar = next((i for i in beatmap_info if i["BeatmapID"] == int(bID)))
-        except: redstar = None
-        try:
-            cheesegull = requests.get(f"https://cheesegull.{osuServerDomain}/api/b/{bID}", headers=requestHeaders).json()
-            if not cheesegull and cheesegull["ParentSetID"] != int(setID): cheesegull = None
-        except: cheesegull = None
-        try:
-            cho = [b for b in Bancho if b["beatmap_id"] == int(bID)]
-            if not cho: cho = None
-        except: cho = None
-        return_result = {"RedstarOSU": redstar, "cheesegull": cheesegull, "Bancho": cho} if redstar and cheesegull else None
-    else:
-        try: cheesegull = requests.get(f"https://cheesegull.{osuServerDomain}/api/s/{setID}", headers=requestHeaders).json() if cheesegull else None
-        except: cheesegull = None
-        return_result = {"RedstarOSU": [int(setID), first_bid, beatmap_info], "cheesegull": cheesegull, "Bancho": Bancho}
-
-    if not omsDB:
-        pass #TODO : osu_media_server 테이블에 beatmapsinfo 항목에 INSERT 문 코드 넣기 (beatmapsinfo.py 복사해서 모듈형태로 가져오게 하기)
-    else:
-        pass #TODO : UPDATE 문으로 넣기
+        redstar = next((b for b in beatmap_info if b["BeatmapID"] == int(bID)), None)
+        gull = next((b for b in cheesegull["ChildrenBeatmaps"] if b["BeatmapID"] == int(bID)), None)
+        cho = next((b for b in Bancho if b["beatmap_id"] == bID), None)
+        return_result = {"RedstarOSU": redstar, "cheesegull": gull, "Bancho": cho} if redstar and cheesegull else None
     return return_result
 
 def choUnavailable(setID):
     unavailable = False
     audio_unavailable = download_unavailable = storyboard = 0
-    Bancho_data = requests.get(f"https://osu.ppy.sh/api/get_beatmaps?k={OSU_APIKEY}&s={setID}").json()
+    Bancho_data = BanchoApiRequest("/api/get_beatmaps", {"s": setID}).json()
+    Bancho_data = sorted(Bancho_data, key=lambda x: x['beatmap_id'])
     if not Bancho_data: return {"Bancho_data": None, "unavailable": None, "audio_unavailable": None, "download_unavailable": None, "storyboard": None, "pylist_unavailable": [None, None, None]}
     for i in Bancho_data:
         if int(i["audio_unavailable"]) == 1 and not audio_unavailable:
@@ -802,8 +880,7 @@ def check(setID, rq_type, checkRenewFile=False, bu = None, bh = None, bvv = None
             else:
                 omsDB = dbO.fetch("SELECT last_update, update_lock FROM beatmapsinfo_copy WHERE BeatmapSetID = %s LIMIT 1", [setID])
             if not omsDB: raise
-        except:
-            Bancho_LastUpdate,  omsDB = (None, {"last_update": None, "update_lock": 0})
+        except: Bancho_LastUpdate,  omsDB = (None, {"last_update": None, "update_lock": 0})
         if omsDB["update_lock"] == 1:
             BanchoTimeCheck = False
         elif not omsDB["last_update"]:
@@ -872,7 +949,7 @@ def check(setID, rq_type, checkRenewFile=False, bu = None, bh = None, bvv = None
                         else:
                             log.warning(f'{newOszHash.status_code}. {mn} 에서 파일을 다운로드할 수 없습니다!')
 
-    if checkRenewFile:
+    if checkRenewFile: #read_osz 전용
         return []
     elif dlsc != 200:
         return dlsc
@@ -1127,8 +1204,7 @@ def read_video(id):
         try:
             #hasVideo = dbC.fetch("SELECT has_video FROM sets WHERE id = %s", [bsid])["has_video"]
             #반초로 조회함
-            hasVideo = int(requests.get(f"https://osu.ppy.sh/api/get_beatmaps?k={OSU_APIKEY}&b={id}", headers=requestHeaders).json()[0]["video"])
-
+            hasVideo = int(BanchoApiRequest("/api/get_beatmaps", {"b": id}).json()[0]["video"])
             if hasVideo != 0: return f"{dataFolder}/Songs/{ptct['foldername']}/{ck['BeatmapVideo']}"
             else: raise
         except: return f"{id} Beatmap has no video!"

@@ -55,7 +55,7 @@ class config:
 			noneCheck.append(self.config.get("server","osuServerDomain"))
 			noneCheck.append(self.config.get("server","ContectEmail"))
 
-			noneCheck.append(self.config.get("osu","Bancho_Apikey"))
+			noneCheck.append(self.config.get("osu","Bancho_Apikeys"))
 			noneCheck.append(self.config.get("osu","Bancho_username"))
 			noneCheck.append(self.config.get("osu","Bancho_password"))
 			noneCheck.append(self.config.get("osu","IS_YOU_HAVE_OSU_PRIVATE_SERVER_WITH_lets.py"))
@@ -98,7 +98,7 @@ class config:
 		self.config.set("server", "ContectEmail", "support@redstar.moe")
 
 		self.config.add_section("osu")
-		self.config.set("osu", "Bancho_Apikey", "Your_Bancho_APIKKEY")
+		self.config.set("osu", "Bancho_Apikeys", "['Your_Bancho_APIKKEY_1', 'Your_Bancho_APIKKEY_2']")
 		self.config.set("osu", "Bancho_username", "")
 		self.config.set("osu", "Bancho_password", "")
 		self.config.set("osu", "IS_YOU_HAVE_OSU_PRIVATE_SERVER_WITH_lets.py", "False")
