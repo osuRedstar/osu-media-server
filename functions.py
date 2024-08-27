@@ -486,7 +486,7 @@ def get_osz_fullName(setID):
     except: return 0
 
 def saveDB(data):
-    dbRR = db("redstar"); dbOO = db("osu_media_server")
+    dbRR = db("redstar", connectMsg=False); dbOO = db("osu_media_server", connectMsg=False)
     try:
         def queryMaker():
             ranked = dbRR.fetch("SELECT beatmap_id, ranked, latest_update FROM beatmaps WHERE beatmapset_id = %s ORDER BY beatmap_id", [data["RedstarOSU"][0]])
@@ -599,7 +599,7 @@ def saveDB(data):
                     dbOO.commit()
                 except Exception as e: log.error(f"INSERT | {e}")
     except: exceptionE("saveDB | ")
-    finally: dbRR.close(); dbOO.close()
+    finally: dbRR.close(CloseMsg=False); dbOO.close(CloseMsg=False)
 
 def osu_file_read(setID, rq_type, bID=None, cheesegull=False, filesinfo=False):
     fullSongName = get_osz_fullName(setID)
