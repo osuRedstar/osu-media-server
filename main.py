@@ -23,6 +23,7 @@ from handlers import replayParserHandler
 from handlers import readableModsHandler, readableModsReverseHandler
 from handlers import rawHandler, rawHandler_async
 from handlers import IPSelfHandler, IPHandler
+from handlers import botsHandler
 #from handlers import FaviconHandler
 #from handlers import StaticHandler
 #from handlers import robots_txt
@@ -103,6 +104,7 @@ def make_app():
         (r"/raw/([^/]+)/([^/]+)", rawHandler.handler),
         (r"/ip", IPSelfHandler.handler),
         (r"/ip/([^/]+)", IPHandler.handler),
+        (r"/bots", botsHandler.handler),
 
         (r"/favicon.ico", FaviconHandler),
         (r"/static/(.*)", StaticHandler),
@@ -140,6 +142,7 @@ def make_app():
         (r"/raw/([^/]+)/([^/]+)", rawHandler.handler),
         (r"/ip", IPSelfHandler.handler),
         (r"/ip/([^/]+)", IPHandler.handler),
+        (r"/bots", botsHandler.handler),
 
         (r"/favicon.ico", FaviconHandler),
         (r"/static/(.*)", StaticHandler),
