@@ -22,6 +22,7 @@ from handlers import OsuHandler, OsuHandler_async
 from handlers import replayParserHandler
 from handlers import readableModsHandler, readableModsReverseHandler
 from handlers import rawHandler, rawHandler_async
+from handlers import IPSelfHandler, IPHandler
 #from handlers import FaviconHandler
 #from handlers import StaticHandler
 #from handlers import robots_txt
@@ -38,8 +39,7 @@ conf = config.config("config.ini")
 class MainHandler(tornado.web.RequestHandler):
     def get(self):
         rm = request_msg(self, botpass=True)
-        if rm != 200:
-            pass
+        if rm != 200: pass
 
         self.set_header("return-fileinfo", json.dumps({"filename": "index.html", "path": "templates/index.html", "fileMd5": calculate_md5.file("templates/index.html")}))
         self.render("templates/index.html")
@@ -48,37 +48,31 @@ class MainHandler(tornado.web.RequestHandler):
 class FaviconHandler(tornado.web.RequestHandler):
     def get(self):
         rm = request_msg(self, botpass=True)
-        if rm != 200:
-            pass
+        if rm != 200: pass
 
         self.set_header("return-fileinfo", json.dumps({"filename": "favicon.ico", "path": "static/img/favicon.ico", "fileMd5": calculate_md5.file("static/img/favicon.ico")}))
         self.set_header('Content-Type', pathToContentType("static/img/favicon.ico")["Content-Type"])
-        with open("static/img/favicon.ico", 'rb') as f:
-            self.write(f.read())
+        with open("static/img/favicon.ico", 'rb') as f: self.write(f.read())
         self.set_header("Ping", str(resPingMs(self)))
 
 class StaticHandler(tornado.web.RequestHandler):
     def get(self, item):
         rm = request_msg(self, botpass=True)
-        if rm != 200:
-            pass
+        if rm != 200: pass
 
         self.set_header("return-fileinfo", json.dumps({"filename": item, "path": f"static/{item}", "fileMd5": calculate_md5.file(f"static/{item}")}))
         self.set_header("Content-Type", pathToContentType(item)["Content-Type"])
-        with open(f"static/{item}", 'rb') as f:
-                self.write(f.read())
+        with open(f"static/{item}", 'rb') as f: self.write(f.read())
         self.set_header("Ping", str(resPingMs(self)))
 
 class robots_txt(tornado.web.RequestHandler):
     def get(self):
         rm = request_msg(self, botpass=True)
-        if rm != 200:
-            pass
+        if rm != 200: pass
 
         self.set_header("return-fileinfo", json.dumps({"filename": "robots.txt", "path": "robots.txt", "fileMd5": calculate_md5.file("robots.txt")}))
         self.set_header("Content-Type", pathToContentType("robots.txt")["Content-Type"])
-        with open("robots.txt", 'rb') as f:
-            self.write(f.read())
+        with open("robots.txt", 'rb') as f: self.write(f.read())
         self.set_header("Ping", str(resPingMs(self)))
 
 
@@ -107,6 +101,8 @@ def make_app():
         (r"/readableMods", readableModsHandler.handler),
         (r"/readableModsReverse", readableModsReverseHandler.handler),
         (r"/raw/([^/]+)/([^/]+)", rawHandler.handler),
+        (r"/ip", IPSelfHandler.handler),
+        (r"/ip/([^/]+)", IPHandler.handler),
 
         (r"/favicon.ico", FaviconHandler),
         (r"/static/(.*)", StaticHandler),
@@ -142,6 +138,8 @@ def make_app():
         (r"/readableMods", readableModsHandler.handler),
         (r"/readableModsReverse", readableModsReverseHandler.handler),
         (r"/raw/([^/]+)/([^/]+)", rawHandler.handler),
+        (r"/ip", IPSelfHandler.handler),
+        (r"/ip/([^/]+)", IPHandler.handler),
 
         (r"/favicon.ico", FaviconHandler),
         (r"/static/(.*)", StaticHandler),
@@ -157,10 +155,8 @@ if __name__ == "__main__":
     getmmdb.dl()
     drpc.drpcStart()
     folder_check()
-    if conf.config["server"]["flaskdebug"] == "0":
-        debugMode = False
-    else:
-        debugMode = True
+    #if conf.config["server"]["flaskdebug"] == "0": debugMode = False
+    #else: debugMode = True
     app = make_app()
     port = int(conf.config["server"]["port"])
     app.listen(port)

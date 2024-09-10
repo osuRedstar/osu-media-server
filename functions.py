@@ -110,17 +110,40 @@ else:
     allowedconnentedbot = False
     log.warning("봇 접근 거부")
 
-def IPtoCountryCode(IP):
-    #2자리 국가코드
-    reader = geoip2.database.Reader("GeoLite2-Country.mmdb")
-    try: country_code = reader.country(IP).country.iso_code
+def getIP(self):
+    real_ip = self.request.headers.get("X-Real-IP")
+    if not real_ip: real_ip = self.request.headers.get("Cf-Connecting-Ip")
+    if not real_ip: real_ip = self.request.headers.get("X-Forwarded-For", "").split(",")[0]
+    if not real_ip: real_ip = self.request.remote_ip
+    return real_ip
+
+def IPtoFullData(IP): #전체 정보를 가져오기 위한 코드
+    reader = geoip2.database.Reader("GeoLite2-City.mmdb")
+    try:
+        response = reader.city(IP)
+        data = {
+            "ip": IP,
+            "city": response.city.name,
+            "region": response.subdivisions.most_specific.name,
+            "country": response.country.iso_code,
+            "country_full": response.country.name,
+            "continent": response.continent.code,
+            "continent_full": response.continent.name,
+            "loc": f"{response.location.latitude},{response.location.longitude}",
+            "postal": response.postal.code if response.postal.code else ""
+        }
     except geoip2.errors.AddressNotFoundError:
-        country_code = "XX"
+        data = {
+            "ip": IP, "city": "Unknown", "region": "Unknown", "country": "XX", "country_full": "Unknown", "continent": "Unknown", "continent_full": "Unknown", "loc": "Unknown", "postal": "Unknown"
+        }
         log.error(f"주어진 IP 주소 : {IP} 를 찾을 수 없습니다.")
     except:
-        country_code = "XX"
+        data = {
+            "ip": IP, "city": "Unknown", "region": "Unknown", "country": "XX", "country_full": "Unknown", "continent": "Unknown", "continent_full": "Unknown", "loc": "Unknown", "postal": "Unknown"
+        }
         exceptionE("국가코드 오류 발생")
-    return country_code
+    finally: reader.close()
+    return data
 
 def getRequestInfo(self):
     IsCloudflare = IsNginx = IsHttp = False
@@ -143,12 +166,12 @@ def getRequestInfo(self):
             request_url = self.request.protocol + "://" + self.request.host + self.request.uri
             IsHttp = True
             Server = self._headers.get("Server")
-        country_code = IPtoCountryCode(real_ip)
+        country_code = IPtoFullData(real_ip)["country"]
     client_ip = self.request.remote_ip
 
     try:
         request_ip = self.request.headers["X-Request-IP"]
-        request_CC = IPtoCountryCode(request_ip)
+        request_CC = IPtoFullData(request_ip)["country"]
         log.info(f"{request_ip} ({request_CC}) | IP조회 들어옴")
     except: request_ip = request_CC = None
 
@@ -269,7 +292,7 @@ def IDM(self, path):
         Range = self.request.headers["Range"].replace("bytes=", "").split("-")
         fileSize = os.path.getsize(path)
         start = int(Range[0])
-        end = os.path.getsize(path) - 1 if not Range[1] else int(Range[1])
+        end = fileSize - 1 if not Range[1] else int(Range[1])
         contentLength = end - start + 1
 
         self.set_status(206) if start != 0 or (start == 0 and Range[1]) else self.set_status(200)
