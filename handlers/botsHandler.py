@@ -19,19 +19,7 @@ class handler(tornado.web.RequestHandler):
         botType = self.get_argument("type", None)
         count = self.get_argument("count", None)
         last_seen = self.get_argument("last_seen", None)
-
-        with open("IPs.json", "r") as f: bots = json.load(f)
-        data = [] #필터링
-        for entry in bots:
-            if ((ip is None or ip in entry.get("IP")) and
-                (country is None or country in entry.get("Country")) and
-                (url is None or url in entry.get("URL")) and
-                (user_agent is None or user_agent in entry.get("User-Agent")) and
-                (referer is None or referer in entry.get("Referer")) and
-                (botType is None or botType in entry.get("Type")) and
-                (count is None or entry.get("Count") == int(count)) and
-                (last_seen is None or entry.get("Last_seen") == int(last_seen))):
-                data.append(entry)
+        data = findBot(ip, country, url, user_agent, referer, botType, count, last_seen)
 
         self.set_header("return-fileinfo", json.dumps({"filename": "", "path": "", "fileMd5": ""}))
         self.set_header("Content-Type", pathToContentType(".json")["Content-Type"])

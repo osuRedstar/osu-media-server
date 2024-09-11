@@ -110,6 +110,21 @@ else:
     allowedconnentedbot = False
     log.warning("봇 접근 거부")
 
+def findBot(ip=None, country=None, url=None, user_agent=None, referer=None, botType=None, count=None, last_seen=None):
+    with open("IPs.json", "r") as f: bots = json.load(f)
+    data = [] #필터링
+    for entry in bots:
+        if ((ip is None or ip in entry.get("IP")) and
+            (country is None or country in entry.get("Country")) and
+            (url is None or url in entry.get("URL")) and
+            (user_agent is None or user_agent in entry.get("User-Agent")) and
+            (referer is None or referer in entry.get("Referer")) and
+            (botType is None or botType in entry.get("Type")) and
+            (count is None or entry.get("Count") == int(count)) and
+            (last_seen is None or entry.get("Last_seen") == int(last_seen))):
+            data.append(entry)
+    return data
+
 def getIP(self):
     real_ip = self.request.headers.get("X-Real-IP")
     if not real_ip: real_ip = self.request.headers.get("Cf-Connecting-Ip")
