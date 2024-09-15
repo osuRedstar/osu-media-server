@@ -784,10 +784,11 @@ def osu_file_read(setID, rq_type, bID=None, cheesegull=False, filesinfo=False):
 
     try: cheesegull = requests.get(f"https://cheesegull.{osuServerDomain}/api/s/{setID}", headers=requestHeaders).json()
     except: cheesegull = None
-    return_result = {"RedstarOSU": [int(setID), first_bid, beatmap_info], "cheesegull": cheesegull, "Bancho": Bancho}
+    return_result = {"RedstarOSU": [int(setID), first_bid, beatmap_info, file_list], "cheesegull": cheesegull, "Bancho": Bancho}
     threading.Thread(target=saveDB, args=(return_result,)).start()
     if bID is not None:
         redstar = next((b for b in beatmap_info if b["BeatmapID"] == int(bID)), None)
+        redstar["files"] = file_list
         gull = next((b for b in cheesegull["ChildrenBeatmaps"] if b["BeatmapID"] == int(bID)), None)
         cho = next((b for b in Bancho if b["beatmap_id"] == bID), None)
         return_result = {"RedstarOSU": redstar, "cheesegull": gull, "Bancho": cho} if redstar and cheesegull else None
@@ -948,8 +949,7 @@ def check(setID, rq_type, checkRenewFile=False, bu = None, bh = None, bvv = None
             try:
                 rankStatus = dbR.fetch(f"SELECT ranked FROM beatmaps WHERE beatmapset_id = %s", [setID])["ranked"]
                 log.info(f"파일 최신화 redstar DB 랭크상태 조회 완료 : {rankStatus}")
-                if rankStatus == 4:
-                    rankStatus = 0
+                if rankStatus == 4: rankStatus = 0
             except:
                 rankStatus = dbC.fetch(f"SELECT ranked_status FROM sets WHERE id = %s", [setID])["ranked_status"]
                 log.info(f"파일 최신화 cheesegull DB 랭크상태 조회 완료 : {rankStatus}")
