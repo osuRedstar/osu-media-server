@@ -7,16 +7,15 @@ import traceback
 import struct
 import datetime
 import io
-
-
+import requestsManager
 
 MODULE_NAME = "readableModsReverseHandler"
-class handler(tornado.web.RequestHandler):
+class handler(requestsManager.asyncRequestHandler):
     """
     Handler for /readableModsReverse
 
     """
-    def get(self):
+    def asyncGet(self):
         rm = request_msg(self, botpass=False)
         if rm != 200:
             return send403(self, rm)

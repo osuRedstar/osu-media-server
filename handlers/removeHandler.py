@@ -5,11 +5,12 @@ from functions import *
 import json
 import traceback
 import config
+import requestsManager
 
 conf = config.config("config.ini")
 
-class handler(tornado.web.RequestHandler):
-    def get(self, bsid):
+class handler(requestsManager.asyncRequestHandler):
+    def asyncGet(self, bsid):
         rm = request_msg(self, botpass=False)
         if rm != 200:
             return send403(self, rm)

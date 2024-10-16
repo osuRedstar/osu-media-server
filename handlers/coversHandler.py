@@ -5,12 +5,13 @@ from functions import *
 import json
 import traceback
 import config
+import requestsManager
 
 conf = config.config("config.ini")
 osuServerDomain = conf.config["server"]["osuServerDomain"]
 
-class handler(tornado.web.RequestHandler):
-    def get(self, id, cover_type):
+class handler(requestsManager.asyncRequestHandler):
+    def asyncGet(self, id, cover_type):
         rm = request_msg(self, botpass=True)
         if rm != 200:
             pass

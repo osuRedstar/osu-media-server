@@ -4,9 +4,10 @@ import lets_common_log.logUtils as log
 from functions import *
 import json
 import traceback
+import requestsManager
 
-class handler(tornado.web.RequestHandler):
-    def get(self, bsid, bid):
+class handler(requestsManager.asyncRequestHandler):
+    def asyncGet(self, bsid, bid):
         rm = request_msg(self, botpass=False)
         if rm != 200:
             return send403(self, rm)

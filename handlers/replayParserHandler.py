@@ -7,19 +7,18 @@ import traceback
 import struct
 import datetime
 import io
-
-
+import requestsManager
 
 MODULE_NAME = "replayParserHandler"
-class handler(tornado.web.RequestHandler):
+class handler(requestsManager.asyncRequestHandler):
     """
     Handler for /replayparser
 
     """
-    def get(self):
+    def asyncGet(self):
         self.render("../templates/replayParser.html")
 
-    def post(self):
+    def asyncPost(self):
         dl = True if type(self.get_argument("dl", default=False)) != bool else False
         statusCode = 400
         data = {"message": "unknown error"}
