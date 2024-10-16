@@ -10,29 +10,29 @@ import getmmdb
 
 #from handlers import MainHandler
 from handlers import ListHandler
-from handlers import BgHandler, BgHandler_async
-from handlers import ThumbHandler, ThumbHandler_async
-from handlers import PreviewHandler, PreviewHandler_async
-from handlers import AudioHandler, AudioHandler_async
-from handlers import VideoHandler, VideoHandler_async
-from handlers import beatmapPageHandler, beatmapPageHandler_async
-from handlers import OszHandler, OszHandler_async
-from handlers import OszBHandler, OszBHandler_async
-from handlers import OsuHandler, OsuHandler_async
+from handlers import BgHandler
+from handlers import ThumbHandler
+from handlers import PreviewHandler
+from handlers import AudioHandler
+from handlers import VideoHandler
+from handlers import beatmapPageHandler
+from handlers import OszHandler
+from handlers import OszBHandler
+from handlers import OsuHandler
 from handlers import replayParserHandler
 from handlers import readableModsHandler, readableModsReverseHandler
-from handlers import rawHandler, rawHandler_async
+from handlers import rawHandler
 from handlers import IPSelfHandler, IPHandler
 from handlers import botsHandler
 #from handlers import FaviconHandler
 #from handlers import StaticHandler
 #from handlers import robots_txt
 from handlers import StatusHandler
-from handlers import webMapsHandler, webMapsHandler_async
+from handlers import webMapsHandler
 from handlers import searchHandler
 from handlers import removeHandler
-from handlers import filesinfoHandler, filesinfoHandler_async
-from handlers import filesinfoHandler2, filesinfoHandler2_async
+from handlers import filesinfoHandler
+from handlers import filesinfoHandler2
 from handlers import coversHandler
 
 conf = config.config("config.ini")
@@ -115,44 +115,6 @@ def make_app():
         #assets.ppy.sh
         (r"/beatmaps/([^/]+)/covers/([^/]+)", coversHandler.handler),
     ])
-
-""" def make_app(): #async
-    return tornado.web.Application([
-        (r"/", MainHandler),
-        (r"/list", ListHandler.handler),
-        (r"/list/([^/]+)", ListHandler.handler),
-        (r"/bg/([^/]+)", BgHandler_async.handler),
-        (r"/thumb/([^/]+)", ThumbHandler_async.handler),
-        (r"/preview/([^/]+)", PreviewHandler_async.handler),
-        (r"/audio/([^/]+)", AudioHandler_async.handler),
-        (r"/video/([^/]+)", VideoHandler_async.handler),
-        (r"/s/([^/]+)", beatmapPageHandler.handler),
-        (r"/d/([^/]+)", OszHandler_async.handler),
-        (r"/b/([^/]+)", OszBHandler_async.handler),
-        (r"/osu/([^/]+)", OsuHandler_async.handler),
-        (r"/status", StatusHandler.handler),
-        (r"/web/maps/(.*)", webMapsHandler.handler),
-        (r"/search", searchHandler.handler),
-        (r"/remove/([^/]+)", removeHandler.handler),
-        (r"/filesinfo/([^/]+)", filesinfoHandler_async.handler),
-        (r"/filesinfo/([^/]+)/([^/]+)", filesinfoHandler2_async.handler),
-        (r"/replayparser", replayParserHandler.handler),
-        (r"/readableMods", readableModsHandler.handler),
-        (r"/readableModsReverse", readableModsReverseHandler.handler),
-        (r"/raw/([^/]+)/([^/]+)", rawHandler.handler),
-        (r"/ip", IPSelfHandler.handler),
-        (r"/ip/([^/]+)", IPHandler.handler),
-        (r"/bots", botsHandler.handler),
-
-        (r"/favicon.ico", FaviconHandler),
-        (r"/static/(.*)", StaticHandler),
-        #(r"/favicon.ico", tornado.web.StaticFileHandler, {"path": "static/img/favicon.ico"})
-        #(r'/static/(.*)', tornado.web.StaticFileHandler, {'path': 'static'}),
-        (r"/robots.txt", robots_txt),
-
-        #assets.ppy.sh
-        (r"/beatmaps/([^/]+)/covers/([^/]+)", coversHandler.handler),
-    ]) """
 
 if __name__ == "__main__":
     getmmdb.dl()
