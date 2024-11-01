@@ -135,17 +135,17 @@ def getIP(self):
 def IPtoFullData(IP): #전체 정보를 가져오기 위한 코드
     reader = geoip2.database.Reader("GeoLite2-City.mmdb")
     try:
-        response = reader.city(IP)
+        res = reader.city(IP)
         data = {
             "ip": IP,
-            "city": response.city.name,
-            "region": response.subdivisions.most_specific.name,
-            "country": response.country.iso_code,
-            "country_full": response.country.name,
-            "continent": response.continent.code,
-            "continent_full": response.continent.name,
-            "loc": f"{response.location.latitude},{response.location.longitude}",
-            "postal": response.postal.code if response.postal.code else ""
+            "city": res.city.name,
+            "region": res.subdivisions.most_specific.name,
+            "country": res.country.iso_code,
+            "country_full": res.country.name,
+            "continent": res.continent.code,
+            "continent_full": res.continent.name,
+            "loc": f"{res.location.latitude},{res.location.longitude}",
+            "postal": res.postal.code if res.postal.code else ""
         }
     except geoip2.errors.AddressNotFoundError:
         data = {
@@ -184,12 +184,6 @@ def getRequestInfo(self):
         country_code = IPtoFullData(real_ip)["country"]
     client_ip = self.request.remote_ip
 
-    try:
-        request_ip = self.request.headers["X-Request-IP"]
-        request_CC = IPtoFullData(request_ip)["country"]
-        log.info(f"{request_ip} ({request_CC}) | IP조회 들어옴")
-    except: request_ip = request_CC = None
-
     try: User_Agent = self.request.headers["User-Agent"]
     except:
         User_Agent = ""
@@ -200,7 +194,7 @@ def getRequestInfo(self):
         log.info("Referer 값이 존재함!")
     except: Referer = ""
 
-    return real_ip, request_url, country_code, client_ip, request_ip, request_CC, User_Agent, Referer, IsCloudflare, IsNginx, IsHttp, Server
+    return real_ip, request_url, country_code, client_ip, User_Agent, Referer, IsCloudflare, IsNginx, IsHttp, Server
 
 def request_msg(self, botpass=False):
     # Logging the request IP address

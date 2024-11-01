@@ -12,18 +12,16 @@ class handler(requestsManager.asyncRequestHandler):
         if rm != 200:
             pass
 
-        real_ip, request_url, country_code, client_ip, request_ip, request_CC, User_Agent, Referer, IsCloudflare, IsNginx, IsHttp, Server = getRequestInfo(self)
+        real_ip, request_url, country_code, client_ip, User_Agent, Referer, IsCloudflare, IsNginx, IsHttp, Server = getRequestInfo(self)
         data = {
             "code": 200,
-            "oszCount": read_list()["osz"]["count"] if not request_ip and not request_CC else None,
-            "oszSize": get_dir_size(f"{dataFolder}/dl") if not request_ip and not request_CC else None,
-            "filesSize": get_dir_size(f"{dataFolder}/Songs") if not request_ip and not request_CC else None,
+            "oszCount": read_list()["osz"]["count"],
+            "oszSize": get_dir_size(f"{dataFolder}/dl"),
+            "filesSize": get_dir_size(f"{dataFolder}/Songs"),
             "requestTime": round(time.time()),
             "request": {
                 "IP": real_ip,
                 "country": country_code,
-                "X-Request-IP": request_ip,
-                "X-Request-Country": request_CC,
                 "User-Agent": User_Agent,
                 "url": request_url,
                 "Referer": Referer,
