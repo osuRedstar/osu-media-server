@@ -200,7 +200,7 @@ def request_msg(self, botpass=False):
     # Logging the request IP address
     print("")
     
-    real_ip, request_url, country_code, client_ip, request_ip, request_CC, User_Agent, Referer, IsCloudflare, IsNginx, IsHttp, Server = getRequestInfo(self)
+    real_ip, request_url, country_code, client_ip, User_Agent, Referer, IsCloudflare, IsNginx, IsHttp, Server = getRequestInfo(self)
 
     rMsg = f"Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_url} | From: {User_Agent} | Referer: {Referer}"
     rt = 200
