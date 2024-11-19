@@ -174,7 +174,8 @@ def getRequestInfo(self):
             real_ip = self.request.headers["X-Real-IP"] if "X-Real-IP" in self.request.headers else self.request.headers["X-Forwarded-For"].split(",")[0]
             request_url = self.request.headers["X-Forwarded-Proto"] + "://" + self.request.host + self.request.uri
             IsNginx = True
-            Server = os.popen("nginx.exe -v 2>&1").read().split(":")[1].strip()
+            try: Server = os.popen("nginx.exe -v 2>&1").read().split(":")[1].strip()
+            except: ngp = os.getcwd().replace(os.getcwd().split("\\")[-1], "nginx/nginx.exe").replace("\\", "/"); Server = os.popen(f'{ngp} -v 2>&1').read().split(":")[1].strip()
         except Exception as e:
             log.warning(f"http로 접속시도함 | cloudflare를 거치지 않음, real_ip는 http요청이라서 바로 뜸 | e = {e}")
             real_ip = self.request.remote_ip
