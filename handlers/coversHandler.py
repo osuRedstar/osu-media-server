@@ -4,8 +4,8 @@ import lets_common_log.logUtils as log
 from functions import *
 import json
 import traceback
-import config
-import requestsManager
+from helpers import config
+from helpers import requestsManager
 
 conf = config.config("config.ini")
 osuServerDomain = conf.config["server"]["osuServerDomain"]

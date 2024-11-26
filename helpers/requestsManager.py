@@ -8,7 +8,7 @@ import tornado.gen
 from tornado.ioloop import IOLoop
 from raven.contrib.tornado import SentryMixin
 
-pool = ThreadPool(16)
+pool = ThreadPool(4)
 
 class asyncRequestHandler(SentryMixin, tornado.web.RequestHandler):
 	"""

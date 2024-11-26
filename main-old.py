@@ -2,7 +2,7 @@ from lets_common_log import logUtils as log
 from flask import Flask, render_template, session, redirect, url_for, request, send_from_directory, jsonify, send_file, Response, jsonify
 from functions import *
 import os
-import config
+from helpers import config
 
 conf = config.config("config.ini")
 

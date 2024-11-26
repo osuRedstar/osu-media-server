@@ -3,10 +3,10 @@ import os
 import shutil
 import time
 from lets_common_log import logUtils as log
-import config
+from helpers import config
 import pymysql
 from time import localtime, strftime
-from dbConnent import db
+from helpers.dbConnect import db
 
 def txtLOG_errorAdded(msg):
     # .txt로 로그 남기기

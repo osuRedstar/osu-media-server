@@ -1,11 +1,11 @@
 from lets_common_log import logUtils as log
-from dbConnent import db
+from helpers.dbConnect import db
 import zipfile
 import os
 import shutil
 import requests
 from tqdm import tqdm
-import config
+from helpers import config
 from PIL import Image
 import hashlib
 import re

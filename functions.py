@@ -1,11 +1,11 @@
 from lets_common_log import logUtils as log
-from dbConnent import db
+from helpers.dbConnect import db
 import zipfile
 import os
 import shutil
 import requests
 from tqdm import tqdm
-import config
+from helpers import config
 from PIL import Image
 import hashlib
 import re
@@ -16,7 +16,7 @@ from datetime import datetime
 import json
 from collections import Counter
 import geoip2.database
-import mods
+from helpers import mods
 import traceback
 
 def exceptionE(msg=""): e = traceback.format_exc(); log.error(f"{msg} \n{e}"); return e
@@ -126,11 +126,10 @@ def findBot(ip=None, country=None, url=None, user_agent=None, referer=None, botT
     return data
 
 def getIP(self):
-    real_ip = self.request.headers.get("X-Real-IP")
-    if not real_ip: real_ip = self.request.headers.get("Cf-Connecting-Ip")
-    if not real_ip: real_ip = self.request.headers.get("X-Forwarded-For", "").split(",")[0]
-    if not real_ip: real_ip = self.request.remote_ip
-    return real_ip
+    if "X-Real-IP" in self.request.headers: return self.request.headers.get("X-Real-IP")
+    elif "CF-Connecting-IP" in self.request.headers: return self.request.headers.get("CF-Connecting-IP")
+    elif "X-Forwarded-For" in self.request.headers: return self.request.headers.get("X-Forwarded-For")
+    else: return self.request.remote_ip
 
 def IPtoFullData(IP): #전체 정보를 가져오기 위한 코드
     reader = geoip2.database.Reader("GeoLite2-City.mmdb")
@@ -1465,4 +1464,4 @@ def removeAllFiles(bsid):
         isdelfiles = 1
     except: pass
 
-    return {"message": {0: "Doesn't exist", 1: "Delete success"} , "osz": isdelosz, "files": isdelfiles}
+    return {"message": {0: "Doesn't exist", 1: "Delete success"} , "name": osz, "osz": isdelosz, "files": isdelfiles}

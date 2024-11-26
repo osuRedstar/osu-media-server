@@ -1,6 +1,6 @@
 import json
 import pymysql
-import config
+from helpers import config
 import traceback
 
 from lets_common_log import logUtils as log

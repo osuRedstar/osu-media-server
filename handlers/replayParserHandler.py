@@ -7,7 +7,7 @@ import traceback
 import struct
 import datetime
 import io
-import requestsManager
+from helpers import requestsManager
 
 MODULE_NAME = "replayParserHandler"
 class handler(requestsManager.asyncRequestHandler):

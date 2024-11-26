@@ -1,5 +1,5 @@
 import os
-import config
+from helpers import config
 import tornado.ioloop
 import tornado.web
 import lets_common_log.logUtils as log

@@ -1,12 +1,13 @@
 import os
-import config
+from helpers import config
 import tornado.ioloop
 import tornado.web
 from functions import *
 import lets_common_log.logUtils as log
 import json
-import drpc
-import getmmdb
+from helpers import drpc
+from helpers import getmmdb
+from helpers import requestsManager
 
 #from handlers import MainHandler
 from handlers import ListHandler
@@ -37,7 +38,7 @@ from handlers import coversHandler
 
 conf = config.config("config.ini")
 
-class MainHandler(tornado.web.RequestHandler):
+class MainHandler(requestsManager.asyncRequestHandler):
     def get(self):
         rm = request_msg(self, botpass=True)
         if rm != 200: pass
@@ -46,7 +47,7 @@ class MainHandler(tornado.web.RequestHandler):
         self.render("templates/index.html")
         self.set_header("Ping", str(resPingMs(self)))
 
-class FaviconHandler(tornado.web.RequestHandler):
+class FaviconHandler(requestsManager.asyncRequestHandler):
     def get(self):
         rm = request_msg(self, botpass=True)
         if rm != 200: pass
@@ -56,7 +57,7 @@ class FaviconHandler(tornado.web.RequestHandler):
         with open("static/img/favicon.ico", 'rb') as f: self.write(f.read())
         self.set_header("Ping", str(resPingMs(self)))
 
-class StaticHandler(tornado.web.RequestHandler):
+class StaticHandler(requestsManager.asyncRequestHandler):
     def get(self, item):
         rm = request_msg(self, botpass=True)
         if rm != 200: pass
@@ -66,7 +67,7 @@ class StaticHandler(tornado.web.RequestHandler):
         with open(f"static/{item}", 'rb') as f: self.write(f.read())
         self.set_header("Ping", str(resPingMs(self)))
 
-class robots_txt(tornado.web.RequestHandler):
+class robots_txt(requestsManager.asyncRequestHandler):
     def get(self):
         rm = request_msg(self, botpass=True)
         if rm != 200: pass

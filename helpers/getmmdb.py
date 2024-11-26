@@ -1,4 +1,4 @@
-import config
+from helpers import config
 import threading
 import requests
 import tarfile
@@ -22,9 +22,10 @@ def mmdbdl():
     os.system("rd /s /q mmdb && del /f /q mmdb.tar.gz")
 
 def wk():
-    now = datetime.now()
-    if now.weekday() == 0 and now.hour == 0: mmdbdl()
-    time.sleep(1800)
+    while True:
+        now = datetime.now(); print(now)
+        if now.weekday() == 0 and now.hour == 0: mmdbdl()
+        time.sleep(1800)
 
 def dl():
     if not os.path.isfile("GeoLite2-City.mmdb"): mmdbdl(); log.warning("GeoLite2-City.mmdb 없어서 다운로드함")
