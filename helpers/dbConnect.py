@@ -3,7 +3,7 @@ import pymysql
 from helpers import config
 import traceback
 
-from lets_common_log import logUtils as log
+from helpers import logUtils as log
 
 class db:
     def __init__(self, DBType, connectMsg=True):
@@ -13,7 +13,7 @@ class db:
         self.DB_USERNAME = self.conf.config["db"]["username"]
         self.DB_PASSWORD = self.conf.config["db"]["password"]
         self.DB_DATABASE = DBType
-        self.connect(connectMsg)
+        #self.connect(connectMsg)
 
     def connect(self, connectMsg=True):
         try:
@@ -34,7 +34,8 @@ class db:
     def mogrify(self, sql, param=None): return self.cursor.mogrify(sql, param)
 
     def fetch(self, sql, param=None, NoneMsg=True):
-        self.check_connection()
+        #self.check_connection()
+        self.connect()
         if param is None or param == "": self.cursor.execute(sql)
         else: self.cursor.execute(sql, param)
 
@@ -43,28 +44,30 @@ class db:
 
         if not result:
             if NoneMsg: log.error(f"None | SQL = {self.cursor.mogrify(sql, param)}")
-            return None
+            self.close(); return None
         elif len(result) == 1:
             data = {}
             for c, r in zip(columns, result[0]): data[c] = r
-            return data
+            self.close(); return data
         else:
             d = []
             for i in result:
                 data = {}
                 for c, r in zip(columns, i): data[c] = r
                 d.append(data)
-            return d
+            self.close(); return d
 
     def execute(self, sql, param=None):
-        self.check_connection()
+        #self.check_connection()
+        self.connect()
         if param is None or param == "": self.cursor.execute(sql)
         else: self.cursor.execute(sql, param)
         return self
 
     def commit(self):
-        self.check_connection()
+        #self.check_connection()
         self.pydb.commit()
+        self.close()
 
     def close(self, CloseMsg=True):
         if CloseMsg: log.info(f"{self.DB_DATABASE} db closed")

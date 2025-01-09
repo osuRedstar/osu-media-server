@@ -1,4 +1,4 @@
-from lets_common_log import logUtils as log
+from helpers import logUtils as log
 from flask import Flask, render_template, session, redirect, url_for, request, send_from_directory, jsonify, send_file, Response, jsonify
 from functions import *
 import os

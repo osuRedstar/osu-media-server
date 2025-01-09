@@ -3,6 +3,7 @@ flask==1.1.1
 tornado==4.4.2
 Pillow==8.4.0
 pymysql==1.0.2
+mysqlclient===1.4.2.post1
 tqdm==4.64.1
 pydub==0.25.1
 geoip2==4.6.0

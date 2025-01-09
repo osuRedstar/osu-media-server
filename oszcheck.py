@@ -1,5 +1,5 @@
 from functions import calculate_md5
-from lets_common_log import logUtils as log
+from helpers import logUtils as log
 import requests
 from tqdm import tqdm
 

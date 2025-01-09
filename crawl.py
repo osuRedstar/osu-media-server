@@ -2,7 +2,7 @@ import requests
 import os
 import shutil
 import time
-from lets_common_log import logUtils as log
+from helpers import logUtils as log
 from helpers import config
 import pymysql
 from time import localtime, strftime

@@ -1,4 +1,4 @@
-from lets_common_log import logUtils as log
+from helpers import logUtils as log
 from helpers.dbConnect import db
 import zipfile
 import os

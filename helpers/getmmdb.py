@@ -5,7 +5,7 @@ import tarfile
 import os
 from datetime import datetime
 import time
-from lets_common_log import logUtils as log
+from helpers import logUtils as log
 
 conf = config.config("config.ini")
 mmdbID = conf.config["mmdb"]["id"]

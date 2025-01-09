@@ -5,7 +5,7 @@ from pypresence import Presence, exceptions
 import traceback
 import requests
 from functions import requestHeaders, osuServerDomain
-from lets_common_log import logUtils as log
+from helpers import logUtils as log
 
 rpc = rpcStatus = ""
 st = time.time()

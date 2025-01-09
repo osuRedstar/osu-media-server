@@ -1,5 +1,6 @@
-from lets_common_log import logUtils as log
-from helpers.dbConnect import db
+from helpers import logUtils as log
+#from helpers.dbConnect import db
+from helpers import dbConnector
 import zipfile
 import os
 import shutil
@@ -49,9 +50,9 @@ dataFolder = conf.config["server"]["dataFolder"]
 oszRenewTime = int(conf.config["server"]["oszRenewTime"])
 osuServerDomain = conf.config["server"]["osuServerDomain"]
 
-dbR = db(conf.config["db"]["database"])
-dbC = db("cheesegull")
-dbO = db("osu_media_server")
+dbR = dbConnector.db(conf.config["db"]["database"])
+dbC = dbConnector.db("cheesegull")
+dbO = dbConnector.db("osu_media_server")
 
 mmdbID = conf.config["mmdb"]["id"]
 mmdbKey = conf.config["mmdb"]["key"]
@@ -470,20 +471,17 @@ def get_AudioLength(filesinfo, setID, AudioFilename):
                 m = "{0:02d}".format(l // 60)
                 s = "{0:02d}".format(l % 60)
                 return f"{h}:{m}:{s}"
-            AudioLength = round(float(mediainfo(f"{dataFolder}/dl/{setID}/{AudioFilename}")["duration"]), 2)
+            AudioLength = round(float(mediainfo(f"{dataFolder}/Songs/{get_osz_fullName(setID).replace('.osz', '')}/{AudioFilename}")["duration"]), 3)
             AudioLength = [AudioLength, culc_length(round(AudioLength))]
-            AudioLength_DT = AudioLength_NC = [round(AudioLength[0] / 1.5, 2), culc_length(round(AudioLength[0] / 1.5))]
+            AudioLength_DT = AudioLength_NC = [round(AudioLength[0] / 1.5, 3), culc_length(round(AudioLength[0] / 1.5))]
             #HT = 1. (AudioLength / 0.75), 2. (AudioLength * 1.5)
-            AudioLength_HT = [round(AudioLength[0] / 0.75, 2), culc_length(round(AudioLength[0] / 0.75))]
-        else:
-            AudioLength = AudioLength_DT = AudioLength_NC = AudioLength_HT = None
-    except:
-        AudioLength = AudioLength_DT = AudioLength_NC = AudioLength_HT = None
+            AudioLength_HT = [round(AudioLength[0] / 0.75, 3), culc_length(round(AudioLength[0] / 0.75))]
+        else: raise
+    except: AudioLength = AudioLength_DT = AudioLength_NC = AudioLength_HT = None
     return (AudioLength, AudioLength_DT, AudioLength_NC, AudioLength_HT)
 
 def get_dir_size(path='.'):
-    total = 0
-    stack = [path]
+    total = 0; stack = [path]
     while stack:
         current_path = stack.pop()
         for entry in os.scandir(current_path):
@@ -495,6 +493,10 @@ def get_dir_size(path='.'):
     elif total / (1024 ** 2) < 1024: return f"{round(total / (1024 ** 2), 2)} MB"
     elif total / (1024 ** 3) < 1024: return f"{round(total / (1024 ** 3), 2)} GB"
     elif total / (1024 ** 4) < 1024: return f"{round(total / (1024 ** 4), 2)} TB"
+
+def windowsPath(path):
+    for a in ['<','>',':','"','/','\\','|','?','*']: path.replace(a, "")
+    return path
 
 def folder_check():
     if not os.path.isdir(dataFolder):
@@ -518,18 +520,16 @@ def get_osz_fullName(setID):
     except: return 0
 
 def saveDB(data):
-    dbRR = db("redstar", connectMsg=False); dbOO = db("osu_media_server", connectMsg=False)
     try:
         def queryMaker():
-            ranked = dbRR.fetch("SELECT beatmap_id, ranked, latest_update FROM beatmaps WHERE beatmapset_id = %s ORDER BY beatmap_id", [data["RedstarOSU"][0]])
-            log.warning(ranked)
+            ranked = dbR.fetchAll("SELECT beatmap_id, ranked, latest_update FROM beatmaps WHERE beatmapset_id = %s ORDER BY beatmap_id", [data["RedstarOSU"][0]])
             if type(ranked) is dict: ranked = [ranked]
             elif ranked is None: ranked = []
             if len(data["RedstarOSU"][2]) != len(ranked) and len(data["Bancho"]) != len(ranked):
                 missing_bids = list(set(d['BeatmapID'] for d in data["RedstarOSU"][2]) - set(d['beatmap_id'] for d in ranked))
                 for bid in missing_bids:
                     log.info(f"{bid} pp 요청중..."); requests.get(f"https://old.{osuServerDomain}/letsapi/v1/pp?b={bid}", headers=requestHeaders)
-                ranked2 = dbRR.fetch("SELECT beatmap_id, ranked, latest_update FROM beatmaps WHERE beatmapset_id = %s ORDER BY beatmap_id", [data["RedstarOSU"][0]])
+                ranked2 = dbR.fetchAll("SELECT beatmap_id, ranked, latest_update FROM beatmaps WHERE beatmapset_id = %s ORDER BY beatmap_id", [data["RedstarOSU"][0]])
                 log.chat(ranked2)
             edata = []
             for item1 in data["RedstarOSU"][2]:
@@ -539,80 +539,100 @@ def saveDB(data):
 
             querys = []
             for e in edata:
-                if e["update_lock"] or e['update_lock']: log.warning(f"bid = {e['BeatmapID']} | update_lock 걸림")
-                temp = [None]
-                temp.append(e['osu_file_format_v'])
+                if e["update_lock"]: log.warning(f"bid = {e['BeatmapID']} | update_lock 걸림")
+                temp = [None] #id
+                temp.append(e['osu_file_format_v']) #osu_file_format_v
                 temp.append(data["RedstarOSU"][0]) #BeatmapSetID
                 temp.append(data["RedstarOSU"][1]) #first_bid
-                temp.append(e['BeatmapID'])
-                temp.append(e['BeatmapMD5'])
-                temp.append(e['beatmapName'])
+                temp.append(e['BeatmapID']) #BeatmapID
+                temp.append(e['BeatmapMD5']) #BeatmapMD5
+                temp.append(get_osz_fullName(data["RedstarOSU"][0]).replace(".osz", "")) #Songs_foldername
+                temp.append(e['beatmapName']) #file_name
 
-                temp.append(e['artist']) #커스텀 비트맵이면 여기서 에러뜸
-                temp.append(e['artist_unicode'])
-                temp.append(e['title'])
-                temp.append(e['title_unicode'])
-                temp.append(e['creator'])
-                temp.append(e['creator_id'])
+                temp.append(e['artist']) #artist 커스텀 비트맵이면 여기서 에러뜸
+                temp.append(e['artist_unicode']) #artist_unicode
+                temp.append(e['title']) #title
+                temp.append(e['title_unicode']) #title_unicode
+                temp.append(e['creator']) #creator
+                temp.append(e['creator_id']) #creator_id
 
-                temp.append(e['Version'])
-                temp.append(e['AudioFilename'])
-                temp.append(e['PreviewTime'])
-                temp.append(e['BeatmapBG'])
-                temp.append(e['BeatmapVideo'])
+                temp.append(e['Version']) #Version
+                temp.append(e['AudioFilename']) #AudioFilename
+                temp.append(get_AudioLength(True, data["RedstarOSU"][0], e['AudioFilename'])[0][0]) #AudioLength
+                temp.append(e['PreviewTime']) #PreviewTime
+                temp.append(e['BeatmapBG']) #BeatmapBG
+                temp.append(e['BeatmapVideo']) #BeatmapVideo
 
-                temp.append(e['diff_size'])
-                temp.append(e['diff_overall'])
-                temp.append(e['diff_approach'])
-                temp.append(e['diff_drain'])
-                temp.append(e['total_length'])
-                temp.append(e['hit_length'])
-                temp.append(e['max_combo'])
-                temp.append(e['count_normal'])
-                temp.append(e['count_slider'])
-                temp.append(e['count_spinner'])
-                temp.append(e['bpm'])
-                temp.append(e['source'])
-                temp.append(e['tags'])
-                temp.append(e['packs'])
+                temp.append(e['diff_size']) #CS
+                temp.append(e['diff_overall']) #OD
+                temp.append(e['diff_approach']) #AR
+                temp.append(e['diff_drain']) #HP
+                temp.append(e['total_length']) #total_length
+                temp.append(e['hit_length']) #hit_length
+                temp.append(e['max_combo']) #max_combo
+                temp.append(e['count_normal']) #count_normal
+                temp.append(e['count_slider']) #count_slider
+                temp.append(e['count_spinner']) #count_spinner
+                temp.append(e['bpm']) #bpm
+                temp.append(e['source']) #source
+                temp.append(e['tags']) #tags
+                temp.append(e['packs']) #packs
 
-                temp.append(e['ranked'])
+                temp.append(e['ranked']) #ranked
 
-                temp.append(e['approved'])
-                temp.append(e['mode'])
-                temp.append(e['genre_id'])
-                temp.append(e['language_id'])
-                temp.append(e['storyboard'])
-                temp.append(e['download_unavailable'])
-                temp.append(e['audio_unavailable'])
-                temp.append(e['diff_aim'])
-                temp.append(e['diff_speed'])
-                temp.append(e['difficultyrating'])
-                temp.append(e['rating'])
-                temp.append(e['favourite_count'])
-                temp.append(e['playcount'])
-                temp.append(e['passcount'])
-                temp.append(e['submit_date'])
-                temp.append(e['approved_date'])
-                temp.append(e['last_update'])
+                temp.append(e['approved']) #approved
+                temp.append(e['mode']) #mode
+                temp.append(e['genre_id']) #genre_id
+                temp.append(e['language_id']) #language_id
+                temp.append(e['storyboard']) #storyboard
+                temp.append(e['download_unavailable']) #download_unavailable
+                temp.append(e['audio_unavailable']) #audio_unavailable
+                temp.append(e['diff_aim']) #diff_aim
+                temp.append(e['diff_speed']) #diff_speed
+                temp.append(e['difficultyrating']) #difficultyrating
+                temp.append(e['rating']) #rating
+                temp.append(e['favourite_count']) #favourite_count
+                temp.append(e['playcount']) #playcount
+                temp.append(e['passcount']) #passcount
+                temp.append(e['submit_date']) #submit_date
+                temp.append(e['approved_date']) #approved_date
+                temp.append(e['last_update']) #last_update
 
-                temp.append(e['latest_update'])
-
-                temp.append(e['update_lock'])
-                
+                temp.append(e['latest_update']) #latest_update
+                temp.append(e['update_lock']) #update_lock
+                temp.append(1 if data["RedstarOSU"][0] < 0 or e['BeatmapID'] < 0 else 0) #CustomMap
                 temp.append(time.time()) #LastChecked
 
                 querys.append(temp)
             return querys
-        isExist = dbOO.fetch("SELECT * from beatmapsinfo_copy WHERE BeatmapSetID = %s and update_lock = 0 ORDER BY id", [data["RedstarOSU"][0]])
+        isExist = dbO.fetchAll("SELECT * from beatmapsinfo_copy WHERE BeatmapSetID = %s ORDER BY id", [data["RedstarOSU"][0]])
         querys = queryMaker()
-        if querys[0][51] or (isExist and data["Bancho"][0]["last_update"] == querys[0][49]): pass
-        elif isExist:
-            try:
-                dbOO.execute("DELETE FROM beatmapsinfo_copy WHERE BeatmapSetID = %s and update_lock = 0", [data["RedstarOSU"][0]])
-                dbOO.commit()
-                log.warning(f"{data['RedstarOSU'][0]} | 기존 DB 삭제")
-            except Exception as e: log.error(f"DELETE | {e}")
+        if isExist:
+            if type(isExist) is dict: isExist = [isExist]
+            for ie in isExist:
+                for q in querys:
+                    if ie["BeatmapMD5"] == q[5]:
+                        if ie["update_lock"] or (ie["last_update"] == datetime.strptime(q[51], '%Y-%m-%d %H:%M:%S')): pass
+                        else:
+                            q[0] = ie["id"]
+                            sql = f"""
+                                UPDATE beatmapsInfo_copy
+                                    SET
+                                        osu_file_format_v = %s, BeatmapSetID = %s, first_bid = %s, BeatmapID = %s, BeatmapMD5 = %s,
+                                        Songs_foldername = %s, file_name = %s, artist = %s, artist_unicode = %s, title = %s,
+                                        title_unicode = %s, creator = %s, creator_id = %s, Version = %s, AudioFilename = %s,
+                                        AudioLength = %s, PreviewTime = %s, BeatmapBG = %s, BeatmapVideo = %s, CS = %s,
+                                        OD = %s, AR = %s, HP = %s, total_length = %s, hit_length = %s,
+                                        max_combo = %s, count_normal = %s, count_slider = %s, count_spinner = %s, bpm = %s,
+                                        source = %s, tags = %s, packs = %s, ranked = %s, approved = %s,
+                                        mode = %s, genre_id = %s, language_id = %s, storyboard = %s, download_unavailable = %s,
+                                        audio_unavailable = %s, diff_aim = %s, diff_speed = %s, difficultyrating = %s, rating = %s,
+                                        favourite_count = %s, playcount = %s, passcount = %s, submit_date = %s, approved_date = %s,
+                                        last_update = %s, latest_update = %s, update_lock = %s, CustomMap = %s, LastChecked = %s
+                                    WHERE id = {q.pop(0)};
+                            """
+                            dbO.execute(sql, q)
+                            log.info(f"{q[4]} DB 업데이트 완료!")
         else:
             for q in querys:
                 try:
@@ -624,14 +644,12 @@ def saveDB(data):
                                 %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
                                 %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
                                 %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                                %s, %s, %s
+                                %s, %s, %s, %s, %s, %s
                             )
                     """
-                    dbOO.execute(sql, q)
-                    dbOO.commit()
+                    dbO.execute(sql, q)
                 except Exception as e: log.error(f"INSERT | {e}")
     except: exceptionE("saveDB | ")
-    finally: dbRR.close(CloseMsg=False); dbOO.close(CloseMsg=False)
 
 def osu_file_read(setID, rq_type, bID=None, cheesegull=False, filesinfo=False):
     fullSongName = get_osz_fullName(setID)
@@ -645,8 +663,7 @@ def osu_file_read(setID, rq_type, bID=None, cheesegull=False, filesinfo=False):
             return ck
 
     #압축파일에 문제생겼을때 재 다운로드
-    try:
-        zipfile.ZipFile(f'{dataFolder}/dl/{fullSongName}').extractall(f'{dataFolder}/Songs/{ptct["foldername"]}')
+    try: zipfile.ZipFile(f'{dataFolder}/dl/{fullSongName}').extractall(f'{dataFolder}/Songs/{ptct["foldername"]}')
     except zipfile.BadZipFile as e:
         ck = check(setID, rq_type)
         if type(ck) is int: return ck
@@ -666,7 +683,7 @@ def osu_file_read(setID, rq_type, bID=None, cheesegull=False, filesinfo=False):
     beatmap_info = []
 
     #.osu 파일명 기준으로 이름순으로 정렬함
-    gullDB = dbC.fetch("""
+    gullDB = dbC.fetchAll("""
         SELECT b.id, b.file_md5, CONCAT(s.artist, ' - ', s.title, ' (', s.creator, ') [', b.diff_name, ']' '.osu') AS filename, s.artist, s.title, s.creator, b.diff_name
         FROM sets AS s
         JOIN beatmaps AS b ON s.id = b.parent_set_id
@@ -689,7 +706,7 @@ def osu_file_read(setID, rq_type, bID=None, cheesegull=False, filesinfo=False):
                 BeatmapVideo, audio_unavailable, download_unavailable, storyboard
             FROM beatmapsinfo_copy WHERE BeatmapMD5 = %s
         """
-        temp = omsDB = dbO.fetch(sql, [beatmap_md5], NoneMsg=False)
+        temp = omsDB = dbO.fetch(sql, [beatmap_md5])
         if not temp: temp = {}
 
         with open("exceptOszList.json", "r") as file:
@@ -844,7 +861,7 @@ def check(setID, rq_type, checkRenewFile=False, bu = None, bh = None, bvv = None
         for i, (link, mn) in enumerate(zip(url, urlName)):
             # 파일 다운로드 요청
             try:
-                res = requests.get(link, headers=requestHeaders, timeout=3, stream=True)
+                res = requests.get(link, headers=requestHeaders, timeout=5, stream=True)
                 statusCode = res.status_code
                 header_filename = res.headers.get('Content-Disposition')
             except requests.exceptions.ReadTimeout as e:
@@ -1276,7 +1293,6 @@ def read_osu(id):
         if d["BeatmapID"] == bid: ck = d; break
     fullSongName = get_osz_fullName(bsid)
     ptct = pathToContentType(fullSongName)
-
     return f"{dataFolder}/Songs/{ptct['foldername']}/{ck['beatmapName']}"
 
 def filename_to_GetCheesegullDB(filename):
@@ -1290,6 +1306,11 @@ def filename_to_GetCheesegullDB(filename):
     except:
         artist, title, creator, version = None
         log.error("osu filename에서 artist, title, creator, version 추출중 에러")
+
+    #osu_media_server DB 로 먼저 뽑아봄
+    log.debug(f"filename = {filename} | {artist}, {title}, {creator}, {version}")
+    resu = dbO.fetch("SELECT BeatmapID as id, BeatmapSetID as parent_set_id FROM beatmapsinfo_copy WHERE file_name = %s", [filename])
+    if resu: return resu
 
     #위에 코드로 대채 테스트
     """ try:

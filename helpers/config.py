@@ -1,6 +1,6 @@
 import os
 import configparser
-from lets_common_log import logUtils as log
+from helpers import logUtils as log
 
 class config:
 	"""

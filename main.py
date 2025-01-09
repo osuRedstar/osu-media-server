@@ -3,7 +3,7 @@ from helpers import config
 import tornado.ioloop
 import tornado.web
 from functions import *
-import lets_common_log.logUtils as log
+from helpers import logUtils as log
 import json
 from helpers import drpc
 from helpers import getmmdb
