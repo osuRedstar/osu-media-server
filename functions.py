@@ -1215,10 +1215,13 @@ def read_preview(id):
         Codec = mediainfo(f"{file}")["codec_name"]
         if Codec != "mp3": log.error(f"{ck['AudioFilename']} 코텍은 mp3가 아님 | {Codec}")
 
+        audio = float(mediainfo(file)["duration"])
         if ck["PreviewTime"] == -1:
-            audio = float(mediainfo(file)["duration"])
             PreviewTime = audio / 2.5
             log.warning(f"{bsid}.mp3 ({ck['AudioFilename']}) 의 PreviewTime 값이 {ck['PreviewTime']} 이므로 TotalLength ({audio}) / 2.5 == {PreviewTime} 로 세팅함")
+        elif ck["PreviewTime"] / 1000 > audio:
+            PreviewTime = 0
+            log.warning(f'PreviewTime({ck["PreviewTime"] / 1000}) 이 > audio({float(mediainfo(file)["duration"])}) 보다 길어서 0으로 세팅함') #666438.mp3
         else:  PreviewTime = ck["PreviewTime"] / 1000
 
         if Codec == "mp3": ffmpeg_msg = f'ffmpeg -i "{file}" -ss {PreviewTime} -t 30.821 -acodec copy -y "{dataFolder}/Songs/{ptct["foldername"]}/{id}"'
