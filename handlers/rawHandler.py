@@ -1,6 +1,6 @@
 import tornado.ioloop
 import tornado.web
-import lets_common_log.logUtils as log
+from helpers import logUtils as log
 from functions import *
 import json
 import traceback
@@ -9,9 +9,7 @@ from helpers import requestsManager
 class handler(requestsManager.asyncRequestHandler):
     def asyncGet(self, folder, file):
         rm = request_msg(self, botpass=False)
-        if rm != 200:
-            return send403(self, rm)
-
+        if rm != 200: return send403(self, rm)
         try:
             file = read_raw(folder, file)
             if file: IDM(self, file)
@@ -20,5 +18,4 @@ class handler(requestsManager.asyncRequestHandler):
             log.warning(e)
             log.error(f"\n{traceback.format_exc()}")
             return send503(self, e, "bid", id)
-        finally:
-            self.set_header("Ping", str(resPingMs(self)))
+        finally: self.set_header("Ping", str(resPingMs(self)))

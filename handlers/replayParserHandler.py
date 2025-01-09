@@ -1,6 +1,6 @@
 import tornado.ioloop
 import tornado.web
-import lets_common_log.logUtils as log
+from helpers import logUtils as log
 from functions import *
 import json
 import traceback
@@ -33,28 +33,21 @@ class handler(requestsManager.asyncRequestHandler):
                 return int(timestamp.timestamp())
 
             def readULEB128(data):
-                result = 0
-                shift = 0
+                result = shift = 0
                 while True:
                     byte = data.read(1)
-                    if not byte:
-                        raise ValueError("Unexpected end of data while reading ULEB128")
+                    if not byte: raise ValueError("Unexpected end of data while reading ULEB128")
                     byte = ord(byte)
                     result |= (byte & 0x7F) << shift
                     shift += 7
-                    if not byte & 0x80:
-                        break
+                    if not byte & 0x80: break
                 return result
 
             def unpackString(data):
                 indicator = data.read(1)
-                if indicator == b"\x00":
-                    return ""
-                elif indicator == b"\x0b":
-                    length = readULEB128(data)
-                    return data.read(length).decode('utf-8')
-                else:
-                    raise ValueError("Invalid string indicator")
+                if indicator == b"\x00": return ""
+                elif indicator == b"\x0b": return data.read(readULEB128(data)).decode('utf-8')
+                else: raise ValueError("Invalid string indicator")
 
             def unpackReplayData(data):
                 data = io.BytesIO(data)  # BytesIO 객체 생성
@@ -103,11 +96,8 @@ class handler(requestsManager.asyncRequestHandler):
                         "rawReplay": str(rawReplay)
                     }, indent=2
                 )
-
             scoreData = unpackReplayData(scoreDataEnc)
-        
-        except Exception as e:
-            log.error(e)
+        except Exception as e: log.error(e)
         finally:
             if dl:
                 self.set_header('Content-Type', self.request.files["score"][0]["content_type"])
