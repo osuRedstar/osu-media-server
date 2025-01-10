@@ -2,7 +2,7 @@ __pycache__/
 data/
 data2/
 config.ini
-custom_osz/
+#custom_osz/
 logs.txt
 IPs.json
 GeoLite2-Country.mmdb
