@@ -511,7 +511,7 @@ def get_dir_size(path='.'):
     elif total / (1024 ** 4) < 1024: return f"{round(total / (1024 ** 4), 2)} TB"
 
 def windowsPath(path):
-    for a in ['<','>',':','"','/','\\','|','?','*']: path.replace(a, "")
+    for a in ['<','>',':','"','/','\\','|','?','*']: path = path.replace(a, "_")
     return path
 
 def folder_check():
