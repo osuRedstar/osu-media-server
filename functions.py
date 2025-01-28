@@ -381,6 +381,22 @@ def pathToContentType(path, isInclude=False):
 
 ####################################################################################################
 
+def getAcc(play_mode: int, count_300: int, count_100: int, count_50: int, gekis_count: int, katus_count: int, misses_count: int) -> int:
+	if play_mode == 0: #Std
+		total_notes = count_300 + count_100 + count_50 + misses_count
+		accuracy = (300 * count_300 + 100 * count_100 + 50 * count_50) / (300 * total_notes) * 100
+	elif play_mode == 1: #Taiko
+		total_notes = count_300 + count_100 + misses_count
+		accuracy = (count_300 + 0.5 * count_100) / total_notes * 100
+	elif play_mode == 2: #CTB
+		total_notes = count_300 + count_100 + count_50 + misses_count + katus_count #+ gekis_count + katus_count
+		accuracy = (count_300 + count_100 + count_50) / total_notes * 100
+	elif play_mode == 3: #Mania
+		total_notes = gekis_count + count_300 + katus_count + count_100 + count_50 + misses_count
+		accuracy = (300 * (gekis_count + count_300) + 200 * katus_count + 100 * count_100 + 50 * count_50) / (300 * total_notes) * 100
+	else: accuracy = 0 #?
+	return accuracy
+
 def readableMods(__mods: int):
     """
     :param __mods: mods bitwise number
@@ -659,8 +675,9 @@ def osu_file_read(setID, rq_type, bID=None, cheesegull=False, filesinfo=False):
     if fullSongName == 0 and rq_type == "all":
         ck = check(setID, rq_type)
         if type(ck) is int: return ck
-        if type(ck) is not list:
-            return ck
+        if type(ck) is not list: return ck
+        fullSongName = get_osz_fullName(setID)
+        ptct = pathToContentType(fullSongName)
 
     #압축파일에 문제생겼을때 재 다운로드
     try: zipfile.ZipFile(f'{dataFolder}/dl/{fullSongName}').extractall(f'{dataFolder}/Songs/{ptct["foldername"]}')

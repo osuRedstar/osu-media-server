@@ -8,6 +8,7 @@ import struct
 import datetime
 import io
 from helpers import requestsManager
+from functions import readableMods, getAcc
 
 MODULE_NAME = "replayParserHandler"
 class handler(requestsManager.asyncRequestHandler):
@@ -15,21 +16,16 @@ class handler(requestsManager.asyncRequestHandler):
     Handler for /replayparser
 
     """
-    def asyncGet(self):
-        self.render("../templates/replayParser.html")
+    def asyncGet(self): self.render("../templates/replayParser.html")
 
     def asyncPost(self):
         dl = True if type(self.get_argument("dl", default=False)) != bool else False
-        statusCode = 400
-        data = {"message": "unknown error"}
         try:
             scoreDataEnc = self.request.files["score"][0]["body"]
             log.info(f'Parsing Replay File!{" For Download File" if dl else ""} | {self.request.files["score"][0]["filename"]}')
 
             def dotTicksToUnix(dotnet_ticks):
-                base = datetime.datetime(1, 1, 1)
-                delta = datetime.timedelta(microseconds=dotnet_ticks/10)
-                timestamp = base + delta
+                timestamp = datetime.datetime(1, 1, 1, tzinfo=datetime.timezone.utc) + datetime.timedelta(microseconds=dotnet_ticks/10)
                 return int(timestamp.timestamp())
 
             def readULEB128(data):
@@ -37,9 +33,7 @@ class handler(requestsManager.asyncRequestHandler):
                 while True:
                     byte = data.read(1)
                     if not byte: raise ValueError("Unexpected end of data while reading ULEB128")
-                    byte = ord(byte)
-                    result |= (byte & 0x7F) << shift
-                    shift += 7
+                    byte = ord(byte); result |= (byte & 0x7F) << shift; shift += 7
                     if not byte & 0x80: break
                 return result
 
@@ -50,7 +44,7 @@ class handler(requestsManager.asyncRequestHandler):
                 else: raise ValueError("Invalid string indicator")
 
             def unpackReplayData(data):
-                data = io.BytesIO(data)  # BytesIO 객체 생성
+                data = io.BytesIO(data) #BytesIO 객체 생성
                 play_mode = struct.unpack("<B", data.read(1))[0]
                 version = struct.unpack("<I", data.read(4))[0]
                 beatmap_md5 = unpackString(data)
@@ -72,6 +66,14 @@ class handler(requestsManager.asyncRequestHandler):
                 id = struct.unpack("<Q", data.read(8))[0]
 
                 if dl: return rawReplay
+                acc = getAcc(play_mode, count_300, count_100, count_50, gekis_count, katus_count, misses_count)
+                bid = dbR.fetch("SELECT beatmap_id, beatmapset_id FROM beatmaps WHERE beatmap_md5 = %s", [beatmap_md5]); bsid = bid["beatmapset_id"]; bid = bid["beatmap_id"]
+                bname = next((d["beatmapName"] for d in osu_file_read(bsid, rq_type="all", cheesegull=True, filesinfo=True)["RedstarOSU"][2] if beatmap_md5 == d["BeatmapMD5"]), None)
+                osz = get_osz_fullName(bsid).replace(".osz", "")
+                if bid:
+                    cmd = f'oppai\\oppai.exe "{dataFolder}\\Songs\\{osz}\\{bname}" {acc}% -m1 +{readableMods(mods)} {max_combo}x {misses_count}xm -m{play_mode} -ojson'
+                    with os.popen(cmd) as c: pp = json.loads(c.buffer.read().decode("utf-8"))
+                else: pp = None
                 return json.dumps(
                     {
                         "dlLink": "https://" + self.request.host + self.request.uri + "?dl",
@@ -93,15 +95,13 @@ class handler(requestsManager.asyncRequestHandler):
                         "mods": mods,
                         "life_bar_graph": life_bar_graph,
                         "time": time,
+                        "acc": acc,
+                        "oppai": pp,
                         "rawReplay": str(rawReplay)
-                    }, indent=2
+                    }, indent=2, ensure_ascii=False
                 )
             scoreData = unpackReplayData(scoreDataEnc)
-        except Exception as e: log.error(e)
+        except: exceptionE()
         finally:
-            if dl:
-                self.set_header('Content-Type', self.request.files["score"][0]["content_type"])
-                self.write(scoreData)
-            else:
-                self.set_header("Content-Type", pathToContentType(".json")["Content-Type"])
-                self.write(scoreData)
+            if dl: self.set_header('Content-Type', self.request.files["score"][0]["content_type"]); self.write(scoreData)
+            else: self.set_header("Content-Type", pathToContentType(".json")["Content-Type"]); self.write(scoreData)
