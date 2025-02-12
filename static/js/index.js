@@ -71,7 +71,7 @@ function audio(arg) {
         location.reload(true);
     }
     else {
-        const mods = prompt("mods (DT, NC, HF)\nno mods = Skip This")
+        const mods = prompt("mods (DT, NC, HT)\nno mods = Skip This")
         if (mods === null | mods === "" | mods === "no") {
             audio_tag.href = `${document.location.href}audio/${get_id}`
         }
