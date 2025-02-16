@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>429 Too Many Requests</title>
+</head>
+<body>
+    <div style="text-align: center;">
+        <h1 style="color: red;">429</h1>
+        <h1>Try Again <a id="ttl" style="color: red;">{{ ttl }}</a> Second later</h1>
+    </div>
+
+    <script>
+        let ttl = Number("{{ ttl }}")
+        const intervalId = setInterval(() => {
+            if (ttl === -1) { 
+                clearInterval(intervalId)
+            }
+            else if (ttl > 0) {
+                ttl -= 1
+                document.getElementById("ttl").innerText = ttl
+            }
+            else {
+                location.reload()
+            }
+        }, 1000)
+    </script>
+</body>
+</html>
