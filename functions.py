@@ -25,9 +25,9 @@ def exceptionE(msg=""): e = traceback.format_exc(); log.error(f"{msg} \n{e}"); r
 class calculate_md5:
     @classmethod
     def file(cls, fn) -> str:
+        if os.path.getsize(fn) > 1073741824: return None
         md5 = hashlib.md5()
-        with open(fn, "rb") as f:
-            md5.update(f.read())
+        with open(fn, "rb") as f: md5.update(f.read())
         return md5.hexdigest()
 
     @classmethod
@@ -58,6 +58,7 @@ mmdbID = conf.config["mmdb"]["id"]
 mmdbKey = conf.config["mmdb"]["key"]
 
 requestHeaders = {"User-Agent": f"RedstarOSU's MediaServer (python requests) | https://b.{osuServerDomain}"}
+OSisWindows = os.name == "nt"
 
 def BanchoApiRequest(url: str, params: dict, apsc: bool=False):
     """
@@ -86,14 +87,12 @@ for i, sc in enumerate(BanchoApiRequest("/api/get_beatmaps", params={'b': -1}, a
 if not apikeyStatus: exit(); del apikeyStatus
 
 #ffmpeg 설치확인
-if os.system(f"ffmpeg -version > {'nul' if os.name == 'nt' else '/dev/null'} 2>&1") != 0:
+if os.system(f"ffmpeg -version > {'nul' if OSisWindows else '/dev/null'} 2>&1") != 0:
     log.warning(f"ffmpeg Does Not Found!! | ignore? (y/n) ")
     if input("").lower() != "y":
         print("exit")
-        if os.name != "nt":
-            print("sudo apt install ffmpeg")
-        else:
-            print("https://github.com/BtbN/FFmpeg-Builds/releases")
+        if OSisWindows: print("https://github.com/BtbN/FFmpeg-Builds/releases")
+        else: print("sudo apt install ffmpeg")
         exit()
     else:
         print("ignored")
@@ -127,7 +126,7 @@ def findBot(ip=None, country=None, url=None, user_agent=None, referer=None, botT
     return data
 
 def getIP(self):
-    if "X-Real-IP" in self.request.headers: return self.request.headers.get("X-Real-IP")
+    if "X-Real-IP" in self.request.headers: return self.request.headers.get("X-Real-IP") #Added from nginx
     elif "CF-Connecting-IP" in self.request.headers: return self.request.headers.get("CF-Connecting-IP")
     elif "X-Forwarded-For" in self.request.headers: return self.request.headers.get("X-Forwarded-For")
     else: return self.request.remote_ip
@@ -162,8 +161,8 @@ def IPtoFullData(IP): #전체 정보를 가져오기 위한 코드
 
 def getRequestInfo(self):
     IsCloudflare = IsNginx = IsHttp = False
+    real_ip = getIP(self)
     try:
-        real_ip = self.request.headers["Cf-Connecting-Ip"]
         request_url = self.request.headers["X-Forwarded-Proto"] + "://" + self.request.host + self.request.uri
         country_code = self.request.headers["Cf-Ipcountry"]
         IsCloudflare = IsNginx = True
@@ -171,30 +170,23 @@ def getRequestInfo(self):
     except Exception as e:
         log.warning(f"cloudflare를 거치지 않음, real_ip는 nginx header에서 가져옴 | e = {e}")
         try:
-            real_ip = self.request.headers["X-Real-IP"] if "X-Real-IP" in self.request.headers else self.request.headers["X-Forwarded-For"].split(",")[0]
             request_url = self.request.headers["X-Forwarded-Proto"] + "://" + self.request.host + self.request.uri
             IsNginx = True
-            try: Server = os.popen("nginx.exe -v 2>&1").read().split(":")[1].strip()
-            except: ngp = os.getcwd().replace(os.getcwd().split("\\")[-1], "nginx/nginx.exe").replace("\\", "/"); Server = os.popen(f'{ngp} -v 2>&1').read().split(":")[1].strip()
+            if OSisWindows:
+                try: Server = os.popen("nginx.exe -v 2>&1").read().split(":")[1].strip()
+                except: ngp = os.getcwd().replace(os.getcwd().split("\\")[-1], "nginx/nginx.exe").replace("\\", "/"); Server = os.popen(f'{ngp} -v 2>&1').read().split(":")[1].strip()
+            else: Server = os.popen("nginx -v 2>&1").read().split(":")[1].strip()
         except Exception as e:
-            log.warning(f"http로 접속시도함 | cloudflare를 거치지 않음, real_ip는 http요청이라서 바로 뜸 | e = {e}")
-            real_ip = self.request.remote_ip
+            log.warning(f"http로 접속시도함 | cloudflare를 거치지 않음, real_ip는 http 요청이라서 바로 뜸 | e = {e}")
             request_url = self.request.protocol + "://" + self.request.host + self.request.uri
             IsHttp = True
             Server = self._headers.get("Server")
         country_code = IPtoFullData(real_ip)["country"]
     client_ip = self.request.remote_ip
-
     try: User_Agent = self.request.headers["User-Agent"]
-    except:
-        User_Agent = ""
-        log.error("User-Agent 값이 존재하지 않음!")
-
-    try:
-        Referer = self.request.headers["Referer"]
-        log.info("Referer 값이 존재함!")
+    except: User_Agent = ""; log.error("User-Agent 값이 존재하지 않음!")
+    try: Referer = self.request.headers["Referer"]; log.info("Referer 값이 존재함!")
     except: Referer = ""
-
     return real_ip, request_url, country_code, client_ip, User_Agent, Referer, IsCloudflare, IsNginx, IsHttp, Server
 
 def request_msg(self, botpass=False):
@@ -256,7 +248,7 @@ def resPingMs(self):
     log.chat(f"{pingMs} ms")
     return pingMs
 
-def send401(self, errMsg):
+def send401(self, errMsg: str):
     self.set_status(401)
     self.set_header("Content-Type", "application/json")
     self.write(json.dumps({"code": 401, "error": errMsg}, indent=2, ensure_ascii=False))
@@ -268,35 +260,50 @@ def send403(self, rm):
     self.write(json.dumps({"code": 403, "error": f"{rm} is Not allowed!!", "message": f"contect --> {ContectEmail}"}, indent=2, ensure_ascii=False))
     self.set_header("Ping", str(resPingMs(self)))
 
-def send404(self, inputType, input):
-    self.set_status(404)
+def send404(self, inputType: str, input: str):
+    self.set_status(404); self.set_header("Content-Type", "text/html")
     self.set_header("return-fileinfo", json.dumps({"filename": "404.html", "path": "templates/404.html", "fileMd5": calculate_md5.file("templates/404.html")}))
     self.render("templates/404.html", inputType=inputType, input=input)
     self.set_header("Ping", str(resPingMs(self)))
 
-def send500(self, inputType, input):
-    self.set_status(500)
+def send429(self, ttl: int):
+    self.set_status(429); self.set_header("Content-Type", "text/html")
+    self.render("templates/429.html", ttl=ttl)
+    self.set_header("Ping", str(resPingMs(self)))
+
+def send500(self, inputType: str, input: str):
+    self.set_status(500); self.set_header("Content-Type", "text/html")
     self.set_header("return-fileinfo", json.dumps({"filename": "500.html", "path": "templates/500.html", "fileMd5": calculate_md5.file("templates/500.html")}))
     self.render("templates/500.html", inputType=inputType, input=input)
     self.set_header("Ping", str(resPingMs(self)))
 
-def send503(self, e, inputType, input):
-    self.set_status(503)
+def send503(self, e, inputType: str, input: str):
+    self.set_status(503); self.set_header("Content-Type", "text/html")
     #Exception = json.dumps({"type": str(type(e)), "error": str(e)}, ensure_ascii=False)
     self.set_header("Exception", json.dumps({"type": str(type(e)), "error": str(e)}))
     self.set_header("return-fileinfo", json.dumps({"filename": "503.html", "path": "templates/503.html", "fileMd5": calculate_md5.file("templates/503.html")}))
     self.render("templates/503.html", inputType=inputType, input=input, Exception=json.dumps({"type": str(type(e)), "error": str(e)}, ensure_ascii=False))
     self.set_header("Ping", str(resPingMs(self)))
 
-def send504(self, inputType, input):
+def send504(self, inputType: str, input: str):
     #cloudflare 504 페이지로 연결됨
-    self.set_status(504)
+    self.set_status(504); self.set_header("Content-Type", "text/html")
     self.set_header("return-fileinfo", json.dumps({"filename": "504.html", "path": "templates/504.html", "fileMd5": calculate_md5.file("templates/504.html")}))
     self.render("templates/504.html", inputType=inputType, input=input)
     self.set_header("Ping", str(resPingMs(self)))
 
+IDMConnects = {}
 def IDM(self, path):
-    if "Range" in self.request.headers and path.endswith(".osz"): #audio html 음악 안나옴 이슈 있음
+    IP = getIP(self)
+    filename = path.split("/")[-1]
+    self.set_header("return-fileinfo", json.dumps({"filename": filename, "path": path, "fileMd5": calculate_md5.file(path)}))
+    self.set_header('Content-Type', pathToContentType(path)["Content-Type"])
+    self.set_header('Content-Disposition', f'inline; filename="{filename}"')
+    self.set_header("Accept-Ranges", "bytes")
+    if "Range" in self.request.headers:
+        IDMConnects[IP] = 1 if not IDMConnects.get(IP) else IDMConnects[IP] + 1
+        log.debug(f"IDMConnects[{IP}] = {IDMConnects[IP]} | {type(IDMConnects[IP])}")
+        if IDMConnects[IP] > 16: send429(self, -1); return False
         idm = True
         log.info("분할 다운로드 활성화!")
         Range = self.request.headers["Range"].replace("bytes=", "").split("-")
@@ -305,24 +312,17 @@ def IDM(self, path):
         end = fileSize - 1 if not Range[1] else int(Range[1])
         contentLength = end - start + 1
 
+        log.info({"Content-Range": f"bytes {start}-{end}/{fileSize}", "Content-Length": contentLength})
         self.set_status(206) if start != 0 or (start == 0 and Range[1]) else self.set_status(200)
         self.set_header("Content-Length", contentLength)
-        self.set_header("Content-Range", f"bytes={start}-{end}/{fileSize}")
-        log.info({"Content-Range": f"bytes={start}-{end}/{fileSize}", "Content-Length": contentLength})
-
+        self.set_header("Content-Range", f"bytes {start}-{end}/{fileSize}")
         with open(path, "rb") as f:
-            f.seek(start)
-            file = f.read(contentLength) if start != 0 or (start == 0 and Range[1]) else f.read()
-            self.write(file)
+            f.seek(start); self.write(f.read(contentLength) if start != 0 or (start == 0 and Range[1]) else f.read())
+        if IDMConnects[IP] > 1: IDMConnects[IP] -= 1
+        else: del IDMConnects[IP]
     else:
         idm = False
         with open(path, 'rb') as f: self.write(f.read())
-
-    filename = path.split("/")[-1]
-    self.set_header("return-fileinfo", json.dumps({"filename": filename, "path": path, "fileMd5": calculate_md5.file(path)}))
-    self.set_header('Content-Type', pathToContentType(path)["Content-Type"])
-    self.set_header('Content-Disposition', f'inline; filename="{filename}"')
-    self.set_header("Accept-Ranges", "bytes")
     return idm
 
 def pathToContentType(path, isInclude=False):
@@ -330,7 +330,7 @@ def pathToContentType(path, isInclude=False):
     fn, fe = os.path.splitext(os.path.basename(path));
     ffln = path.replace(f"/{path.split('/')[-1]}", "")
     fln = os.path.splitext(os.path.basename(ffln.split('/')[-1]))[0]
-    if os.name == "nt":
+    if OSisWindows:
         while fln.endswith("."): fln = fln[:-1]
 
     if isInclude and ".aac" in path.lower() or not isInclude and path.lower().endswith(".aac"): ct, tp = ("audio/aac", "audio")
@@ -906,7 +906,7 @@ def check(setID, rq_type, checkRenewFile=False, bu = None, bh = None, bvv = None
                 log.info(f'{file_name} --> {newFilename} 다운로드 완료')
 
                 def play_finished_dl(): #WAV 파일 재생을 별도의 스레드에서 수행
-                    os.system(f"ffplay -nodisp -autoexit static/audio/match-confirm.mp3 > {'nul' if os.name == 'nt' else '/dev/null'} 2>&1")
+                    os.system(f"ffplay -nodisp -autoexit static/audio/match-confirm.mp3 > {'nul' if OSisWindows else '/dev/null'} 2>&1")
                 play_thread = threading.Thread(target=play_finished_dl)
                 play_thread.start()
 
