@@ -203,21 +203,20 @@ def request_msg(self, botpass=False):
         else: log.error(msg)
 
     #필?터?링
-    if allowedconnentedbot:
-        log.info(rMsg)
+    if allowedconnentedbot: log.info(rMsg)
     else:
         with open("botList.json", "r") as f:
             botList = json.load(f)
-            if any(i in User_Agent.lower() for i in botList["no"]) and not any(i in User_Agent.lower() for i in botList["ok"]):
+            if any(i.lower() in User_Agent.lower() for i in botList["no"]) and not any(i in User_Agent.lower() for i in botList["ok"]):
                 logmsg("bot", f"bot 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_url} | From: {User_Agent} | Referer: {Referer}")
-            elif "python-requests" in User_Agent.lower():
+            elif "python-requests".lower() in User_Agent.lower():
                 logmsg("python-requests", f"python-requests 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_url} | From: {User_Agent} | Referer: {Referer}")
-            elif "python-urllib" in User_Agent.lower():
+            elif "Python-urllib".lower() in User_Agent.lower():
                 logmsg("Python-urllib", f"Python-urllib 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_url} | From: {User_Agent} | Referer: {Referer}")
 
-            elif any(i in User_Agent.lower() for i in botList["ok"]):
+            elif any(i.lower() in User_Agent.lower() for i in botList["ok"]):
                 rMsg = f"bot 감지! | {rMsg}"; log.info(rMsg)
-            elif "postmanruntime" in User_Agent.lower():
+            elif "PostmanRuntime".lower() in User_Agent.lower():
                 rMsg = f"PostmanRuntime 감지! | {rMsg}"; log.debug(rMsg)
             elif User_Agent == "osu!":
                 rMsg = f"osu! 감지! | {rMsg}"; log.info(rMsg)
@@ -496,6 +495,12 @@ def get_AudioLength(filesinfo, setID, AudioFilename):
     except: AudioLength = AudioLength_DT = AudioLength_NC = AudioLength_HT = None
     return (AudioLength, AudioLength_DT, AudioLength_NC, AudioLength_HT)
 
+def format_size(size):
+    """ 사람이 읽기 쉬운 파일 크기 포맷 """
+    i = 0; units = ["Byte", "KB", "MB", "GB", "TB"]
+    while size >= 1024 and i < len(units) - 1: size /= 1024; i += 1
+    return f"{round(size, 2)} {units[i]}"
+
 def get_dir_size(path='.'):
     total = 0; stack = [path]
     while stack:
@@ -503,12 +508,7 @@ def get_dir_size(path='.'):
         for entry in os.scandir(current_path):
             if entry.is_file(): total += entry.stat().st_size
             elif entry.is_dir(): stack.append(entry.path)
-    if total < 1024:
-        return f"{total} Byte"
-    elif total / (1024 ** 1) < 1024: return f"{round(total / (1024 ** 1), 2)} KB"
-    elif total / (1024 ** 2) < 1024: return f"{round(total / (1024 ** 2), 2)} MB"
-    elif total / (1024 ** 3) < 1024: return f"{round(total / (1024 ** 3), 2)} GB"
-    elif total / (1024 ** 4) < 1024: return f"{round(total / (1024 ** 4), 2)} TB"
+    return format_size(total)
 
 def windowsPath(path):
     for a in ['<','>',':','"','/','\\','|','?','*']: path = path.replace(a, "_")
