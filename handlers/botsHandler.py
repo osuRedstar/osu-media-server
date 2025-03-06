@@ -9,7 +9,7 @@ from helpers import requestsManager
 class handler(requestsManager.asyncRequestHandler):
     def asyncGet(self):
         rm = request_msg(self, botpass=True)
-        if rm  !=  200: pass
+        if rm != 200: pass
         ip = self.get_argument("ip", None)
         country = self.get_argument("country", None)
         url = self.get_argument("url", None)
