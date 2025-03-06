@@ -10,30 +10,21 @@ from helpers import getmmdb
 from helpers import requestsManager
 
 #from handlers import MainHandler
-from handlers import ListHandler
-from handlers import BgHandler
-from handlers import ThumbHandler
-from handlers import PreviewHandler
-from handlers import AudioHandler
-from handlers import VideoHandler
+from handlers import ListHandler, BgHandler, ThumbHandler, PreviewHandler, AudioHandler, VideoHandler, OsuHandler
+from handlers import OszALLHandler, OszHandler, OszBHandler
 from handlers import beatmapPageHandler
-from handlers import OszHandler
-from handlers import OszBHandler
-from handlers import OsuHandler
 from handlers import replayParserHandler
 from handlers import readableModsHandler, readableModsReverseHandler
 from handlers import rawHandler
 from handlers import IPSelfHandler, IPHandler
 from handlers import botsHandler
-#from handlers import FaviconHandler
-#from handlers import StaticHandler
-#from handlers import robots_txt
+from handlers import Content_Type
+#from handlers import FaviconHandler, StaticHandler, robots_txt
 from handlers import StatusHandler
 from handlers import webMapsHandler
 from handlers import searchHandler
 from handlers import removeHandler
-from handlers import filesinfoHandler
-from handlers import filesinfoHandler2
+from handlers import filesinfoHandler, filesinfoHandler2
 from handlers import coversHandler
 
 conf = config.config("config.ini")
@@ -91,6 +82,7 @@ def make_app():
         (r"/preview/([^/]+)", PreviewHandler.handler),
         (r"/audio/([^/]+)", AudioHandler.handler),
         (r"/video/([^/]+)", VideoHandler.handler),
+        (r"/d/all", OszALLHandler.handler),
         (r"/s/([^/]+)", beatmapPageHandler.handler),
         (r"/d/([^/]+)", OszHandler.handler),
         (r"/b/([^/]+)", OszBHandler.handler),
@@ -106,6 +98,7 @@ def make_app():
         (r"/ip", IPSelfHandler.handler),
         (r"/ip/([^/]+)", IPHandler.handler),
         (r"/bots", botsHandler.handler),
+        (r"/content-type", Content_Type.handler),
 
         (r"/favicon.ico", FaviconHandler),
         (r"/static/(.*)", StaticHandler),
@@ -121,8 +114,7 @@ if __name__ == "__main__":
     getmmdb.dl()
     drpc.drpcStart()
     folder_check()
-    #if conf.config["server"]["flaskdebug"] == "0": debugMode = False
-    #else: debugMode = True
+    #debugMode = False if conf.config["server"]["flaskdebug"] == "0" else True
     app = make_app()
     port = int(conf.config["server"]["port"])
     app.listen(port)
