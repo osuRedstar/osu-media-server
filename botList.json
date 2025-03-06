@@ -5,10 +5,10 @@
 	"no": [
 		"bot",
 		"crawler",
-		"bytedance.com",
-		"censysinspect",
-		"internet-measurement.com",
-		"googleother",
-		"facebookexternalhit/1.1"
+		"Bytespider",
+		"CensysInspect",
+		"InternetMeasurement",
+		"GoogleOther",
+		"facebookexternalhit"
 	]
 }
