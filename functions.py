@@ -107,15 +107,15 @@ else: log.warning("봇 접근 거부")
 
 def findBot(ip=None, country=None, url=None, user_agent=None, referer=None, botType=None, count=None, last_seen=None):
     sql = "SELECT * FROM ips WHERE TRUE"; params = []
-    if ip: sql += " AND IP = %s"; params.append(ip)
-    if country: sql += " AND Country = %s"; params.append(country)
-    if url: sql += " AND URL = %s"; params.append(url)
-    if user_agent: sql += " AND User_Agent = %s"; params.append(user_agent)
-    if referer: sql += " AND Referer = %s"; params.append(referer)
-    if botType: sql += " AND Type = %s"; params.append(botType)
+    if ip: sql += " AND IP LIKE %s"; params.append(f"%{ip}%")
+    if country: sql += " AND Country LIKE %s"; params.append(f"%{country}%")
+    if url: sql += " AND URL LIKE %s"; params.append(f"%{url}%")
+    if user_agent: sql += " AND User_Agent LIKE %s"; params.append(f"%{user_agent}%")
+    if referer: sql += " AND Referer LIKE %s"; params.append(f"%{referer}%")
+    if botType: sql += " AND Type LIKE %s"; params.append(f"%{botType}%")
     if count is not None: sql += " AND Count = %s"; params.append(int(count))
     if last_seen is not None: sql += " AND Last_seen = %s"; params.append(int(last_seen))
-    sql += " ORDER BY Last_seen"
+    sql += " ORDER BY id"
     return dbO.fetchAll(sql, params)
 
 def getIP(self):
@@ -223,7 +223,7 @@ def request_msg(self, botpass=False):
         for i in ips: dbO.execute("DELETE FROM ips WHERE id = %s", [i["id"]])
         ips = None
     if ips:
-        sql = "UPDATE ips SET Country = %s, URL = %s, User_Agent = %s, Referer = %s, Type = %s, Count = %s, Last_seen = %s, blocked = %s WHERE id = %s"
+        sql = "UPDATE ips SET Country = %s, URL = %s, `User-Agent` = %s, Referer = %s, Type = %s, Count = %s, Last_seen = %s, blocked = %s WHERE id = %s"
         dbO.execute(sql, [country_code, request_url, User_Agent, Referer, userType, ips[0]["Count"] + 1, nt, blocked, ips[0]["id"]])
     else: dbO.execute("INSERT INTO ips VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", [None, real_ip, country_code, request_url, User_Agent, Referer, userType, cnt + 1, nt, blocked])
     return rt
