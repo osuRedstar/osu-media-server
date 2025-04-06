@@ -114,7 +114,7 @@ if __name__ == "__main__":
     getmmdb.dl()
     drpc.drpcStart()
     folder_check()
-    #debugMode = False if conf.config["server"]["flaskdebug"] == "0" else True
+    #debugMode = int(conf.config["server"]["flaskdebug"])
     app = make_app()
     port = int(conf.config["server"]["port"])
     app.listen(port)

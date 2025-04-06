@@ -37,14 +37,13 @@ class calculate_md5:
         return md5.hexdigest()
 
 conf = config.config("config.ini")
-isLog = conf.config["server"]["isLog"]
+isLog = eval(conf.config["server"]["isLog"])
 OSU_APIKEYS = eval(conf.config["osu"]["Bancho_Apikeys"])
 Bancho_u = conf.config["osu"]["Bancho_username"]
 Bancho_p = conf.config["osu"]["Bancho_password"]
 Bancho_p_hashed = calculate_md5.text(Bancho_p)
 #lets.py 형태의 사설서버를 소유중이면 lets\.data\beatmaps 에서만 .osu 파일을 가져옴
-IS_YOU_HAVE_OSU_PRIVATE_SERVER = conf.config["osu"]["IS_YOU_HAVE_OSU_PRIVATE_SERVER_WITH_lets.py"]
-IS_YOU_HAVE_OSU_PRIVATE_SERVER = False if IS_YOU_HAVE_OSU_PRIVATE_SERVER.lower() == "false" or IS_YOU_HAVE_OSU_PRIVATE_SERVER == "0" else True
+IS_YOU_HAVE_OSU_PRIVATE_SERVER = eval(conf.config["osu"]["IS_YOU_HAVE_OSU_PRIVATE_SERVER_WITH_lets.py"])
 lets_beatmaps_Folder = conf.config["osu"]["lets.py_beatmaps_Folder_Path"]
 dataFolder = conf.config["server"]["dataFolder"]
 oszRenewTime = int(conf.config["server"]["oszRenewTime"])
@@ -102,28 +101,22 @@ if os.system(f"ffmpeg -version > {'nul' if OSisWindows else '/dev/null'} 2>&1") 
 
 # main.py
 ContectEmail = conf.config["server"]["ContectEmail"]
-allowedconnentedbot = conf.config["server"]["allowedconnentedbot"]
-if allowedconnentedbot == "True" or allowedconnentedbot == "1":
-    allowedconnentedbot = True
-    log.chat("봇 접근 허용")
-else:
-    allowedconnentedbot = False
-    log.warning("봇 접근 거부")
+allowedconnentedbot = eval(conf.config["server"]["allowedconnentedbot"])
+if allowedconnentedbot: log.chat("봇 접근 허용")
+else: log.warning("봇 접근 거부")
 
 def findBot(ip=None, country=None, url=None, user_agent=None, referer=None, botType=None, count=None, last_seen=None):
-    with open("IPs.json", "r") as f: bots = json.load(f)
-    data = [] #필터링
-    for entry in bots:
-        if ((ip is None or ip in entry.get("IP")) and
-            (country is None or country in entry.get("Country")) and
-            (url is None or url in entry.get("URL")) and
-            (user_agent is None or user_agent in entry.get("User-Agent")) and
-            (referer is None or referer in entry.get("Referer")) and
-            (botType is None or botType in entry.get("Type")) and
-            (count is None or entry.get("Count") == int(count)) and
-            (last_seen is None or entry.get("Last_seen") == int(last_seen))):
-            data.append(entry)
-    return data
+    sql = "SELECT * FROM ips WHERE TRUE"; params = []
+    if ip: sql += " AND IP = %s"; params.append(ip)
+    if country: sql += " AND Country = %s"; params.append(country)
+    if url: sql += " AND URL = %s"; params.append(url)
+    if user_agent: sql += " AND User_Agent = %s"; params.append(user_agent)
+    if referer: sql += " AND Referer = %s"; params.append(referer)
+    if botType: sql += " AND Type = %s"; params.append(botType)
+    if count is not None: sql += " AND Count = %s"; params.append(int(count))
+    if last_seen is not None: sql += " AND Last_seen = %s"; params.append(int(last_seen))
+    sql += " ORDER BY Last_seen"
+    return dbO.fetchAll(sql, params)
 
 def getIP(self):
     if "X-Real-IP" in self.request.headers: return self.request.headers.get("X-Real-IP") #Added from nginx
@@ -203,43 +196,36 @@ def request_msg(self, botpass=False):
         else: log.error(msg)
 
     #필?터?링
-    if allowedconnentedbot: log.info(rMsg)
+    if allowedconnentedbot: userType = "user"; blocked = 0; log.info(rMsg)
     else:
         with open("botList.json", "r") as f:
             botList = json.load(f)
             if any(i.lower() in User_Agent.lower() for i in botList["no"]) and not any(i in User_Agent.lower() for i in botList["ok"]):
-                logmsg("bot", f"bot 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_url} | From: {User_Agent} | Referer: {Referer}")
+                userType = "bot"; blocked = 1; logmsg(userType, f"{userType} 감지! | {rMsg}")
             elif "python-requests".lower() in User_Agent.lower():
-                logmsg("python-requests", f"python-requests 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_url} | From: {User_Agent} | Referer: {Referer}")
+                userType = "python-requests"; blocked = 1; logmsg(userType, f"{userType} 감지! | {rMsg}")
             elif "Python-urllib".lower() in User_Agent.lower():
-                logmsg("Python-urllib", f"Python-urllib 감지! | Request from IP: {real_ip}, {client_ip} ({country_code}) | URL: {request_url} | From: {User_Agent} | Referer: {Referer}")
+                userType = "Python-urllib"; blocked = 1; logmsg(userType, f"{userType} 감지! | {rMsg}")
 
             elif any(i.lower() in User_Agent.lower() for i in botList["ok"]):
-                rMsg = f"bot 감지! | {rMsg}"; log.info(rMsg)
+                userType = "okbot"; blocked = 0; rMsg = f"bot 감지! | {rMsg}"; log.info(rMsg)
             elif "PostmanRuntime".lower() in User_Agent.lower():
-                rMsg = f"PostmanRuntime 감지! | {rMsg}"; log.debug(rMsg)
+                userType = "PostmanRuntime"; blocked = 0; rMsg = f"{userType} 감지! | {rMsg}"; log.debug(rMsg)
             elif User_Agent == "osu!":
-                rMsg = f"osu! 감지! | {rMsg}"; log.info(rMsg)
+                userType = "osu!"; blocked = 0; rMsg = f"{userType} 감지! | {rMsg}"; log.info(rMsg)
             else:
-                log.info(rMsg)
-
-    if not allowedconnentedbot and rt != 200:
-        if not os.path.isfile("IPs.json"):
-            with open("IPs.json", "w") as f: f.write("[\n\n]")
-        with open("IPs.json", "r+") as f:
-            file = json.load(f)
-            if file:
-                isIPExist = False
-                for i, d in enumerate(file):
-                    if d["IP"] == real_ip:
-                        isIPExist = True
-                        file[i] = {"IP": real_ip, "Country": country_code, "URL": request_url, "User-Agent": User_Agent, "Referer": Referer, "Type": rt, "Count": file[i]['Count'] + 1, "Last_seen": int(time.time())}
-                if not isIPExist:
-                    file.append({"IP": real_ip, "Country": country_code, "URL": request_url, "User-Agent": User_Agent, "Referer": Referer, "Type": rt, "Count": 1, "Last_seen": int(time.time())})
-            else: file.append({"IP": real_ip, "Country": country_code, "URL": request_url, "User-Agent": User_Agent, "Referer": Referer, "Type": rt, "Count": 1, "Last_seen": int(time.time())})
-
-            f.seek(0); f.truncate()
-            f.write(json.dumps(file, indent=4))
+                userType = "user"; blocked = 0; log.info(rMsg)
+    #IP DB 로깅
+    ips = dbO.fetchAll("SELECT * FROM ips WHERE IP = %s ORDER BY Last_seen DESC", [real_ip])
+    cnt = dbO.fetch("SELECT COALESCE(SUM(Count), 0) AS cnt FROM ips WHERE IP = %s", [real_ip])["cnt"]
+    nt = int(time.time())
+    if ips and len(ips) > 1:
+        for i in ips: dbO.execute("DELETE FROM ips WHERE id = %s", [i["id"]])
+        ips = None
+    if ips:
+        sql = "UPDATE ips SET Country = %s, URL = %s, User_Agent = %s, Referer = %s, Type = %s, Count = %s, Last_seen = %s, blocked = %s WHERE id = %s"
+        dbO.execute(sql, [country_code, request_url, User_Agent, Referer, userType, ips[0]["Count"] + 1, nt, blocked, ips[0]["id"]])
+    else: dbO.execute("INSERT INTO ips VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", [None, real_ip, country_code, request_url, User_Agent, Referer, userType, cnt + 1, nt, blocked])
     return rt
 
 def resPingMs(self):
@@ -368,6 +354,7 @@ def pathToContentType(path, isInclude=False):
     elif isInclude and ".flv" in path.lower() or not isInclude and path.lower().endswith(".flv"): ct, tp = ("video/x-flv", "video")
     elif isInclude and ".wmv" in path.lower() or not isInclude and path.lower().endswith(".wmv"): ct, tp = ("video/x-ms-wmv", "video")
     elif isInclude and ".mkv" in path.lower() or not isInclude and path.lower().endswith(".mkv"): ct, tp = ("video/x-matroska", "video")
+    elif isInclude and ".mov" in path.lower() or not isInclude and path.lower().endswith(".mov"): ct, tp = ("video/quicktime", "video")
 
     elif isInclude and ".osz" in path.lower() or not isInclude and path.lower().endswith(".osz"): ct, tp = ("application/x-osu-beatmap-archive", "file")
     elif isInclude and ".osr" in path.lower() or not isInclude and path.lower().endswith(".osr"): ct, tp = ("application/x-osu-replay", "file")
