@@ -19,7 +19,8 @@ def mmdbdl():
     mmdbDir = os.listdir('mmdb')[0]
     mmdbFile = [file for file in os.listdir(f"mmdb/{mmdbDir}") if file.endswith(".mmdb")][0]
     os.replace(f"mmdb/{mmdbDir}/{mmdbFile}", "GeoLite2-City.mmdb")
-    os.system("rd /s /q mmdb && del /f /q mmdb.tar.gz")
+    if os.name == "nt": os.system("rd /s /q mmdb && del /f /q mmdb.tar.gz")
+    else: os.system("sudo rm -rf mmdb && sudo rm -rf mmdb.tar.gz")
 
 def wk():
     while True:
