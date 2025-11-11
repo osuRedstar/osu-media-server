@@ -1311,7 +1311,7 @@ def filename_to_GetCheesegullDB(filename):
         creator = match.group('creator')
         version = match.group('version')
     except:
-        artist, title, creator, version = None
+        artist = title = creator = version = None
         log.error("osu filename에서 artist, title, creator, version 추출중 에러")
 
     #osu_media_server DB 로 먼저 뽑아봄
