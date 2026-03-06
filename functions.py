@@ -1,24 +1,12 @@
-from helpers import logUtils as log
+import zipfile, os, psutil, shutil, requests, hashlib, re, time, json, traceback, threading
 #from helpers.dbConnect import db
-from helpers import dbConnector
-import zipfile
-import os
-import shutil
-import requests
+from helpers import dbConnector, config, mods, logUtils as log
 from tqdm import tqdm
-from helpers import config
 from PIL import Image
-import hashlib
-import re
 from pydub.utils import mediainfo
-import threading
-import time
 from datetime import datetime
-import json
 from collections import Counter
 import geoip2.database
-from helpers import mods
-import traceback
 
 def exceptionE(msg=""): e = traceback.format_exc(); log.error(f"{msg} \n{e}"); return e
 
@@ -102,8 +90,7 @@ if os.system(f"ffmpeg -version > {'nul' if OSisWindows else '/dev/null'} 2>&1") 
 # main.py
 ContectEmail = conf.config["server"]["ContectEmail"]
 allowedconnentedbot = eval(conf.config["server"]["allowedconnentedbot"])
-if allowedconnentedbot: log.chat("봇 접근 허용")
-else: log.warning("봇 접근 거부")
+log.chat("봇 접근 허용") if allowedconnentedbot else log.warning("봇 접근 거부")
 
 def findBot(ip=None, country=None, url=None, user_agent=None, referer=None, botType=None, count=None, last_seen=None):
     sql = "SELECT * FROM ips WHERE TRUE"; params = []
@@ -158,16 +145,15 @@ def getRequestInfo(self):
     try:
         request_url = self.request.headers["X-Forwarded-Proto"] + "://" + self.request.host + self.request.uri
         country_code = self.request.headers["Cf-Ipcountry"]
-        IsCloudflare = IsNginx = True
+        IsCloudflare = True
         Server = "Cloudflare"
     except Exception as e:
         log.warning(f"cloudflare를 거치지 않음, real_ip는 nginx header에서 가져옴 | e = {e}")
         try:
             request_url = self.request.headers["X-Forwarded-Proto"] + "://" + self.request.host + self.request.uri
             IsNginx = True
-            if OSisWindows:
-                try: Server = os.popen("nginx.exe -v 2>&1").read().split(":")[1].strip()
-                except: ngp = os.getcwd().replace(os.getcwd().split("\\")[-1], "nginx/nginx.exe").replace("\\", "/"); Server = os.popen(f'{ngp} -v 2>&1').read().split(":")[1].strip()
+            nginx_path = next((p.info['exe'] for p in psutil.process_iter(['name', 'exe']) if p.info['name'] == 'nginx.exe'), None)
+            if OSisWindows: Server = os.popen(f"{nginx_path} -v 2>&1").read().split(":")[1].strip()
             else: Server = os.popen("nginx -v 2>&1").read().split(":")[1].strip()
         except Exception as e:
             log.warning(f"http로 접속시도함 | cloudflare를 거치지 않음, real_ip는 http 요청이라서 바로 뜸 | e = {e}")
