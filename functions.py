@@ -1,6 +1,6 @@
 import zipfile, os, psutil, shutil, requests, hashlib, re, time, json, traceback, threading
 #from helpers.dbConnect import db
-from helpers import dbConnector, config, mods, logUtils as log
+from helpers import dbConnector, config, mods, banchoDownloader, logUtils as log
 from tqdm import tqdm
 from PIL import Image
 from pydub.utils import mediainfo
@@ -823,8 +823,9 @@ def check(setID, rq_type, checkRenewFile=False, bu = None, bh = None, bvv = None
     log.debug(fullSongName)
     choData = choUnavailable(setID)
 
+    #osu.direct 는 302 로 넘겨는데 이떄 Content-Disposition 헤더 없음
     url = [
-        f"https://osu.ppy.sh/d/{setID}?u={Bancho_u}&h={Bancho_p_hashed}",
+        banchoDownloader.download,
         f'https://api.nerinyan.moe/d/{setID}',
         #f"https://chimu.moe/d/{setID}",
         f"https://catboy.best/d/{setID}",
@@ -833,11 +834,7 @@ def check(setID, rq_type, checkRenewFile=False, bu = None, bh = None, bvv = None
         f"https://txy1.sayobot.cn/beatmaps/download/full/{setID}",
         f"https://storage.ripple.moe/d/{setID}"
     ]
-    urlName = ["Bancho", "Nerinyan", "catboy", "osu.direct", "beatconnect", "sayobot", "Ripple"]
-
-    if bu and bh and not choData["unavailable"]:
-        url.insert(0, f"https://osu.ppy.sh/d/{setID}?u={bu}&h={bh}&vv={bvv}")
-        urlName.insert(0, f"{bu}'s Bancho")
+    urlName = ["Bancho API v2", "Nerinyan", "Catboy", "osu.direct", "Beatconnect", "Sayobot", "Ripple"]
 
     if choData["unavailable"]:
         log.warning(f"{url[0]} | {urlName[0]} 링크 삭제함!")
@@ -845,10 +842,11 @@ def check(setID, rq_type, checkRenewFile=False, bu = None, bh = None, bvv = None
 
     def dl():
         #우선 setID .osz로 다운받고 나중에 파일 이름 변경
-        file_name = f'{setID} .osz' #919187 765 MILLION ALLSTARS - UNION!!.osz, 2052147 (Love Live! series) - Colorful Dreams! Colorful Smiles! _  TV2
-        save_path = f'{dataFolder}/dl/'
+        file_name = f'{setID} .osz'; save_path = f'{dataFolder}/dl/'
 
         for i, (link, mn) in enumerate(zip(url, urlName)):
+            if i == 0 or mn == "Bancho": return link(setID) #Bancho API v2 다운로드 후 statusCode 리턴함
+
             # 파일 다운로드 요청
             try:
                 res = requests.get(link, headers=requestHeaders, timeout=5, stream=True)
@@ -866,7 +864,7 @@ def check(setID, rq_type, checkRenewFile=False, bu = None, bh = None, bvv = None
 
                 # tqdm을 사용하여 진행률 표시
                 with open(save_path + file_name, 'wb') as file:
-                    with tqdm(total=file_size, unit='B', unit_scale=True, unit_divisor=1024, ncols=120) as pbar:
+                    with tqdm(total=file_size, unit='B', unit_scale=True, unit_divisor=1024, ncols=120, desc=f"{mn} ({setID})") as pbar:
                         for data in res.iter_content(1024):
                             file.write(data)
                             pbar.update(len(data))
@@ -883,8 +881,7 @@ def check(setID, rq_type, checkRenewFile=False, bu = None, bh = None, bvv = None
                 play_thread = threading.Thread(target=play_finished_dl)
                 play_thread.start()
 
-                try:
-                    os.rename(f"{dataFolder}/dl/{setID} .osz", f"{dataFolder}/dl/{newFilename}")
+                try: os.rename(f"{dataFolder}/dl/{setID} .osz", f"{dataFolder}/dl/{newFilename}")
                 except FileExistsError:
                     ct = int(os.stat(f"{dataFolder}/dl/{newFilename}").st_ctime)
                     shutil.copy2(f"{dataFolder}/dl/{newFilename}", f"{dataFolder}/dl-old/{newFilename[:-4]}-{ct}~{int(time.time())}.osz")
