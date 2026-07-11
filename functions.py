@@ -869,6 +869,10 @@ def check(setID, rq_type, checkRenewFile=False, bu = None, bh = None, bvv = None
                             file.write(data)
                             pbar.update(len(data))
 
+                if not zipfile.is_zipfile(save_path + file_name):
+                    log.error(f"[{mn} | ({save_path + file_name})] 서버 응답 오류 (압축 파일이 아님). 파일을 삭제하고 다음 서버로 시도합니다.")
+                    os.remove(save_path + file_name); continue # 아래 코드를 실행하지 않고 바로 다음 for 루프(다음 다운로드 링크)로 넘어감
+
                 newFilename = re.findall('filename="([^"]+)"', header_filename)[0]
                 if (urlName[i] == "chimu" or urlName[i] == "sayobot") and "%20" in newFilename:
                     newFilename = newFilename.replace("%20", " ")
