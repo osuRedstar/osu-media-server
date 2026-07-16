@@ -33,7 +33,8 @@ def getToken(n: str = None, p: str = None) -> dict:
         token = res.json()
         token_expires_at = token['token_expires_at'] = time.time() + token['expires_in'] - 60 #보통 토큰 유효기간은 하루(86400초)입니다. 안전하게 만료 60초 전으로 세팅합니다.
         token["username"] = data["username"]
-        if not n and not p: access_token = token
+        if not n and not p: access_token = token #발동될 일은 없는걸로 알지만 타 유저의 정보로 얻은 토큰은 전역변수에 저장하지 않는 기능
+        log.info(f"{data['username']} 의 정보로 Lazer 클라의 access_token 획득!")
     except: token = 500 if not res else res.status_code
     return token
 

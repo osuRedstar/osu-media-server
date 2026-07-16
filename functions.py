@@ -73,6 +73,8 @@ for i, sc in enumerate(BanchoApiRequest("/api/get_beatmaps", params={'b': -1}, a
     else: log.info(f"apikey {i + 1} Done!"); apikeyStatus = True
 if not apikeyStatus: exit(); del apikeyStatus
 
+banchoDownloader.getToken()
+
 #ffmpeg 설치확인
 if os.system(f"ffmpeg -version > {'nul' if OSisWindows else '/dev/null'} 2>&1") != 0:
     log.warning(f"ffmpeg Does Not Found!! | ignore? (y/n) ")
